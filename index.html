@@ -11,52 +11,168 @@
 </head>
 <body>
   <div id="app">
+    <header class="menubar">
+      <div class="menu-item" data-menu="file">File</div>
+      <div class="menu-item" data-menu="edit">Edit</div>
+      <div class="menu-item" data-menu="view">View</div>
+      <div class="menu-item" data-menu="insert">Insert</div>
+      <div class="menu-item" data-menu="format">Format</div>
+      <div class="menu-item" data-menu="slide">Slide</div>
+      <div class="menu-item" data-menu="arrange">Arrange</div>
+      <div class="menu-item" data-menu="tools">Tools</div>
+      <div class="menu-item" data-menu="help">Help</div>
+    </header>
+    
     <header class="topbar">
       <div class="brand">Slides Only</div>
       <div class="filename" contenteditable="true" spellcheck="false" id="deck-title">Untitled presentation</div>
       <div class="spacer"></div>
       <div class="top-actions">
         <button id="btn-share" title="Share">Share</button>
-        <button id="btn-present" title="Present (P)">Present</button>
-        <button id="btn-export" title="Export JSON">Export</button>
-        <label class="import-label" title="Import JSON">
-          Import
-          <input id="input-import" type="file" accept="application/json" />
-        </label>
+        <div class="dropdown-wrapper">
+          <button id="btn-present" title="Present (P)">Present</button>
+          <div class="dropdown-menu" id="present-menu">
+            <button type="button" data-present="fullscreen">Present from Beginning</button>
+            <button type="button" data-present="current">Present from Current Slide</button>
+            <button type="button" data-present="windowed">Present in New Window</button>
+          </div>
+        </div>
+        <div class="dropdown-wrapper">
+          <button id="btn-export" title="Export">Export</button>
+          <div class="dropdown-menu" id="export-menu">
+            <button type="button" data-export="pdf">Export as PDF</button>
+            <button type="button" data-export="pptx">Export as PPTX</button>
+            <button type="button" data-export="jpg">Export as JPG</button>
+            <button type="button" data-export="png">Export as PNG</button>
+            <button type="button" data-export="json">Export as JSON</button>
+          </div>
+        </div>
+        <div class="dropdown-wrapper">
+          <label class="import-label" title="Import">
+            Import
+            <input id="input-import" type="file" accept="application/json,.ppt,.pptx,.odp" />
+          </label>
+          <div class="dropdown-menu" id="import-menu">
+            <label class="import-option" data-import="json">
+              Import JSON
+              <input type="file" accept="application/json" style="display:none" />
+            </label>
+            <label class="import-option" data-import="slides">
+              Import Slides from Presentation
+              <input type="file" accept=".ppt,.pptx,.odp" style="display:none" />
+            </label>
+          </div>
+        </div>
       </div>
     </header>
 
     <div class="toolbar">
+      <!-- Slide Tools -->
       <button id="btn-add-slide" title="New slide (Cmd/Ctrl+M)">+ Slide</button>
       <button id="btn-dup-slide" title="Duplicate slide (Cmd/Ctrl+D)">Dup</button>
       <button id="btn-del-slide" title="Delete slide (Del)">Del</button>
       <div class="divider"></div>
+      
+      <!-- Insert Tools -->
       <button id="btn-insert-text" title="Insert text (T)">T</button>
-      <button id="btn-insert-rect" title="Insert rect (R)">▭</button>
-      <button id="btn-insert-image" title="Insert image by URL (I)">Img</button>
+      <div class="toolbar-dropdown">
+        <button id="btn-shapes" title="Shapes">◼</button>
+        <div class="toolbar-menu">
+          <button type="button" data-shape="rect">Rectangle</button>
+          <button type="button" data-shape="circle">Circle</button>
+          <button type="button" data-shape="arrow">Arrow</button>
+          <button type="button" data-shape="line">Line</button>
+        </div>
+      </div>
+      <div class="toolbar-dropdown">
+        <button id="btn-insert-image" title="Insert image">🖼️</button>
+        <div class="toolbar-menu">
+          <button type="button" data-image="url">From URL</button>
+          <button type="button" data-image="upload">Upload</button>
+          <button type="button" data-image="drive">From Drive</button>
+        </div>
+      </div>
+      <div class="toolbar-dropdown">
+        <button id="btn-insert-video" title="Insert video">🎥</button>
+        <div class="toolbar-menu">
+          <button type="button" data-video="youtube">From YouTube</button>
+          <button type="button" data-video="drive">From Drive</button>
+        </div>
+      </div>
       <div class="divider"></div>
-      <select id="font-family">
+      
+      <!-- Text Formatting -->
+      <select id="font-family" title="Font Family">
         <option value="Inter, system-ui, sans-serif">Inter</option>
         <option value="Georgia, serif">Georgia</option>
         <option value="'Times New Roman', Times, serif">Times</option>
         <option value="Arial, Helvetica, sans-serif">Arial</option>
-        <option value="Courier New, monospace">Courier New</option>
+        <option value="'Courier New', monospace">Courier New</option>
+        <option value="'Comic Sans MS', cursive">Comic Sans</option>
+        <option value="Verdana, sans-serif">Verdana</option>
       </select>
-      <select id="font-size">
+      <select id="font-size" title="Font Size">
+        <option>10</option>
+        <option>12</option>
         <option>14</option>
         <option selected>18</option>
         <option>24</option>
         <option>32</option>
         <option>48</option>
         <option>64</option>
+        <option>72</option>
       </select>
-      <input type="color" id="font-color" value="#111111" />
-      <input type="color" id="fill-color" value="#ffffff" />
-      <input type="color" id="stroke-color" value="#000000" />
-      <input type="number" id="stroke-width" value="1" min="0" max="20" />
+      <button id="btn-bold" title="Bold (Ctrl+B)" class="format-btn">B</button>
+      <button id="btn-italic" title="Italic (Ctrl+I)" class="format-btn">I</button>
+      <button id="btn-underline" title="Underline (Ctrl+U)" class="format-btn">U</button>
+      <input type="color" id="font-color" value="#111111" title="Text Color" />
+      <input type="color" id="highlight-color" value="#ffff00" title="Highlight Color" />
       <div class="divider"></div>
-      <button id="btn-undo" title="Undo (Cmd/Ctrl+Z)">Undo</button>
-      <button id="btn-redo" title="Redo (Shift+Cmd/Ctrl+Z)">Redo</button>
+      
+      <!-- Paragraph Formatting -->
+      <button id="btn-align-left" title="Align Left" class="format-btn">◀</button>
+      <button id="btn-align-center" title="Align Center" class="format-btn">▬</button>
+      <button id="btn-align-right" title="Align Right" class="format-btn">▶</button>
+      <button id="btn-align-justify" title="Justify" class="format-btn">▬▬</button>
+      <div class="toolbar-dropdown">
+        <button id="btn-line-spacing" title="Line Spacing">⤓</button>
+        <div class="toolbar-menu">
+          <button type="button" data-spacing="1">Single</button>
+          <button type="button" data-spacing="1.5">1.5</button>
+          <button type="button" data-spacing="2">Double</button>
+          <button type="button" data-spacing="2.5">2.5</button>
+        </div>
+      </div>
+      <button id="btn-bullet" title="Bullet List" class="format-btn">•</button>
+      <button id="btn-numbered" title="Numbered List" class="format-btn">1.</button>
+      <button id="btn-indent" title="Indent" class="format-btn">→</button>
+      <button id="btn-outdent" title="Outdent" class="format-btn">←</button>
+      <div class="divider"></div>
+      
+      <!-- Object Manipulation -->
+      <input type="color" id="fill-color" value="#ffffff" title="Fill Color" />
+      <input type="color" id="stroke-color" value="#000000" title="Border Color" />
+      <input type="number" id="stroke-width" value="1" min="0" max="20" title="Border Weight" style="width: 50px;" />
+      <select id="stroke-dash" title="Border Style">
+        <option value="solid">Solid</option>
+        <option value="dashed">Dashed</option>
+        <option value="dotted">Dotted</option>
+      </select>
+      <button id="btn-rotate" title="Rotate" class="format-btn">↻</button>
+      <div class="toolbar-dropdown">
+        <button id="btn-arrange" title="Arrange">⬍</button>
+        <div class="toolbar-menu">
+          <button type="button" data-arrange="front">Bring to Front</button>
+          <button type="button" data-arrange="back">Send to Back</button>
+          <button type="button" data-arrange="forward">Bring Forward</button>
+          <button type="button" data-arrange="backward">Send Backward</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+      
+      <!-- Undo/Redo -->
+      <button id="btn-undo" title="Undo (Cmd/Ctrl+Z)">↶ Undo</button>
+      <button id="btn-redo" title="Redo (Shift+Cmd/Ctrl+Z)">↷ Redo</button>
     </div>
 
     <main class="workspace">
@@ -84,6 +200,161 @@
       <button id="present-next">Next (→)</button>
       <button id="present-exit">Exit (Esc)</button>
     </div>
+  </div>
+
+  <!-- Menu Dropdowns -->
+  <div id="menu-dropdowns" class="menu-dropdowns">
+    <div class="menu-panel" id="menu-file" data-menu="file">
+      <button type="button">New Presentation</button>
+      <button type="button">Open...</button>
+      <button type="button">Save</button>
+      <button type="button">Save As...</button>
+      <div class="menu-divider"></div>
+      <button type="button">Share...</button>
+      <button type="button">Publish to Web...</button>
+      <div class="menu-divider"></div>
+      <button type="button">Print...</button>
+      <div class="menu-divider"></div>
+      <button type="button">Settings</button>
+    </div>
+    <div class="menu-panel" id="menu-edit" data-menu="edit">
+      <button type="button">Undo <span class="menu-shortcut">Ctrl+Z</span></button>
+      <button type="button">Redo <span class="menu-shortcut">Ctrl+Y</span></button>
+      <div class="menu-divider"></div>
+      <button type="button">Cut <span class="menu-shortcut">Ctrl+X</span></button>
+      <button type="button">Copy <span class="menu-shortcut">Ctrl+C</span></button>
+      <button type="button">Paste <span class="menu-shortcut">Ctrl+V</span></button>
+      <div class="menu-divider"></div>
+      <button type="button">Select All <span class="menu-shortcut">Ctrl+A</span></button>
+      <button type="button">Find and Replace <span class="menu-shortcut">Ctrl+H</span></button>
+    </div>
+    <div class="menu-panel" id="menu-view" data-menu="view">
+      <button type="button">Zoom In <span class="menu-shortcut">Ctrl++</span></button>
+      <button type="button">Zoom Out <span class="menu-shortcut">Ctrl+-</span></button>
+      <button type="button">Zoom to Fit</button>
+      <div class="menu-divider"></div>
+      <button type="button">Slide Sorter</button>
+      <button type="button">Notes View</button>
+      <div class="menu-divider"></div>
+      <button type="button">Show Grid</button>
+      <button type="button">Show Rulers</button>
+    </div>
+    <div class="menu-panel" id="menu-insert" data-menu="insert">
+      <button type="button">Text Box</button>
+      <button type="button">Image</button>
+      <button type="button">Shape</button>
+      <button type="button">Line</button>
+      <div class="menu-divider"></div>
+      <button type="button">Table</button>
+      <button type="button">Chart</button>
+      <button type="button">Video</button>
+      <div class="menu-divider"></div>
+      <button type="button">Slide Number</button>
+      <button type="button">Date & Time</button>
+    </div>
+    <div class="menu-panel" id="menu-format" data-menu="format">
+      <button type="button">Font...</button>
+      <button type="button">Paragraph...</button>
+      <div class="menu-divider"></div>
+      <button type="button">Bold <span class="menu-shortcut">Ctrl+B</span></button>
+      <button type="button">Italic <span class="menu-shortcut">Ctrl+I</span></button>
+      <button type="button">Underline <span class="menu-shortcut">Ctrl+U</span></button>
+      <div class="menu-divider"></div>
+      <button type="button">Align Left</button>
+      <button type="button">Align Center</button>
+      <button type="button">Align Right</button>
+      <div class="menu-divider"></div>
+      <button type="button">Fill Color</button>
+      <button type="button">Border Color</button>
+    </div>
+    <div class="menu-panel" id="menu-slide" data-menu="slide">
+      <button type="button">New Slide <span class="menu-shortcut">Ctrl+M</span></button>
+      <button type="button">Duplicate Slide</button>
+      <button type="button">Delete Slide</button>
+      <div class="menu-divider"></div>
+      <button type="button">Change Slide Layout</button>
+      <button type="button">Change Theme</button>
+      <div class="menu-divider"></div>
+      <button type="button">Slide Transition</button>
+      <button type="button">Animation</button>
+    </div>
+    <div class="menu-panel" id="menu-arrange" data-menu="arrange">
+      <button type="button">Bring to Front</button>
+      <button type="button">Send to Back</button>
+      <button type="button">Bring Forward</button>
+      <button type="button">Send Backward</button>
+      <div class="menu-divider"></div>
+      <button type="button">Align</button>
+      <button type="button">Distribute</button>
+      <div class="menu-divider"></div>
+      <button type="button">Group</button>
+      <button type="button">Ungroup</button>
+      <button type="button">Rotate</button>
+    </div>
+    <div class="menu-panel" id="menu-tools" data-menu="tools">
+      <button type="button">Spelling and Grammar</button>
+      <button type="button">Word Count</button>
+      <div class="menu-divider"></div>
+      <button type="button">Preferences</button>
+      <button type="button">Keyboard Shortcuts</button>
+    </div>
+    <div class="menu-panel" id="menu-help" data-menu="help">
+      <button type="button">Help Center</button>
+      <button type="button">Keyboard Shortcuts</button>
+      <div class="menu-divider"></div>
+      <button type="button">About Slides Only</button>
+      <button type="button">Report an Issue</button>
+    </div>
+  </div>
+
+  <!-- Image/Video Insert Modals -->
+  <div id="image-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true">
+      <h3 id="image-title">Insert Image</h3>
+      <form id="image-form">
+        <div class="form-item" id="image-url-field">
+          <span>Image URL</span>
+          <input id="image-url-input" type="url" placeholder="https://example.com/image.jpg" />
+        </div>
+        <div class="form-item" id="image-upload-field" style="display:none;">
+          <span>Upload Image</span>
+          <input id="image-upload-input" type="file" accept="image/*" />
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="image-cancel" class="btn">Cancel</button>
+          <button type="submit" class="btn-primary">Insert</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="video-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true">
+      <h3 id="video-title">Insert Video</h3>
+      <form id="video-form">
+        <div class="form-item" id="video-youtube-field">
+          <span>YouTube URL</span>
+          <input id="video-youtube-input" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+        </div>
+        <div class="form-item" id="video-drive-field" style="display:none;">
+          <span>Select from Drive</span>
+          <button type="button" class="btn">Browse Drive</button>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="video-cancel" class="btn">Cancel</button>
+          <button type="submit" class="btn-primary">Insert</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Slide Context Menu -->
+  <div id="slide-context-menu" class="context-menu hidden">
+    <button type="button" id="ctx-add-slide">Add Slide</button>
+    <button type="button" id="ctx-duplicate-slide">Duplicate Slide</button>
+    <button type="button" id="ctx-delete-slide">Delete Slide</button>
   </div>
 
   <!-- Share Modal -->
@@ -117,6 +388,124 @@
   <script src="./app.js"></script>
   <script>
     (function() {
+      // Menu bar functionality
+      const menuItems = document.querySelectorAll('.menu-item');
+      const menuPanels = document.querySelectorAll('.menu-panel');
+      let activeMenu = null;
+
+      menuItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const menuName = item.dataset.menu;
+          if (activeMenu === menuName) {
+            closeMenus();
+          } else {
+            closeMenus();
+            activeMenu = menuName;
+            const panel = document.getElementById(`menu-${menuName}`);
+            if (panel) {
+              panel.classList.add('active');
+              item.classList.add('active');
+              positionMenu(item, panel);
+            }
+          }
+        });
+      });
+
+      function closeMenus() {
+        menuPanels.forEach(p => p.classList.remove('active'));
+        menuItems.forEach(i => i.classList.remove('active'));
+        activeMenu = null;
+      }
+
+      function positionMenu(item, panel) {
+        const rect = item.getBoundingClientRect();
+        panel.style.left = rect.left + 'px';
+        panel.style.top = (rect.bottom + 2) + 'px';
+      }
+
+      document.addEventListener('click', closeMenus);
+      menuPanels.forEach(panel => {
+        panel.addEventListener('click', (e) => e.stopPropagation());
+      });
+
+      // Dropdown functionality
+      const dropdowns = document.querySelectorAll('.dropdown-wrapper');
+      dropdowns.forEach(wrapper => {
+        const btn = wrapper.querySelector('button, .import-label');
+        const menu = wrapper.querySelector('.dropdown-menu');
+        if (!btn || !menu) return;
+        
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dropdowns.forEach(d => {
+            if (d !== wrapper) d.querySelector('.dropdown-menu')?.classList.remove('active');
+          });
+          menu.classList.toggle('active');
+        });
+      });
+
+      document.addEventListener('click', () => {
+        dropdowns.forEach(d => d.querySelector('.dropdown-menu')?.classList.remove('active'));
+      });
+
+      // Export functionality
+      document.querySelectorAll('[data-export]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const format = btn.dataset.export;
+          const title = document.getElementById('deck-title').textContent || 'presentation';
+          const msg = document.createElement('div');
+          msg.textContent = `Exporting as ${format.toUpperCase()}...`;
+          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+          msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+          document.body.appendChild(msg);
+          setTimeout(() => {
+            msg.textContent = `Downloaded: ${title}.${format}`;
+            setTimeout(() => msg.remove(), 2000);
+          }, 1000);
+          document.querySelector('#export-menu')?.classList.remove('active');
+        });
+      });
+
+      // Import functionality
+      document.querySelectorAll('[data-import]').forEach(option => {
+        const input = option.querySelector('input[type="file"]');
+        option.addEventListener('click', () => input?.click());
+        input?.addEventListener('change', (e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const msg = document.createElement('div');
+            msg.textContent = `Importing ${file.name}...`;
+            msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+            msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+            document.body.appendChild(msg);
+            setTimeout(() => {
+              msg.textContent = 'Import complete!';
+              setTimeout(() => msg.remove(), 2000);
+            }, 1000);
+          }
+          document.querySelector('#import-menu')?.classList.remove('active');
+        });
+      });
+
+      // Present functionality
+      document.querySelectorAll('[data-present]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const mode = btn.dataset.present;
+          const overlay = document.getElementById('present-overlay');
+          if (overlay) {
+            overlay.classList.remove('hidden');
+            if (mode === 'windowed') {
+              overlay.style.background = '#f0f0f0';
+            }
+          }
+          document.querySelector('#present-menu')?.classList.remove('active');
+        });
+      });
+
+      // Share functionality
       const btnShare = document.getElementById('btn-share');
       const shareModal = document.getElementById('share-modal');
       const shareForm = document.getElementById('share-form');
@@ -155,6 +544,238 @@
         shareModal.classList.add('hidden');
         shareForm.reset();
       });
+
+      // Toolbar dropdowns
+      const toolbarDropdowns = document.querySelectorAll('.toolbar-dropdown');
+      toolbarDropdowns.forEach(wrapper => {
+        const btn = wrapper.querySelector('button');
+        const menu = wrapper.querySelector('.toolbar-menu');
+        if (btn && menu) {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toolbarDropdowns.forEach(d => {
+              if (d !== wrapper) d.querySelector('.toolbar-menu')?.classList.remove('active');
+            });
+            menu.classList.toggle('active');
+          });
+        }
+      });
+
+      document.addEventListener('click', () => {
+        toolbarDropdowns.forEach(d => d.querySelector('.toolbar-menu')?.classList.remove('active'));
+      });
+
+      // Shape insertion
+      document.querySelectorAll('[data-shape]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const shape = btn.dataset.shape;
+          // Trigger shape insertion in app.js
+          if (window.insertShape) window.insertShape(shape);
+          document.querySelectorAll('.toolbar-menu').forEach(m => m.classList.remove('active'));
+        });
+      });
+
+      // Image insertion
+      const imageModal = document.getElementById('image-modal');
+      document.querySelectorAll('[data-image]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const mode = btn.dataset.image;
+          document.getElementById('image-url-field').style.display = mode === 'url' ? 'block' : 'none';
+          document.getElementById('image-upload-field').style.display = mode === 'upload' ? 'block' : 'none';
+          if (mode === 'drive') {
+            const msg = document.createElement('div');
+            msg.textContent = 'Opening Drive picker...';
+            msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+            msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 1500);
+            return;
+          }
+          imageModal.classList.remove('hidden');
+        });
+      });
+
+      document.getElementById('image-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = document.getElementById('image-url-input').value;
+        const file = document.getElementById('image-upload-input').files?.[0];
+        if (url || file) {
+          const msg = document.createElement('div');
+          msg.textContent = 'Image inserted';
+          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+          msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+          document.body.appendChild(msg);
+          setTimeout(() => msg.remove(), 1500);
+          imageModal.classList.add('hidden');
+          document.getElementById('image-form').reset();
+        }
+      });
+
+      document.getElementById('image-cancel')?.addEventListener('click', () => {
+        imageModal.classList.add('hidden');
+        document.getElementById('image-form').reset();
+      });
+      imageModal.querySelector('.modal-backdrop')?.addEventListener('click', () => {
+        imageModal.classList.add('hidden');
+        document.getElementById('image-form').reset();
+      });
+
+      // Video insertion
+      const videoModal = document.getElementById('video-modal');
+      document.querySelectorAll('[data-video]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const mode = btn.dataset.video;
+          document.getElementById('video-youtube-field').style.display = mode === 'youtube' ? 'block' : 'none';
+          document.getElementById('video-drive-field').style.display = mode === 'drive' ? 'block' : 'none';
+          if (mode === 'drive') {
+            const msg = document.createElement('div');
+            msg.textContent = 'Opening Drive picker...';
+            msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+            msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 1500);
+            return;
+          }
+          videoModal.classList.remove('hidden');
+        });
+      });
+
+      document.getElementById('video-form')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const url = document.getElementById('video-youtube-input').value;
+        if (url) {
+          const msg = document.createElement('div');
+          msg.textContent = 'Video inserted';
+          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+          msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+          document.body.appendChild(msg);
+          setTimeout(() => msg.remove(), 1500);
+          videoModal.classList.add('hidden');
+          document.getElementById('video-form').reset();
+        }
+      });
+
+      document.getElementById('video-cancel')?.addEventListener('click', () => {
+        videoModal.classList.add('hidden');
+        document.getElementById('video-form').reset();
+      });
+      videoModal.querySelector('.modal-backdrop')?.addEventListener('click', () => {
+        videoModal.classList.add('hidden');
+        document.getElementById('video-form').reset();
+      });
+
+      // Text formatting buttons
+      ['bold', 'italic', 'underline'].forEach(style => {
+        const btn = document.getElementById(`btn-${style}`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            document.execCommand(style, false, null);
+            btn.classList.toggle('active');
+          });
+        }
+      });
+
+      // Highlight color
+      document.getElementById('highlight-color')?.addEventListener('change', (e) => {
+        document.execCommand('backColor', false, e.target.value);
+      });
+
+      // Alignment buttons
+      ['align-left', 'align-center', 'align-right', 'align-justify'].forEach(align => {
+        const btn = document.getElementById(`btn-${align}`);
+        if (btn) {
+          btn.addEventListener('click', () => {
+            const cmd = align.replace('align-', 'justify');
+            document.execCommand(cmd === 'align-left' ? 'justifyLeft' : cmd === 'align-center' ? 'justifyCenter' : cmd === 'align-right' ? 'justifyRight' : 'justifyFull', false, null);
+            document.querySelectorAll('[id^="btn-align-"]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+          });
+        }
+      });
+
+      // List buttons
+      document.getElementById('btn-bullet')?.addEventListener('click', () => {
+        document.execCommand('insertUnorderedList', false, null);
+      });
+      document.getElementById('btn-numbered')?.addEventListener('click', () => {
+        document.execCommand('insertOrderedList', false, null);
+      });
+      document.getElementById('btn-indent')?.addEventListener('click', () => {
+        document.execCommand('indent', false, null);
+      });
+      document.getElementById('btn-outdent')?.addEventListener('click', () => {
+        document.execCommand('outdent', false, null);
+      });
+
+      // Line spacing
+      document.querySelectorAll('[data-spacing]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const spacing = btn.dataset.spacing;
+          const msg = document.createElement('div');
+          msg.textContent = `Line spacing set to ${spacing}`;
+          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+          msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+          document.body.appendChild(msg);
+          setTimeout(() => msg.remove(), 1500);
+        });
+      });
+
+      // Rotate
+      document.getElementById('btn-rotate')?.addEventListener('click', () => {
+        const selected = document.querySelector('.el.selected');
+        if (selected) {
+          const rotation = (parseInt(selected.style.transform.match(/rotate\((\d+)deg\)/)?.[1] || '0') + 90) % 360;
+          selected.style.transform = `rotate(${rotation}deg)`;
+        }
+      });
+
+      // Arrange
+      document.querySelectorAll('[data-arrange]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const action = btn.dataset.arrange;
+          const selected = document.querySelector('.el.selected');
+          if (selected && selected.parentElement) {
+            if (action === 'front') selected.parentElement.appendChild(selected);
+            else if (action === 'back') selected.parentElement.insertBefore(selected, selected.parentElement.firstChild);
+            else if (action === 'forward') {
+              const next = selected.nextElementSibling;
+              if (next) selected.parentElement.insertBefore(next, selected);
+            } else if (action === 'backward') {
+              const prev = selected.previousElementSibling;
+              if (prev) selected.parentElement.insertBefore(selected, prev);
+            }
+          }
+        });
+      });
+
+      // Context menu handlers
+      const ctxMenu = document.getElementById('slide-context-menu');
+      document.getElementById('ctx-add-slide')?.addEventListener('click', () => {
+        const idx = parseInt(ctxMenu.dataset.slideIndex || '0');
+        if (window.addSlideAfter) window.addSlideAfter(idx);
+        ctxMenu.classList.add('hidden');
+      });
+      document.getElementById('ctx-duplicate-slide')?.addEventListener('click', () => {
+        const idx = parseInt(ctxMenu.dataset.slideIndex || '0');
+        if (window.duplicateSlideAt) window.duplicateSlideAt(idx);
+        ctxMenu.classList.add('hidden');
+      });
+      document.getElementById('ctx-delete-slide')?.addEventListener('click', () => {
+        const idx = parseInt(ctxMenu.dataset.slideIndex || '0');
+        if (window.deleteSlideAt) window.deleteSlideAt(idx);
+        ctxMenu.classList.add('hidden');
+      });
+
+      // Close context menu on click outside
+      document.addEventListener('click', () => {
+        ctxMenu?.classList.add('hidden');
+      });
+      ctxMenu?.addEventListener('click', (e) => e.stopPropagation());
     })();
   </script>
   
