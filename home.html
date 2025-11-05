@@ -9,34 +9,34 @@
 <body class="home-body">
   <div class="home-root">
     <aside class="home-sidebar" aria-label="Main">
-      <div class="sb-item" title="Profile">
+      <a class="sb-item" href="./account.html" title="Profile">
         <div class="sb-icon avatar">R</div>
         <div class="sb-label">Profile</div>
-      </div>
-      <div class="sb-item" title="Home">
+      </a>
+      <a class="sb-item active" href="./home.html" title="Home">
         <div class="sb-icon">🏠</div>
         <div class="sb-label">Home</div>
-      </div>
-      <div class="sb-item" title="Notifications">
+      </a>
+      <a class="sb-item" href="./notifications.html" title="Notifications">
         <div class="sb-icon">🔔</div>
         <div class="sb-label">Notifications</div>
-      </div>
-      <div class="sb-item" title="Groups">
+      </a>
+      <a class="sb-item" href="./groups.html" title="Groups">
         <div class="sb-icon">👥</div>
         <div class="sb-label">Groups</div>
-      </div>
-      <div class="sb-item" title="Projects">
+      </a>
+      <a class="sb-item" href="./projects.html" title="Projects">
         <div class="sb-icon">📁</div>
         <div class="sb-label">Projects</div>
-      </div>
-      <div class="sb-item" title="Microsoft Teams">
+      </a>
+      <a class="sb-item" href="./teams.html" title="Microsoft Teams">
         <div class="sb-icon">💬</div>
         <div class="sb-label">Teams</div>
-      </div>
-      <div class="sb-item" title="Outlook">
+      </a>
+      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
         <div class="sb-icon">📧</div>
         <div class="sb-label">Outlook</div>
-      </div>
+      </a>
     </aside>
 
     <main class="home-main">
@@ -47,6 +47,12 @@
           <img src="./pic/aramco-digital.png" alt="Aramco Digital" />
         </div>
       </header>
+
+      <section class="home-search">
+        <div class="search-wrap" role="search">
+          <input id="home-search" class="search-input" type="search" placeholder="Search Recent and Projects…" aria-label="Search Recent and Projects" />
+        </div>
+      </section>
 
       <section class="home-middle">
         <div class="panel create">
@@ -66,11 +72,24 @@
             <h2>Recent</h2>
             <a href="#" class="show-all">Show all</a>
           </div>
-          <div class="panel-grid four">
-            <div class="card empty"></div>
-            <div class="card empty"></div>
-            <div class="card empty"></div>
-            <div class="card empty"></div>
+          <div class="panel-grid four" id="recent-list">
+            <div class="card" data-title="Quarterly Review">Quarterly Review</div>
+            <div class="card" data-title="Team All-Hands">Team All-Hands</div>
+            <div class="card" data-title="Product Roadmap">Product Roadmap</div>
+            <div class="card" data-title="Client Proposal">Client Proposal</div>
+          </div>
+        </div>
+
+        <div class="panel projects">
+          <div class="panel-head">
+            <h2>Projects</h2>
+            <a href="#" class="show-all">Show all</a>
+          </div>
+          <div class="panel-grid four" id="projects-list">
+            <div class="card" data-title="Neptune Migration">Neptune Migration</div>
+            <div class="card" data-title="SaaS Analytics">SaaS Analytics</div>
+            <div class="card" data-title="Slides Editor">Slides Editor</div>
+            <div class="card" data-title="AI Assistant">AI Assistant</div>
           </div>
         </div>
       </section>
@@ -94,6 +113,20 @@
         const initial = name ? name[0].toUpperCase() : 'U';
         avatar.textContent = initial;
       }
+      // Search across Recent and Projects
+      const input = document.getElementById('home-search');
+      const lists = [document.getElementById('recent-list'), document.getElementById('projects-list')];
+      function applyFilter(q) {
+        const query = (q || '').trim().toLowerCase();
+        lists.forEach(list => {
+          if (!list) return;
+          list.querySelectorAll('.card').forEach(card => {
+            const title = (card.getAttribute('data-title') || card.textContent || '').toLowerCase();
+            card.style.display = query && !title.includes(query) ? 'none' : '';
+          });
+        });
+      }
+      input && input.addEventListener('input', (e) => applyFilter(e.target.value));
     })();
   </script>
 </body>
