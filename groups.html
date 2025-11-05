@@ -3,34 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Groups</title>
+  <title>Team & Group Management</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="home-body">
   <div class="home-root">
     <aside class="home-sidebar" aria-label="Main">
-      <a class="sb-item" href="./profile/" title="Profile"><div class="sb-icon avatar">U</div><div class="sb-label">Profile</div></a>
-      <a class="sb-item" href="./home.html" title="Home"><div class="sb-icon">🏠</div><div class="sb-label">Home</div></a>
-      <a class="sb-item" href="./notifications.html" title="Notifications"><div class="sb-icon">🔔</div><div class="sb-label">Notifications</div></a>
-      <a class="sb-item active" href="./groups.html" title="Groups"><div class="sb-icon">👥</div><div class="sb-label">Groups</div></a>
-      <a class="sb-item" href="./projects.html" title="Projects"><div class="sb-icon">📁</div><div class="sb-label">Projects</div></a>
-      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook"><div class="sb-icon">📧</div><div class="sb-label">Outlook</div></a>
+      <a class="sb-item" href="/profile/" title="Profile">
+        <div class="sb-icon avatar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </div>
+        <div class="sb-label">Profile</div>
+      </a>
+      <a class="sb-item" href="./home.html" title="Home">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <div class="sb-label">Home</div>
+      </a>
+      <a class="sb-item" href="./notifications.html" title="Notifications">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </div>
+        <div class="sb-label">Notifications</div>
+      </a>
+      <a class="sb-item active" href="./groups.html" title="Groups">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="sb-label">Groups</div>
+      </a>
+      <a class="sb-item" href="./projects.html" title="Projects">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="sb-label">Projects</div>
+      </a>
+      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+            <polyline points="22,6 12,13 2,6"></polyline>
+          </svg>
+        </div>
+        <div class="sb-label">Outlook</div>
+      </a>
     </aside>
     <main class="home-main">
-      <header class="home-top"><div class="top-spacer"></div><h1 class="greeting">Groups</h1><div class="top-logo"><img src="./pic/aramco-digital.png" alt="Aramco Digital" /></div></header>
-      <section class="home-middle groups-layout">
-        <div class="groups-left">
-          <div class="panel">
-            <div class="panel-head">
-              <h2>Group List</h2>
-              <button id="btn-create-group" class="btn-create-group" type="button">+ Create New Group</button>
+      <header class="home-top">
+        <h1 class="greeting">Team & Group Management</h1>
+        <div class="top-logo">
+          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="header-logo" />
+        </div>
+      </header>
+      <section class="home-middle">
+        <div class="panel" style="margin-bottom: 20px;">
+          <div class="panel-head">
+            <h2 class="page-title">Team & Group Management</h2>
+          </div>
+        </div>
+        <div class="groups-layout">
+          <div class="groups-left">
+            <div class="panel">
+              <div class="panel-head">
+                <h2>Group List</h2>
+              </div>
+              
+              <div class="group-search-wrapper">
+                <input type="search" id="group-search" class="group-search" placeholder="Search groups..." aria-label="Search groups" />
+              </div>
+              
+              <button id="btn-create-group" class="btn-create-group" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Create New Group
+              </button>
+              
+              <ul class="group-list" id="group-list">
+                <li class="group-item" data-group="Q3 Marketing Team">Q3 Marketing Team</li>
+                <li class="group-item" data-group="HR Management">HR Management</li>
+                <li class="group-item" data-group="Engineering Squad">Engineering Squad</li>
+                <li class="group-item" data-group="Design Team">Design Team</li>
+              </ul>
             </div>
-            <ul class="group-list">
-              <li class="group-item">Q3 Marketing Team</li>
-              <li class="group-item">HR Management</li>
-              <li class="group-item">Engineering Squad</li>
-              <li class="group-item">Design Team</li>
-            </ul>
           </div>
         </div>
         <div class="groups-right">
@@ -144,6 +217,23 @@
       const membersInput = document.getElementById('members-input');
       const suggestions = document.getElementById('suggestions');
       const form = document.getElementById('create-group-form');
+
+      // Group search functionality
+      const groupSearch = document.getElementById('group-search');
+      const groupList = document.getElementById('group-list');
+      const groupItems = document.querySelectorAll('.group-item');
+      
+      groupSearch && groupSearch.addEventListener('input', function(e) {
+        const query = e.target.value.toLowerCase().trim();
+        groupItems.forEach(item => {
+          const groupName = item.textContent.toLowerCase();
+          if (query === '' || groupName.includes(query)) {
+            item.style.display = '';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
 
       function openModal() {
         modal.classList.remove('hidden');
@@ -272,7 +362,6 @@
       let currentGroup = null;
       let currentUserRole = 'Member'; // Will be determined from group data
       const currentUserEmail = 'you@aramco.com'; // Current logged-in user
-      const groupItems = document.querySelectorAll('.group-item');
       const detailsEmpty = document.getElementById('group-details-empty');
       const detailsContent = document.getElementById('group-details-content');
       const detailsTitle = document.getElementById('group-details-title');
@@ -350,11 +439,26 @@
           const canRemove = canModifyMembers && !isCurrentUser && member.role !== 'Owner';
           const canChangeRole = canModifyMembers && !isCurrentUser;
           
+          // Get initials from name
+          const initials = member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+          // Determine role badge color
+          const roleColors = {
+            'Owner': '#0F2C67',
+            'Admin': '#00A38D',
+            'Member': '#6b7280'
+          };
+          const roleColor = roleColors[member.role] || '#6b7280';
+          
           return `
           <div class="member-item">
+            <div class="member-avatar">
+              <div class="member-initials">${initials}</div>
+            </div>
             <div class="member-info">
-              <div class="member-name">${member.name} ${isCurrentUser ? '(You)' : ''}</div>
-              <div class="member-email">${member.email}</div>
+              <div class="member-name">${member.name} ${isCurrentUser ? '<span class="member-you">(You)</span>' : ''}</div>
+              <div class="member-role-badge" style="background: ${roleColor}20; color: ${roleColor};">
+                ${member.role}
+              </div>
             </div>
             <div class="member-actions">
               <select class="role-select" data-email="${member.email}" ${canChangeRole ? '' : 'disabled'}>
@@ -413,16 +517,41 @@
         // Load Shared Content
         const contentList = document.getElementById('shared-content-list');
         contentList.innerHTML = group.sharedContent.length > 0 
-          ? group.sharedContent.map(item => `
-              <a href="${item.link}" class="content-item">
-                <div class="content-icon">${item.type === 'Presentation' ? '📊' : item.type === 'Document' ? '📄' : '📈'}</div>
-                <div class="content-info">
-                  <div class="content-title">${item.title}</div>
-                  <div class="content-type">${item.type}</div>
+          ? group.sharedContent.map(item => {
+              const iconMap = {
+                'Presentation': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>`,
+                'Document': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                  <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>`,
+                'Spreadsheet': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="9" y1="21" x2="9" y2="9"></line>
+                </svg>`
+              };
+              const icon = iconMap[item.type] || iconMap['Document'];
+              
+              return `
+              <a href="${item.link}" class="shared-content-card">
+                <div class="content-card-thumbnail">
+                  <div class="content-card-icon">${icon}</div>
+                </div>
+                <div class="content-card-info">
+                  <div class="content-card-title">${item.title}</div>
+                  <div class="content-card-type">${item.type}</div>
                 </div>
               </a>
-            `).join('')
-          : '<p>No shared content yet.</p>';
+            `;
+            }).join('')
+          : '<div class="empty-content-message"><p>No shared content yet.</p></div>';
 
         // Load Settings with permissions
         const settingsName = document.getElementById('settings-name');
