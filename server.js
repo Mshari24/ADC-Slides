@@ -57,8 +57,9 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(port, () => {
-  console.log(`Dev server running at http://localhost:${port}`);
+const host = process.env.HOST || '127.0.0.1';
+server.listen(port, host, () => {
+  console.log(`Dev server running at http://${host}:${port}`);
 });
 
 
