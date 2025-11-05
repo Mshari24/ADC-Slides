@@ -9,7 +9,7 @@
 <body class="home-body">
   <div class="home-root">
     <aside class="home-sidebar" aria-label="Main">
-      <a class="sb-item" href="./account.html" title="Profile">
+      <a class="sb-item" href="/profile/" title="Profile">
         <div class="sb-icon avatar">R</div>
         <div class="sb-label">Profile</div>
       </a>
@@ -59,11 +59,25 @@
           <div class="panel-head">
             <h2>Create</h2>
           </div>
-          <div class="panel-grid four">
-            <div class="card">Blank Presentation</div>
-            <div class="card">AD</div>
-            <div class="card">Import Slides</div>
-            <div class="card">Import Theme</div>
+          <div class="panel-grid four create-grid">
+            <button id="btn-blank" class="tile tile-blank" type="button" title="Blank Presentation">
+              <div class="tile-icon">+</div>
+              <div class="tile-label">Blank Presentation</div>
+            </button>
+            <button id="btn-ad" class="tile" type="button" title="AD Template">
+              <div class="tile-icon">🅰️</div>
+              <div class="tile-label">AD</div>
+            </button>
+            <button id="btn-import" class="tile" type="button" title="Import Slides">
+              <div class="tile-icon">⬆️</div>
+              <div class="tile-label">Import Slides</div>
+            </button>
+            <button id="btn-theme" class="tile" type="button" title="Import Theme">
+              <div class="tile-icon">🎨</div>
+              <div class="tile-label">Import Theme</div>
+            </button>
+            <input id="input-import-slides" type="file" accept=".json,.ppt,.pptx,.odp" style="display:none" />
+            <input id="input-import-theme" type="file" accept=".json,.zip,.thm" style="display:none" />
           </div>
         </div>
 
@@ -73,10 +87,34 @@
             <a href="#" class="show-all">Show all</a>
           </div>
           <div class="panel-grid four" id="recent-list">
-            <div class="card" data-title="Quarterly Review">Quarterly Review</div>
-            <div class="card" data-title="Team All-Hands">Team All-Hands</div>
-            <div class="card" data-title="Product Roadmap">Product Roadmap</div>
-            <div class="card" data-title="Client Proposal">Client Proposal</div>
+            <a class="file-card" href="./index.html?open=q3-report" data-title="Q3 Report">
+              <div class="file-icon">📄</div>
+              <div class="file-meta">
+                <div class="file-name">Q3 Report</div>
+                <div class="file-sub">Last opened: Sep 18, 2025</div>
+              </div>
+            </a>
+            <a class="file-card" href="./index.html?open=all-hands" data-title="Team All-Hands">
+              <div class="file-icon">📊</div>
+              <div class="file-meta">
+                <div class="file-name">Team All-Hands</div>
+                <div class="file-sub">Last opened: Oct 2, 2025</div>
+              </div>
+            </a>
+            <a class="file-card" href="./index.html?open=roadmap" data-title="Product Roadmap">
+              <div class="file-icon">🗂️</div>
+              <div class="file-meta">
+                <div class="file-name">Product Roadmap</div>
+                <div class="file-sub">Last opened: Oct 31, 2025</div>
+              </div>
+            </a>
+            <a class="file-card" href="./index.html?open=proposal" data-title="Client Proposal">
+              <div class="file-icon">📝</div>
+              <div class="file-meta">
+                <div class="file-name">Client Proposal</div>
+                <div class="file-sub">Last opened: Nov 1, 2025</div>
+              </div>
+            </a>
           </div>
         </div>
 
@@ -120,13 +158,48 @@
         const query = (q || '').trim().toLowerCase();
         lists.forEach(list => {
           if (!list) return;
-          list.querySelectorAll('.card').forEach(card => {
+          const items = list.classList.contains('panel-grid') ? list.children : list.querySelectorAll('.card');
+          Array.from(items).forEach(card => {
             const title = (card.getAttribute('data-title') || card.textContent || '').toLowerCase();
             card.style.display = query && !title.includes(query) ? 'none' : '';
           });
         });
       }
       input && input.addEventListener('input', (e) => applyFilter(e.target.value));
+
+      // Create tiles actions
+      const btnBlank = document.getElementById('btn-blank');
+      const btnAd = document.getElementById('btn-ad');
+      const btnImport = document.getElementById('btn-import');
+      const btnTheme = document.getElementById('btn-theme');
+      const inputSlides = document.getElementById('input-import-slides');
+      const inputTheme = document.getElementById('input-import-theme');
+
+      btnBlank && btnBlank.addEventListener('click', () => {
+        window.location.href = './index.html';
+      });
+      btnAd && btnAd.addEventListener('click', () => {
+        window.location.href = './index.html?template=ad';
+      });
+      btnImport && btnImport.addEventListener('click', () => inputSlides && inputSlides.click());
+      btnTheme && btnTheme.addEventListener('click', () => inputTheme && inputTheme.click());
+
+      function showToast(msg) {
+        const el = document.createElement('div');
+        el.textContent = msg; el.style.position='fixed'; el.style.bottom='16px'; el.style.left='50%'; el.style.transform='translateX(-50%)';
+        el.style.background='#111827'; el.style.color='#fff'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.style.zIndex='9999';
+        document.body.appendChild(el); setTimeout(()=>{ el.remove(); }, 1800);
+      }
+      inputSlides && inputSlides.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) showToast('Imported: ' + f.name + ' (demo)');
+        e.target.value = '';
+      });
+      inputTheme && inputTheme.addEventListener('change', (e) => {
+        const f = e.target.files && e.target.files[0];
+        if (f) showToast('Theme imported: ' + f.name + ' (demo)');
+        e.target.value = '';
+      });
     })();
   </script>
 </body>

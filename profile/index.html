@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Account Settings</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body class="home-body">
+  <div class="home-root">
+    <aside class="home-sidebar" aria-label="Main">
+      <a class="sb-item active" href="/profile/" title="Profile">
+        <div class="sb-icon avatar">U</div>
+        <div class="sb-label">Profile</div>
+      </a>
+      <a class="sb-item" href="/home.html" title="Home">
+        <div class="sb-icon">🏠</div>
+        <div class="sb-label">Home</div>
+      </a>
+      <a class="sb-item" href="/notifications.html" title="Notifications">
+        <div class="sb-icon">🔔</div>
+        <div class="sb-label">Notifications</div>
+      </a>
+      <a class="sb-item" href="/groups.html" title="Groups">
+        <div class="sb-icon">👥</div>
+        <div class="sb-label">Groups</div>
+      </a>
+      <a class="sb-item" href="/projects.html" title="Projects">
+        <div class="sb-icon">📁</div>
+        <div class="sb-label">Projects</div>
+      </a>
+      <a class="sb-item" href="/teams.html" title="Teams">
+        <div class="sb-icon">💬</div>
+        <div class="sb-label">Teams</div>
+      </a>
+      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
+        <div class="sb-icon">📧</div>
+        <div class="sb-label">Outlook</div>
+      </a>
+    </aside>
+
+    <main class="home-main">
+      <header class="home-top">
+        <div class="top-spacer"></div>
+        <h1 class="greeting">Account Settings</h1>
+        <div class="top-logo"><img src="../pic/aramco-digital.png" alt="Aramco Digital" /></div>
+      </header>
+
+      <section class="home-search">
+        <div class="search-wrap">
+          <input class="search-input" placeholder="Search settings…" aria-label="Search settings" />
+        </div>
+      </section>
+
+      <section class="home-middle">
+        <div class="panel">
+          <div class="panel-head"><h2>Your Profile</h2></div>
+          <div class="profile-row">
+            <div class="avatar-wrap">
+              <img id="profile-avatar" class="avatar-img" alt="Profile picture" />
+              <button id="btn-avatar" class="btn" type="button">Upload Photo</button>
+              <input id="input-avatar" type="file" accept="image/*" style="display:none" />
+            </div>
+            <form id="profile-form" class="profile-form" onsubmit="return false;">
+              <label class="form-item">
+                <span>Display Name</span>
+                <input id="display-name" type="text" placeholder="Your name" />
+              </label>
+              <label class="form-item">
+                <span>Job Title</span>
+                <input id="job-title" type="text" value="Software Engineer" readonly class="readonly" />
+              </label>
+              <div class="actions">
+                <button id="btn-save" class="btn-primary" type="submit">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Security</h2></div>
+          <div class="security-grid">
+            <div class="sec-actions">
+              <button id="btn-change-pass" class="btn-primary" type="button">Change Password</button>
+              <label class="switch">
+                <input id="toggle-2fa" type="checkbox" />
+                <span class="slider"></span>
+                <span class="switch-label">Enable Two-Factor Authentication (2FA)</span>
+              </label>
+            </div>
+            <div class="sec-sessions">
+              <h3 class="subhead">Recent Sessions</h3>
+              <ul class="session-list">
+                <li>Desktop, Riyadh — 1 hour ago</li>
+                <li>iPhone, Jeddah — Yesterday</li>
+                <li>MacBook, Dhahran — 3 days ago</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Preferences</h2></div>
+          <div class="prefs-grid">
+            <label class="switch">
+              <input id="toggle-dark" type="checkbox" />
+              <span class="slider"></span>
+              <span class="switch-label">Dark Mode</span>
+            </label>
+            <label class="form-item">
+              <span>Language</span>
+              <select id="lang-select">
+                <option value="en">English</option>
+                <option value="ar">العربية (Arabic)</option>
+                <option value="fr">Français (French)</option>
+                <option value="es">Español (Spanish)</option>
+              </select>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <div class="logout-section">
+        <button id="btn-logout" class="btn-logout" type="button">Log Out</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function() {
+      const params = new URLSearchParams(location.search);
+      const name = (params.get('name') || '').trim();
+      const avatar = document.querySelector('.sb-icon.avatar');
+      if (avatar) avatar.textContent = name ? name[0].toUpperCase() : 'U';
+
+      // Profile interactions
+      const inputAvatar = document.getElementById('input-avatar');
+      const btnAvatar = document.getElementById('btn-avatar');
+      const imgAvatar = document.getElementById('profile-avatar');
+      btnAvatar && btnAvatar.addEventListener('click', () => inputAvatar && inputAvatar.click());
+      inputAvatar && inputAvatar.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => { imgAvatar.src = reader.result; };
+        reader.readAsDataURL(file);
+        e.target.value = '';
+      });
+
+      const form = document.getElementById('profile-form');
+      const display = document.getElementById('display-name');
+      form && form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const msg = document.createElement('div');
+        msg.textContent = 'Saved';
+        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+        msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+        document.body.appendChild(msg); setTimeout(()=>msg.remove(), 1500);
+        if (avatar && display && display.value) avatar.textContent = display.value[0].toUpperCase();
+      });
+
+      // Security modal: Change Password
+      const btnChange = document.getElementById('btn-change-pass');
+      const modal = document.createElement('div');
+      modal.className = 'modal hidden';
+      modal.innerHTML = `
+        <div class="modal-backdrop"></div>
+        <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cp-title">
+          <h3 id="cp-title">Change Password</h3>
+          <form id="cp-form">
+            <label class="form-item"><span>Old Password</span><input type="password" required /></label>
+            <label class="form-item"><span>New Password</span><input id="cp-new" type="password" required minlength="6" /></label>
+            <label class="form-item"><span>Confirm New Password</span><input id="cp-confirm" type="password" required minlength="6" /></label>
+            <div class="modal-actions">
+              <button type="button" id="cp-cancel" class="btn">Cancel</button>
+              <button type="submit" class="btn-primary">Save</button>
+            </div>
+          </form>
+        </div>`;
+      document.body.appendChild(modal);
+      function openModal(){ modal.classList.remove('hidden'); }
+      function closeModal(){ modal.classList.add('hidden'); }
+      btnChange && btnChange.addEventListener('click', openModal);
+      modal.querySelector('#cp-cancel').addEventListener('click', closeModal);
+      modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+      modal.querySelector('#cp-form').addEventListener('submit', (e)=>{
+        e.preventDefault();
+        const a = modal.querySelector('#cp-new');
+        const b = modal.querySelector('#cp-confirm');
+        if (a.value !== b.value) { alert('Passwords do not match'); return; }
+        closeModal();
+        const n = document.createElement('div'); n.textContent='Password updated';
+        n.style.position='fixed'; n.style.bottom='16px'; n.style.left='50%'; n.style.transform='translateX(-50%)';
+        n.style.background='var(--primary)'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='10px'; n.style.zIndex='9999';
+        document.body.appendChild(n); setTimeout(()=>n.remove(),1500);
+      });
+
+      // 2FA toggle demo
+      const t2fa = document.getElementById('toggle-2fa');
+      t2fa && t2fa.addEventListener('change', () => {
+        const n = document.createElement('div'); n.textContent = t2fa.checked ? '2FA enabled' : '2FA disabled';
+        n.style.position='fixed'; n.style.bottom='16px'; n.style.left='50%'; n.style.transform='translateX(-50%)';
+        n.style.background='var(--primary)'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='10px'; n.style.zIndex='9999';
+        document.body.appendChild(n); setTimeout(()=>n.remove(), 1200);
+      });
+
+      // Dark Mode toggle
+      const tDark = document.getElementById('toggle-dark');
+      const saved = localStorage.getItem('darkMode') === 'true';
+      if (saved) document.body.classList.add('dark-mode');
+      tDark && (tDark.checked = saved);
+      tDark && tDark.addEventListener('change', () => {
+        document.body.classList.toggle('dark-mode', tDark.checked);
+        localStorage.setItem('darkMode', String(tDark.checked));
+      });
+
+      // Language selector
+      const lang = document.getElementById('lang-select');
+      lang && (lang.value = localStorage.getItem('language') || 'en');
+      lang && lang.addEventListener('change', () => {
+        localStorage.setItem('language', lang.value);
+        const n = document.createElement('div'); n.textContent='Language preference saved';
+        n.style.position='fixed'; n.style.bottom='16px'; n.style.left='50%'; n.style.transform='translateX(-50%)';
+        n.style.background='var(--primary)'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='10px'; n.style.zIndex='9999';
+        document.body.appendChild(n); setTimeout(()=>n.remove(), 1200);
+      });
+
+      // Log Out
+      const btnLogout = document.getElementById('btn-logout');
+      btnLogout && btnLogout.addEventListener('click', () => {
+        if (confirm('Are you sure you want to log out?')) {
+          localStorage.removeItem('darkMode');
+          localStorage.removeItem('language');
+          window.location.href = '../login.html';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+
