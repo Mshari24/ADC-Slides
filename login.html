@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Log in</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="login-body">
+  <div class="login-frame">
+    <canvas id="bg-lines" class="login-bg-canvas" aria-hidden="true"></canvas>
+    <header class="login-topbar">
+      <div class="login-right">
+        <img class="brand-logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Saudi_Aramco_logo.svg/2560px-Saudi_Aramco_logo.svg.png" alt="Aramco Digital" />
+      </div>
+    </header>
+
+    <main class="login-container">
+      <section class="login-card" aria-labelledby="login-title">
+      <h1 id="login-title" class="login-title">Log in</h1>
+      <form id="login-form" class="login-form" novalidate>
+        <div class="form-field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="you@example.com" required />
+          <p class="error" id="email-error" aria-live="polite"></p>
+        </div>
+        <div class="form-field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="••••••••" required minlength="6" />
+          <p class="error" id="password-error" aria-live="polite"></p>
+        </div>
+        <button type="submit" class="login-button">Log in</button>
+        <p class="form-message" id="form-message" aria-live="polite"></p>
+      </form>
+      </section>
+    </main>
+  </div>
+
+  <script>
+  (function() {
+    // draw random green/blue lines on background canvas
+    function drawRandomLines() {
+      var canvas = document.getElementById('bg-lines');
+      if (!canvas) return;
+      var dpr = window.devicePixelRatio || 1;
+      var width = canvas.clientWidth = window.innerWidth;
+      var height = canvas.clientHeight = window.innerHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      var ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      ctx.clearRect(0, 0, width, height);
+      ctx.lineWidth = 1;
+      var colors = ['rgba(34,197,94,0.3)', 'rgba(16,185,129,0.3)', 'rgba(59,130,246,0.3)', 'rgba(56,189,248,0.3)'];
+      var count = 80;
+      for (var i = 0; i < count; i++) {
+        var x1 = Math.random() * width;
+        var y1 = Math.random() * height;
+        var x2 = x1 + (Math.random() * 220 - 110);
+        var y2 = y1 + (Math.random() * 220 - 110);
+        ctx.strokeStyle = colors[Math.floor(Math.random() * colors.length)];
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+    }
+
+    window.addEventListener('resize', drawRandomLines);
+    drawRandomLines();
+
+    const form = document.getElementById('login-form');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const emailError = document.getElementById('email-error');
+    const passwordError = document.getElementById('password-error');
+    const formMessage = document.getElementById('form-message');
+
+    function clearErrors() {
+      emailError.textContent = '';
+      passwordError.textContent = '';
+      formMessage.textContent = '';
+      formMessage.className = 'form-message';
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      clearErrors();
+
+      let hasError = false;
+      if (!email.value) {
+        emailError.textContent = 'Email is required.';
+        hasError = true;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        emailError.textContent = 'Enter a valid email address.';
+        hasError = true;
+      }
+
+      if (!password.value) {
+        passwordError.textContent = 'Password is required.';
+        hasError = true;
+      } else if (password.value.length < 6) {
+        passwordError.textContent = 'Password must be at least 6 characters.';
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      formMessage.textContent = 'Logging in...';
+      formMessage.className = 'form-message info';
+
+      setTimeout(function () {
+        formMessage.textContent = 'Logged in successfully (demo).';
+        formMessage.className = 'form-message success';
+      }, 700);
+    });
+  })();
+  </script>
+</body>
+</html>
+
+
