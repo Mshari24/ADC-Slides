@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Slides Clone</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">Slides Clone</div>
+      <div class="filename" contenteditable="true" spellcheck="false" id="deck-title">Untitled presentation</div>
+      <div class="spacer"></div>
+      <div class="top-actions">
+        <button id="btn-present" title="Present (P)">Present</button>
+        <button id="btn-export" title="Export JSON">Export</button>
+        <label class="import-label" title="Import JSON">
+          Import
+          <input id="input-import" type="file" accept="application/json" />
+        </label>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button id="btn-add-slide" title="New slide (Cmd/Ctrl+M)">+ Slide</button>
+      <button id="btn-dup-slide" title="Duplicate slide (Cmd/Ctrl+D)">Dup</button>
+      <button id="btn-del-slide" title="Delete slide (Del)">Del</button>
+      <div class="divider"></div>
+      <button id="btn-insert-text" title="Insert text (T)">T</button>
+      <button id="btn-insert-rect" title="Insert rect (R)">▭</button>
+      <button id="btn-insert-image" title="Insert image by URL (I)">Img</button>
+      <div class="divider"></div>
+      <select id="font-family">
+        <option value="Inter, system-ui, sans-serif">Inter</option>
+        <option value="Georgia, serif">Georgia</option>
+        <option value="'Times New Roman', Times, serif">Times</option>
+        <option value="Arial, Helvetica, sans-serif">Arial</option>
+        <option value="Courier New, monospace">Courier New</option>
+      </select>
+      <select id="font-size">
+        <option>14</option>
+        <option selected>18</option>
+        <option>24</option>
+        <option>32</option>
+        <option>48</option>
+        <option>64</option>
+      </select>
+      <input type="color" id="font-color" value="#111111" />
+      <input type="color" id="fill-color" value="#ffffff" />
+      <input type="color" id="stroke-color" value="#000000" />
+      <input type="number" id="stroke-width" value="1" min="0" max="20" />
+      <div class="divider"></div>
+      <button id="btn-undo" title="Undo (Cmd/Ctrl+Z)">Undo</button>
+      <button id="btn-redo" title="Redo (Shift+Cmd/Ctrl+Z)">Redo</button>
+    </div>
+
+    <main class="workspace">
+      <aside class="sidebar" id="slides-sidebar"></aside>
+      <section class="stage-wrap">
+        <div id="stage" class="stage" tabindex="0"></div>
+      </section>
+    </main>
+
+    <footer class="statusbar">
+      <div id="status-text">Ready</div>
+      <div class="spacer"></div>
+      <div id="zoom-controls">
+        <button id="zoom-out">-</button>
+        <span id="zoom-label">100%</span>
+        <button id="zoom-in">+</button>
+      </div>
+    </footer>
+  </div>
+
+  <div id="present-overlay" class="present hidden">
+    <div class="present-slide" id="present-slide"></div>
+    <div class="present-controls">
+      <button id="present-prev">Prev (←)</button>
+      <button id="present-next">Next (→)</button>
+      <button id="present-exit">Exit (Esc)</button>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+  
+</body>
+  
+</html>
+
+
