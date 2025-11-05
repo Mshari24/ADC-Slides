@@ -9,19 +9,485 @@
 <body class="home-body">
   <div class="home-root">
     <aside class="home-sidebar" aria-label="Main">
-      <a class="sb-item" href="./account.html" title="Profile"><div class="sb-icon avatar">U</div><div class="sb-label">Profile</div></a>
+      <a class="sb-item" href="./profile/" title="Profile"><div class="sb-icon avatar">U</div><div class="sb-label">Profile</div></a>
       <a class="sb-item" href="./home.html" title="Home"><div class="sb-icon">🏠</div><div class="sb-label">Home</div></a>
       <a class="sb-item" href="./notifications.html" title="Notifications"><div class="sb-icon">🔔</div><div class="sb-label">Notifications</div></a>
       <a class="sb-item active" href="./groups.html" title="Groups"><div class="sb-icon">👥</div><div class="sb-label">Groups</div></a>
       <a class="sb-item" href="./projects.html" title="Projects"><div class="sb-icon">📁</div><div class="sb-label">Projects</div></a>
-      <a class="sb-item" href="./teams.html" title="Teams"><div class="sb-icon">💬</div><div class="sb-label">Teams</div></a>
       <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook"><div class="sb-icon">📧</div><div class="sb-label">Outlook</div></a>
     </aside>
     <main class="home-main">
       <header class="home-top"><div class="top-spacer"></div><h1 class="greeting">Groups</h1><div class="top-logo"><img src="./pic/aramco-digital.png" alt="Aramco Digital" /></div></header>
-      <section class="home-middle"><div class="panel"><div class="panel-head"><h2>Groups Management</h2></div><p>Coming soon.</p></div></section>
+      <section class="home-middle groups-layout">
+        <div class="groups-left">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Group List</h2>
+              <button id="btn-create-group" class="btn-create-group" type="button">+ Create New Group</button>
+            </div>
+            <ul class="group-list">
+              <li class="group-item">Q3 Marketing Team</li>
+              <li class="group-item">HR Management</li>
+              <li class="group-item">Engineering Squad</li>
+              <li class="group-item">Design Team</li>
+            </ul>
+          </div>
+        </div>
+        <div class="groups-right">
+          <div class="panel" id="group-details-panel">
+            <div class="panel-head">
+              <h2 id="group-details-title">Group Details</h2>
+            </div>
+            <div id="group-details-empty" class="group-details-empty">
+              <p>Select a group to view details.</p>
+            </div>
+            <div id="group-details-content" class="group-details-content hidden">
+              <div class="tabs">
+                <button class="tab-btn active" data-tab="members">Members</button>
+                <button class="tab-btn" data-tab="content">Shared Content</button>
+                <button class="tab-btn" data-tab="settings">Group Settings</button>
+              </div>
+              
+              <div id="tab-members" class="tab-content active">
+                <div class="discussion-section">
+                  <a href="#" class="discussion-link" id="discussion-link">
+                    <div class="discussion-icon">💬</div>
+                    <div class="discussion-info">
+                      <div class="discussion-title">Group Discussion Channel</div>
+                      <div class="discussion-subtitle">Open group chat and messaging</div>
+                    </div>
+                  </a>
+                </div>
+                <div class="members-list" id="members-list">
+                  <!-- Members will be populated here -->
+                </div>
+              </div>
+              
+              <div id="tab-content" class="tab-content">
+                <div class="shared-content-list" id="shared-content-list">
+                  <!-- Shared content will be populated here -->
+                </div>
+              </div>
+              
+              <div id="tab-settings" class="tab-content">
+                <form id="group-settings-form" class="settings-form">
+                  <label class="form-item">
+                    <span>Group Name</span>
+                    <input id="settings-name" type="text" required />
+                  </label>
+                  <label class="form-item">
+                    <span>Group Description</span>
+                    <textarea id="settings-description" rows="4"></textarea>
+                  </label>
+                  <div class="settings-actions">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="button" id="btn-delete-group" class="btn-delete">Delete Group</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
+
+  <!-- Create Group Modal -->
+  <div id="create-group-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-large" role="dialog" aria-modal="true" aria-labelledby="cg-title">
+      <h3 id="cg-title">Create New Group</h3>
+      <form id="create-group-form">
+        <label class="form-item">
+          <span>Group Name</span>
+          <input id="group-name" type="text" placeholder="Enter group name" required />
+        </label>
+        <label class="form-item">
+          <span>Group Description</span>
+          <textarea id="group-description" rows="4" placeholder="Enter group description"></textarea>
+        </label>
+        <div class="form-item">
+          <span>Group Owner</span>
+          <input type="text" value="You (current user)" readonly class="readonly" />
+        </div>
+        <label class="form-item">
+          <span>Add Members</span>
+          <div class="members-input-wrapper">
+            <textarea id="members-input" rows="4" placeholder="Enter email addresses (one per line or comma-separated)"></textarea>
+            <div id="suggestions" class="suggestions hidden"></div>
+          </div>
+        </label>
+        <div class="modal-actions">
+          <button type="button" id="cg-cancel" class="btn">Cancel</button>
+          <button type="submit" class="btn-primary">Create Group</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Sample corporate emails for auto-suggest
+      const corporateEmails = [
+        'ahmed.ali@aramco.com',
+        'sara.mohammed@aramco.com',
+        'khalid.hassan@aramco.com',
+        'fatima.ibrahim@aramco.com',
+        'mohammed.abdullah@aramco.com',
+        'noor.ahmed@aramco.com',
+        'omar.khalil@aramco.com',
+        'layla.ismail@aramco.com'
+      ];
+
+      const btnCreate = document.getElementById('btn-create-group');
+      const modal = document.getElementById('create-group-modal');
+      const membersInput = document.getElementById('members-input');
+      const suggestions = document.getElementById('suggestions');
+      const form = document.getElementById('create-group-form');
+
+      function openModal() {
+        modal.classList.remove('hidden');
+      }
+
+      function closeModal() {
+        modal.classList.add('hidden');
+        form.reset();
+        suggestions.classList.add('hidden');
+      }
+
+      btnCreate && btnCreate.addEventListener('click', openModal);
+      document.getElementById('cg-cancel').addEventListener('click', closeModal);
+      modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+
+      // Auto-suggest for email addresses
+      membersInput && membersInput.addEventListener('input', (e) => {
+        const text = e.target.value;
+        const lastWord = text.split(/[\s,]+/).pop().toLowerCase();
+        
+        if (lastWord.length > 0 && lastWord.includes('@')) {
+          const domain = lastWord.split('@')[1] || '';
+          const matches = corporateEmails.filter(email => 
+            email.toLowerCase().includes(lastWord) || 
+            (domain && email.includes('@' + domain))
+          ).slice(0, 5);
+          
+          if (matches.length > 0) {
+            suggestions.innerHTML = matches.map(email => 
+              `<div class="suggestion-item" data-email="${email}">${email}</div>`
+            ).join('');
+            suggestions.classList.remove('hidden');
+          } else {
+            suggestions.classList.add('hidden');
+          }
+        } else {
+          suggestions.classList.add('hidden');
+        }
+      });
+
+      suggestions && suggestions.addEventListener('click', (e) => {
+        const item = e.target.closest('.suggestion-item');
+        if (item) {
+          const email = item.dataset.email;
+          const text = membersInput.value;
+          const lastWord = text.split(/[\s,]+/).pop();
+          const newText = text.substring(0, text.length - lastWord.length) + email;
+          membersInput.value = newText;
+          suggestions.classList.add('hidden');
+          membersInput.focus();
+        }
+      });
+
+      form && form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const groupName = document.getElementById('group-name').value;
+        const members = document.getElementById('members-input').value;
+        
+        const msg = document.createElement('div');
+        msg.textContent = `Group "${groupName}" created successfully!`;
+        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+        msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 2000);
+        
+        closeModal();
+      });
+
+      // Sample group data
+      const groupsData = {
+        'Q3 Marketing Team': {
+          name: 'Q3 Marketing Team',
+          description: 'Marketing activities for Q3',
+          members: [
+            { email: 'you@aramco.com', name: 'You', role: 'Owner' },
+            { email: 'ahmed.ali@aramco.com', name: 'Ahmed Ali', role: 'Admin' },
+            { email: 'sara.mohammed@aramco.com', name: 'Sara Mohammed', role: 'Member' },
+            { email: 'khalid.hassan@aramco.com', name: 'Khalid Hassan', role: 'Member' }
+          ],
+          sharedContent: [
+            { title: 'Q3 Campaign Strategy', type: 'Presentation', link: './projects.html?file=q3-campaign' },
+            { title: 'Market Research Data', type: 'Document', link: './projects.html?file=market-research' },
+            { title: 'Budget Overview', type: 'Spreadsheet', link: './projects.html?file=budget' }
+          ]
+        },
+        'HR Management': {
+          name: 'HR Management',
+          description: 'Human Resources team group',
+          members: [
+            { email: 'you@aramco.com', name: 'You', role: 'Admin' },
+            { email: 'fatima.ibrahim@aramco.com', name: 'Fatima Ibrahim', role: 'Owner' },
+            { email: 'mohammed.abdullah@aramco.com', name: 'Mohammed Abdullah', role: 'Member' }
+          ],
+          sharedContent: [
+            { title: 'Employee Handbook', type: 'Document', link: './projects.html?file=handbook' },
+            { title: 'Recruitment Process', type: 'Presentation', link: './projects.html?file=recruitment' }
+          ]
+        },
+        'Engineering Squad': {
+          name: 'Engineering Squad',
+          description: 'Engineering and development team',
+          members: [
+            { email: 'you@aramco.com', name: 'You', role: 'Member' },
+            { email: 'noor.ahmed@aramco.com', name: 'Noor Ahmed', role: 'Owner' },
+            { email: 'omar.khalil@aramco.com', name: 'Omar Khalil', role: 'Admin' }
+          ],
+          sharedContent: [
+            { title: 'Tech Stack Overview', type: 'Document', link: './projects.html?file=tech-stack' },
+            { title: 'Sprint Planning', type: 'Presentation', link: './projects.html?file=sprint' }
+          ]
+        },
+        'Design Team': {
+          name: 'Design Team',
+          description: 'Design and creative team collaboration',
+          members: [
+            { email: 'you@aramco.com', name: 'You', role: 'Admin' },
+            { email: 'layla.ismail@aramco.com', name: 'Layla Ismail', role: 'Owner' }
+          ],
+          sharedContent: [
+            { title: 'Design System', type: 'Document', link: './projects.html?file=design-system' },
+            { title: 'Brand Guidelines', type: 'Presentation', link: './projects.html?file=brand' }
+          ]
+        }
+      };
+
+      let currentGroup = null;
+      let currentUserRole = 'Member'; // Will be determined from group data
+      const currentUserEmail = 'you@aramco.com'; // Current logged-in user
+      const groupItems = document.querySelectorAll('.group-item');
+      const detailsEmpty = document.getElementById('group-details-empty');
+      const detailsContent = document.getElementById('group-details-content');
+      const detailsTitle = document.getElementById('group-details-title');
+
+      // Get current user's role in the group
+      function getUserRole(group) {
+        const user = group.members.find(m => m.email === currentUserEmail);
+        return user ? user.role : null;
+      }
+
+      // Check if user has permission
+      function canEdit() {
+        return currentUserRole === 'Owner' || currentUserRole === 'Admin';
+      }
+
+      function canDelete() {
+        return currentUserRole === 'Owner';
+      }
+
+      // Group selection
+      groupItems.forEach(item => {
+        item.addEventListener('click', () => {
+          groupItems.forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          
+          const groupName = item.textContent;
+          currentGroup = groupsData[groupName];
+          
+          if (currentGroup) {
+            currentUserRole = getUserRole(currentGroup) || 'Member';
+            detailsTitle.textContent = currentGroup.name;
+            detailsEmpty.classList.add('hidden');
+            detailsContent.classList.remove('hidden');
+            loadGroupDetails(currentGroup);
+          }
+        });
+      });
+
+      // Discussion channel link
+      document.getElementById('discussion-link') && document.getElementById('discussion-link').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentGroup) {
+          const msg = document.createElement('div');
+          msg.textContent = `Opening discussion channel for ${currentGroup.name}`;
+          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+          msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+          document.body.appendChild(msg);
+          setTimeout(() => msg.remove(), 2000);
+          // In production, this would navigate to a chat interface or open a chat modal
+        }
+      });
+
+      // Tab switching
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetTab = btn.dataset.tab;
+          
+          tabBtns.forEach(b => b.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+          
+          btn.classList.add('active');
+          document.getElementById(`tab-${targetTab}`).classList.add('active');
+        });
+      });
+
+      function loadGroupDetails(group) {
+        // Load Members
+        const membersList = document.getElementById('members-list');
+        const canModifyMembers = canEdit();
+        membersList.innerHTML = group.members.map(member => {
+          const isCurrentUser = member.email === currentUserEmail;
+          const canRemove = canModifyMembers && !isCurrentUser && member.role !== 'Owner';
+          const canChangeRole = canModifyMembers && !isCurrentUser;
+          
+          return `
+          <div class="member-item">
+            <div class="member-info">
+              <div class="member-name">${member.name} ${isCurrentUser ? '(You)' : ''}</div>
+              <div class="member-email">${member.email}</div>
+            </div>
+            <div class="member-actions">
+              <select class="role-select" data-email="${member.email}" ${canChangeRole ? '' : 'disabled'}>
+                <option value="Owner" ${member.role === 'Owner' ? 'selected' : ''}>Owner</option>
+                <option value="Admin" ${member.role === 'Admin' ? 'selected' : ''}>Admin</option>
+                <option value="Member" ${member.role === 'Member' ? 'selected' : ''}>Member</option>
+              </select>
+              <button class="btn-remove" data-email="${member.email}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
+            </div>
+          </div>
+        `;
+        }).join('');
+
+        // Role change handler
+        membersList.querySelectorAll('.role-select').forEach(select => {
+          if (!select.disabled) {
+            select.addEventListener('change', (e) => {
+              if (!canEdit()) {
+                alert('You do not have permission to change member roles.');
+                e.target.value = group.members.find(m => m.email === e.target.dataset.email).role;
+                return;
+              }
+              const email = e.target.dataset.email;
+              const msg = document.createElement('div');
+              msg.textContent = `Role updated for ${email}`;
+              msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+              msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+              document.body.appendChild(msg);
+              setTimeout(() => msg.remove(), 1500);
+            });
+          }
+        });
+
+        // Remove member handler
+        membersList.querySelectorAll('.btn-remove').forEach(btn => {
+          if (!btn.disabled) {
+            btn.addEventListener('click', (e) => {
+              if (!canEdit()) {
+                alert('You do not have permission to remove members.');
+                return;
+              }
+              const email = e.target.dataset.email;
+              if (confirm(`Remove ${email} from this group?`)) {
+                const msg = document.createElement('div');
+                msg.textContent = `${email} removed from group`;
+                msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+                msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+                document.body.appendChild(msg);
+                setTimeout(() => msg.remove(), 1500);
+                loadGroupDetails(group); // Reload
+              }
+            });
+          }
+        });
+
+        // Load Shared Content
+        const contentList = document.getElementById('shared-content-list');
+        contentList.innerHTML = group.sharedContent.length > 0 
+          ? group.sharedContent.map(item => `
+              <a href="${item.link}" class="content-item">
+                <div class="content-icon">${item.type === 'Presentation' ? '📊' : item.type === 'Document' ? '📄' : '📈'}</div>
+                <div class="content-info">
+                  <div class="content-title">${item.title}</div>
+                  <div class="content-type">${item.type}</div>
+                </div>
+              </a>
+            `).join('')
+          : '<p>No shared content yet.</p>';
+
+        // Load Settings with permissions
+        const settingsName = document.getElementById('settings-name');
+        const settingsDesc = document.getElementById('settings-description');
+        const btnDelete = document.getElementById('btn-delete-group');
+        
+        settingsName.value = group.name;
+        settingsDesc.value = group.description || '';
+        
+        if (!canEdit()) {
+          settingsName.disabled = true;
+          settingsDesc.disabled = true;
+        } else {
+          settingsName.disabled = false;
+          settingsDesc.disabled = false;
+        }
+        
+        if (canDelete()) {
+          btnDelete.style.display = 'block';
+          btnDelete.disabled = false;
+        } else {
+          btnDelete.style.display = 'none';
+          btnDelete.disabled = true;
+        }
+      }
+
+      // Settings form
+      const settingsForm = document.getElementById('group-settings-form');
+      settingsForm && settingsForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!canEdit()) {
+          alert('You do not have permission to edit group settings. Only Owners and Admins can modify settings.');
+          return;
+        }
+        const msg = document.createElement('div');
+        msg.textContent = 'Settings saved successfully';
+        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+        msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 1500);
+      });
+
+      // Delete group
+      const btnDelete = document.getElementById('btn-delete-group');
+      btnDelete && btnDelete.addEventListener('click', () => {
+        if (!canDelete()) {
+          alert('Only the group Owner can delete the group.');
+          return;
+        }
+        if (confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+          const msg = document.createElement('div');
+          msg.textContent = 'Group deleted successfully';
+          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+          msg.style.background='#dc2626'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+          document.body.appendChild(msg);
+          setTimeout(() => {
+            msg.remove();
+            detailsEmpty.classList.remove('hidden');
+            detailsContent.classList.add('hidden');
+            groupItems.forEach(i => i.classList.remove('active'));
+          }, 1500);
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
 

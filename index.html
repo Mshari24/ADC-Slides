@@ -16,6 +16,7 @@
       <div class="filename" contenteditable="true" spellcheck="false" id="deck-title">Untitled presentation</div>
       <div class="spacer"></div>
       <div class="top-actions">
+        <button id="btn-share" title="Share">Share</button>
         <button id="btn-present" title="Present (P)">Present</button>
         <button id="btn-export" title="Export JSON">Export</button>
         <label class="import-label" title="Import JSON">
@@ -85,7 +86,77 @@
     </div>
   </div>
 
+  <!-- Share Modal -->
+  <div id="share-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog modal-large" role="dialog" aria-modal="true" aria-labelledby="share-title">
+      <h3 id="share-title">Share Presentation</h3>
+      <form id="share-form">
+        <div class="form-item">
+          <span>Share with Group</span>
+          <select id="share-group-select">
+            <option value="">Select a group...</option>
+            <option value="Q3 Marketing Team">Q3 Marketing Team</option>
+            <option value="HR Management">HR Management</option>
+            <option value="Engineering Squad">Engineering Squad</option>
+            <option value="Design Team">Design Team</option>
+          </select>
+        </div>
+        <div class="form-item" style="margin-top: 16px;">
+          <span>Or share with individual emails</span>
+          <textarea id="share-emails" rows="3" placeholder="Enter email addresses (comma-separated)"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="share-cancel" class="btn">Cancel</button>
+          <button type="submit" class="btn-primary">Share</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="./app.js"></script>
+  <script>
+    (function() {
+      const btnShare = document.getElementById('btn-share');
+      const shareModal = document.getElementById('share-modal');
+      const shareForm = document.getElementById('share-form');
+      
+      btnShare && btnShare.addEventListener('click', () => {
+        shareModal.classList.remove('hidden');
+      });
+      
+      document.getElementById('share-cancel') && document.getElementById('share-cancel').addEventListener('click', () => {
+        shareModal.classList.add('hidden');
+        shareForm.reset();
+      });
+      
+      shareModal.querySelector('.modal-backdrop') && shareModal.querySelector('.modal-backdrop').addEventListener('click', () => {
+        shareModal.classList.add('hidden');
+        shareForm.reset();
+      });
+      
+      shareForm && shareForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const group = document.getElementById('share-group-select').value;
+        const emails = document.getElementById('share-emails').value;
+        
+        if (!group && !emails.trim()) {
+          alert('Please select a group or enter email addresses');
+          return;
+        }
+        
+        const msg = document.createElement('div');
+        msg.textContent = group ? `Shared with ${group}` : 'Shared successfully';
+        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
+        msg.style.background='var(--primary, #0e5aed)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
+        document.body.appendChild(msg);
+        setTimeout(() => msg.remove(), 2000);
+        
+        shareModal.classList.add('hidden');
+        shareForm.reset();
+      });
+    })();
+  </script>
   
 </body>
   
