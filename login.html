@@ -112,7 +112,10 @@
       setTimeout(function () {
         formMessage.textContent = 'Logged in successfully (demo).';
         formMessage.className = 'form-message success';
-      }, 700);
+        var displayName = email.value.split('@')[0];
+        displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        window.location.href = './home.html?name=' + encodeURIComponent(displayName);
+      }, 500);
     });
   })();
   </script>

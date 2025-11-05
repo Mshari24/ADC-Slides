@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="home-body">
+  <div class="home-root">
+    <aside class="home-sidebar" aria-label="Main">
+      <div class="sb-item" title="Profile">
+        <div class="sb-icon avatar">R</div>
+        <div class="sb-label">Profile</div>
+      </div>
+      <div class="sb-item" title="Home">
+        <div class="sb-icon">🏠</div>
+        <div class="sb-label">Home</div>
+      </div>
+      <div class="sb-item" title="Notifications">
+        <div class="sb-icon">🔔</div>
+        <div class="sb-label">Notifications</div>
+      </div>
+      <div class="sb-item" title="Groups">
+        <div class="sb-icon">👥</div>
+        <div class="sb-label">Groups</div>
+      </div>
+      <div class="sb-item" title="Projects">
+        <div class="sb-icon">📁</div>
+        <div class="sb-label">Projects</div>
+      </div>
+      <div class="sb-item" title="Microsoft Teams">
+        <div class="sb-icon">💬</div>
+        <div class="sb-label">Teams</div>
+      </div>
+      <div class="sb-item" title="Outlook">
+        <div class="sb-icon">📧</div>
+        <div class="sb-label">Outlook</div>
+      </div>
+    </aside>
+
+    <main class="home-main">
+      <header class="home-top">
+        <div class="top-spacer"></div>
+        <h1 id="greeting" class="greeting">Good Morning!</h1>
+        <div class="top-logo">
+          <img src="./pic/aramco-digital.png" alt="Aramco Digital" />
+        </div>
+      </header>
+
+      <section class="home-middle">
+        <div class="panel create">
+          <div class="panel-head">
+            <h2>Create</h2>
+          </div>
+          <div class="panel-grid four">
+            <div class="card">Blank Presentation</div>
+            <div class="card">AD</div>
+            <div class="card">Import Slides</div>
+            <div class="card">Import Theme</div>
+          </div>
+        </div>
+
+        <div class="panel recent">
+          <div class="panel-head">
+            <h2>Recent</h2>
+            <a href="#" class="show-all">Show all</a>
+          </div>
+          <div class="panel-grid four">
+            <div class="card empty"></div>
+            <div class="card empty"></div>
+            <div class="card empty"></div>
+            <div class="card empty"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Derive name from query string and set greeting; also set avatar initial
+    (function () {
+      const params = new URLSearchParams(location.search);
+      const nameParam = params.get('name') || '';
+      const now = new Date();
+      const hour = now.getHours();
+      const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+      const name = nameParam.trim();
+      const greeting = document.getElementById('greeting');
+      greeting.textContent = `Good ${part}${name ? ', ' + name + '!' : '!'}`;
+
+      const avatar = document.querySelector('.sb-icon.avatar');
+      if (avatar) {
+        const initial = name ? name[0].toUpperCase() : 'U';
+        avatar.textContent = initial;
+      }
+    })();
+  </script>
+</body>
+</html>
+
+
