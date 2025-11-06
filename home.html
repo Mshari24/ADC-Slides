@@ -77,6 +77,16 @@
       <section class="home-search">
         <div class="search-wrap" role="search">
           <input id="home-search" class="search-input" type="search" placeholder="Search Recent and Projects…" aria-label="Search Recent and Projects" />
+          <div id="search-results" class="search-results hidden">
+            <div class="search-category">
+              <h3 class="search-category-title">Files</h3>
+              <div class="search-category-items" id="search-files"></div>
+            </div>
+            <div class="search-category">
+              <h3 class="search-category-title">People/Groups</h3>
+              <div class="search-category-items" id="search-people"></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -254,9 +264,112 @@
 
       // Avatar icon is now an SVG, so we don't need to set text content
       // The avatar initial is handled by the SVG icon itself
-      // Search across Recent and Projects
+      
+      // Contextual Search with Categories
       const input = document.getElementById('home-search');
+      const searchResults = document.getElementById('search-results');
+      const searchFiles = document.getElementById('search-files');
+      const searchPeople = document.getElementById('search-people');
       const lists = [document.getElementById('recent-list'), document.getElementById('projects-list')];
+      
+      // Sample data for search (in a real app, this would come from an API)
+      const searchData = {
+        files: [
+          { title: 'Q3 Report', type: 'Presentation', date: 'Sep 18, 2025', link: './index.html?open=q3-report' },
+          { title: 'Team All-Hands', type: 'Presentation', date: 'Oct 2, 2025', link: './index.html?open=all-hands' },
+          { title: 'Product Roadmap', type: 'Presentation', date: 'Oct 31, 2025', link: './index.html?open=roadmap' },
+          { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' },
+          { title: 'Neptune Migration', type: 'Project', date: 'Oct 15, 2025', link: './projects.html' },
+          { title: 'SaaS Analytics', type: 'Project', date: 'Oct 20, 2025', link: './projects.html' },
+          { title: 'Slides Editor', type: 'Project', date: 'Oct 25, 2025', link: './projects.html' },
+          { title: 'AI Assistant', type: 'Project', date: 'Nov 1, 2025', link: './projects.html' }
+        ],
+        people: [
+          { name: 'John Doe', role: 'Software Engineer', group: 'Q3 Marketing Team', link: './groups.html' },
+          { name: 'Sarah Smith', role: 'Product Manager', group: 'Product Team', link: './groups.html' },
+          { name: 'Ahmed Al-Rashid', role: 'Design Lead', group: 'Design Team', link: './groups.html' },
+          { name: 'Maria Garcia', role: 'Data Analyst', group: 'Analytics Team', link: './groups.html' },
+          { name: 'Q3 Marketing Team', type: 'Group', members: 12, link: './groups.html' },
+          { name: 'Product Team', type: 'Group', members: 8, link: './groups.html' },
+          { name: 'Design Team', type: 'Group', members: 6, link: './groups.html' },
+          { name: 'Analytics Team', type: 'Group', members: 10, link: './groups.html' }
+        ]
+      };
+      
+      function renderSearchResults(query) {
+        const q = (query || '').trim().toLowerCase();
+        
+        if (!q) {
+          searchResults.classList.add('hidden');
+          return;
+        }
+        
+        // Filter files
+        const matchingFiles = searchData.files.filter(item => 
+          item.title.toLowerCase().includes(q) || 
+          item.type.toLowerCase().includes(q)
+        );
+        
+        // Filter people/groups
+        const matchingPeople = searchData.people.filter(item => 
+          item.name.toLowerCase().includes(q) ||
+          (item.role && item.role.toLowerCase().includes(q)) ||
+          (item.group && item.group.toLowerCase().includes(q)) ||
+          (item.type && item.type.toLowerCase().includes(q))
+        );
+        
+        // Render files
+        if (matchingFiles.length > 0) {
+          searchFiles.innerHTML = matchingFiles.map(file => `
+            <a href="${file.link}" class="search-result-item">
+              <div class="search-result-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  ${file.type === 'Presentation' 
+                    ? '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>'
+                    : '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>'
+                  }
+                </svg>
+              </div>
+              <div class="search-result-content">
+                <div class="search-result-title">${file.title}</div>
+                <div class="search-result-meta">${file.type} • ${file.date}</div>
+              </div>
+            </a>
+          `).join('');
+        } else {
+          searchFiles.innerHTML = '<div class="search-result-empty">No files found</div>';
+        }
+        
+        // Render people/groups
+        if (matchingPeople.length > 0) {
+          searchPeople.innerHTML = matchingPeople.map(person => `
+            <a href="${person.link}" class="search-result-item">
+              <div class="search-result-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  ${person.type === 'Group'
+                    ? '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>'
+                    : '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>'
+                  }
+                </svg>
+              </div>
+              <div class="search-result-content">
+                <div class="search-result-title">${person.name}</div>
+                <div class="search-result-meta">${person.role || person.type}${person.group ? ' • ' + person.group : ''}${person.members ? ' • ' + person.members + ' members' : ''}</div>
+              </div>
+            </a>
+          `).join('');
+        } else {
+          searchPeople.innerHTML = '<div class="search-result-empty">No people or groups found</div>';
+        }
+        
+        // Show results if there are any matches
+        if (matchingFiles.length > 0 || matchingPeople.length > 0) {
+          searchResults.classList.remove('hidden');
+        } else {
+          searchResults.classList.add('hidden');
+        }
+      }
+      
       function applyFilter(q) {
         const query = (q || '').trim().toLowerCase();
         lists.forEach(list => {
@@ -268,7 +381,27 @@
           });
         });
       }
-      input && input.addEventListener('input', (e) => applyFilter(e.target.value));
+      
+      if (input) {
+        input.addEventListener('input', (e) => {
+          const query = e.target.value;
+          renderSearchResults(query);
+          applyFilter(query);
+        });
+        
+        input.addEventListener('focus', (e) => {
+          if (e.target.value.trim()) {
+            renderSearchResults(e.target.value);
+          }
+        });
+        
+        // Hide results when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.search-wrap')) {
+            searchResults.classList.add('hidden');
+          }
+        });
+      }
 
       // Create tiles actions
       const btnBlank = document.getElementById('btn-blank');
