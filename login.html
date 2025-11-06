@@ -3,94 +3,125 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login • Aramco Digital</title>
+  <title>Log in • Aramco Digital</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body class="login-split-body">
-  <main class="split-login">
-    <section class="split-left">
-      <div class="gradient-shapes" aria-hidden="true"></div>
-      <div class="welcome">
-        <h1>Welcome to Aramco Digital</h1>
+<body class="login-body">
+  <div class="login-shell">
+    <section class="login-hero" aria-label="Welcome message">
+      <div class="hero-layer" aria-hidden="true"></div>
+      <div class="hero-text">
+        <h1>Welcome to Aramco Digital Slides</h1>
         <p>Empowering innovation with secure access to your digital workspace and services.</p>
       </div>
     </section>
 
-    <section class="split-right">
-      <div class="login-panel">
-        <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="login-logo" />
-        <h2>USER LOGIN</h2>
-        <form id="login-form" class="login-form">
-          <label class="input-field">
-            <span>Username or Email</span>
-            <input type="text" placeholder="you@company.com" required />
-          </label>
-          <label class="input-field">
-            <span>Password</span>
-            <input id="password-input" class="with-toggle" type="password" placeholder="••••••••" required />
-            <button id="toggle-password" class="toggle-visibility" type="button" aria-label="Show password" aria-pressed="false" data-state="hidden">
-              <svg class="icon-eye" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z"/>
-                <circle cx="12" cy="12" r="3.5"/>
-              </svg>
-              <svg class="icon-eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M3 3l18 18"/>
-                <path d="M10.7 5.1A11.6 11.6 0 0 1 12 5c7 0 11 7 11 7a17.6 17.6 0 0 1-4.1 4.8"/>
-                <path d="M6.1 6.6A17.7 17.7 0 0 0 1 12s4 7 11 7c1.3 0 2.5-.2 3.6-.6"/>
-                <circle cx="12" cy="12" r="3.5"/>
-              </svg>
-            </button>
-          </label>
-
-          <div class="login-utils">
-            <label class="remember">
-              <input type="checkbox" />
-              <span>Remember Me</span>
-            </label>
-            <a class="forgot" href="#">Forgot password?</a>
+    <section class="login-side" aria-labelledby="login-heading">
+      <div class="login-card">
+        <img class="brand-logo" src="./pic/aramco-digital.png" alt="Aramco Digital" />
+        <h2 class="login-heading" id="login-heading">USER LOGIN</h2>
+        <form id="login-form" class="login-form" novalidate>
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="E.g.: Name@company.com" required />
+            <p class="error" id="email-error" aria-live="polite"></p>
           </div>
-
-          <button class="login-action" type="submit">LOGIN</button>
+          <div class="form-field password-field">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+              <input type="password" id="password" name="password" class="with-toggle" placeholder="••••••••" required minlength="6" />
+              <button type="button" id="toggle-password" class="toggle-visibility" aria-label="Show password" aria-pressed="false" data-state="hidden">
+                <svg class="icon-eye" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" />
+                  <circle cx="12" cy="12" r="3.5" />
+                </svg>
+                <svg class="icon-eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M3 3l18 18" />
+                  <path d="M10.7 5.1A11.6 11.6 0 0 1 12 5c7 0 11 7 11 7a17.6 17.6 0 0 1-4.1 4.8" />
+                  <path d="M6.1 6.6A17.7 17.7 0 0 0 1 12s4 7 11 7c1.3 0 2.5-.2 3.6-.6" />
+                  <circle cx="12" cy="12" r="3.5" />
+                </svg>
+              </button>
+            </div>
+            <p class="error" id="password-error" aria-live="polite"></p>
+          </div>
+          <label class="remember-option">
+            <input type="checkbox" id="remember" name="remember" />
+            <span>Remember Me</span>
+          </label>
+          <button type="submit" class="login-button">Log in</button>
+          <p class="form-message" id="form-message" aria-live="polite"></p>
         </form>
       </div>
     </section>
-  </main>
+  </div>
 
-
-  <footer class="brand-banner" role="contentinfo">
-    <div class="brand-wrap">
-      <span class="by">designed by</span>
-      <span class="brand-mark" aria-label="Company logo">
-        <!-- simple placeholder logo -->
-        <svg viewBox="0 0 64 20" width="84" height="26" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="18" height="18" rx="4" fill="#0ea5e9"/>
-          <path d="M7 7h6v6H7z" fill="#fff"/>
-          <text x="26" y="14" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="700" fill="#0f172a">YourCo</text>
-        </svg>
-      </span>
-    </div>
-  </footer>
   <script>
-    (function() {
-      const input = document.getElementById('password-input');
-      const toggle = document.getElementById('toggle-password');
-      if (!input || !toggle) return;
-      toggle.addEventListener('click', () => {
-        const isHidden = input.type === 'password';
-        input.type = isHidden ? 'text' : 'password';
-        toggle.setAttribute('aria-pressed', String(isHidden));
-        toggle.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
-        toggle.dataset.state = isHidden ? 'visible' : 'hidden';
+  (function() {
+    const form = document.getElementById('login-form');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const toggle = document.getElementById('toggle-password');
+    const emailError = document.getElementById('email-error');
+    const passwordError = document.getElementById('password-error');
+    const formMessage = document.getElementById('form-message');
+
+    function clearErrors() {
+      emailError.textContent = '';
+      passwordError.textContent = '';
+      formMessage.textContent = '';
+      formMessage.className = 'form-message';
+    }
+
+    if (toggle && password) {
+      toggle.addEventListener('click', function() {
+        const hidden = password.type === 'password';
+        password.type = hidden ? 'text' : 'password';
+        toggle.dataset.state = hidden ? 'visible' : 'hidden';
+        toggle.setAttribute('aria-pressed', String(hidden));
+        toggle.setAttribute('aria-label', hidden ? 'Hide password' : 'Show password');
       });
-      const form = document.getElementById('login-form');
-      const usernameInput = form ? form.querySelector('input[type="text"]') : null;
-      form && form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const raw = (usernameInput && usernameInput.value) || '';
-        const name = raw.includes('@') ? raw.split('@')[0] : (raw || 'User');
-        window.location.href = './home.html?name=' + encodeURIComponent(name);
-      });
-    })();
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      clearErrors();
+
+      let hasError = false;
+      if (!email.value) {
+        emailError.textContent = 'Email is required.';
+        hasError = true;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        emailError.textContent = 'Enter a valid email address.';
+        hasError = true;
+      }
+
+      if (!password.value) {
+        passwordError.textContent = 'Password is required.';
+        hasError = true;
+      } else if (password.value.length < 6) {
+        passwordError.textContent = 'Password must be at least 6 characters.';
+        hasError = true;
+      }
+
+      if (hasError) return;
+
+      formMessage.textContent = 'Logging in...';
+      formMessage.className = 'form-message info';
+
+      setTimeout(function () {
+        formMessage.textContent = 'Logged in successfully (demo).';
+        formMessage.className = 'form-message success';
+        var displayName = email.value.split('@')[0];
+        if (displayName) {
+          displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        } else {
+          displayName = 'User';
+        }
+        window.location.href = './home.html?name=' + encodeURIComponent(displayName);
+      }, 600);
+    });
+  })();
   </script>
 </body>
 </html>
