@@ -851,12 +851,12 @@ body {
   padding: 8px 0;
   border-radius: 10px;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  color: #6b7280;
+  color: #4a6fa5;
 }
 
 .sb-item:hover {
   background: #f9fafb;
-  color: #374151;
+  color: #0F2C67;
 }
 
 .sb-icon {
@@ -868,7 +868,7 @@ body {
   justify-content: center;
   background: transparent;
   border: none;
-  color: #6b7280;
+  color: #4a6fa5;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -880,7 +880,7 @@ body {
 
 .sb-icon.avatar {
   background: transparent;
-  color: #6b7280;
+  color: #4a6fa5;
 }
 
 .sb-icon.avatar svg {
@@ -921,6 +921,14 @@ body {
 
 .sb-item.active:hover {
   background: #008b7a;
+  color: #ffffff;
+}
+
+.sb-item.active:hover .sb-icon {
+  color: #ffffff;
+}
+
+.sb-item.active:hover .sb-label {
   color: #ffffff;
 }
 
@@ -2761,8 +2769,49 @@ body {
 .dark-mode .modal-dialog { background: var(--panel); border-color: var(--border); color: var(--text); }
 .dark-mode .home-top { border-color: var(--border); }
 .dark-mode .home-search { border-color: var(--border); background: var(--panel); }
-.dark-mode .sb-item { color: var(--text); }
-.dark-mode .sb-icon { border-color: var(--border); background: var(--panel); }
+.dark-mode .sb-item { 
+  color: #6b8db8; 
+}
+
+.dark-mode .sb-item:hover {
+  color: #8ba8d1;
+}
+
+.dark-mode .sb-icon { 
+  border-color: var(--border); 
+  background: transparent; 
+  color: #6b8db8;
+}
+
+.dark-mode .sb-icon.avatar {
+  color: #6b8db8;
+}
+
+.dark-mode .sb-item.active {
+  background: #00A38D;
+  color: #ffffff;
+}
+
+.dark-mode .sb-item.active .sb-icon {
+  color: #ffffff;
+}
+
+.dark-mode .sb-item.active .sb-label {
+  color: #ffffff;
+}
+
+.dark-mode .sb-item.active:hover {
+  background: #008b7a;
+  color: #ffffff;
+}
+
+.dark-mode .sb-item.active:hover .sb-icon {
+  color: #ffffff;
+}
+
+.dark-mode .sb-item.active:hover .sb-label {
+  color: #ffffff;
+}
 .dark-mode .greeting { color: var(--text); }
 .dark-mode .panel-head h2 { color: var(--text); }
 .dark-mode .file-name { color: var(--text); }
