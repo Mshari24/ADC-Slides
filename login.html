@@ -112,12 +112,28 @@
       setTimeout(function () {
         formMessage.textContent = 'Logged in successfully (demo).';
         formMessage.className = 'form-message success';
-        var displayName = email.value.split('@')[0];
-        if (displayName) {
-          displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
-        } else {
-          displayName = 'User';
+
+        var emailValue = email.value.trim();
+        var displayNameRaw = emailValue.split('@')[0] || '';
+        var displayNameParts = displayNameRaw.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+        var displayName = displayNameParts.length
+          ? displayNameParts.map(function (part) {
+              return part.charAt(0).toUpperCase() + part.slice(1);
+            }).join(' ')
+          : 'User';
+
+        var initials = displayNameParts.length
+          ? displayNameParts.map(function (part) { return part.charAt(0).toUpperCase(); }).join('').slice(0, 2)
+          : (emailValue ? emailValue.slice(0, 2).toUpperCase() : 'AD');
+
+        try {
+          window.localStorage.setItem('adSlidesUserName', displayName);
+          window.localStorage.setItem('adSlidesUserEmail', emailValue);
+          window.localStorage.setItem('adSlidesUserInitials', initials);
+        } catch (error) {
+          console.warn('Unable to persist user session info', error);
         }
+
         window.location.href = './home.html?name=' + encodeURIComponent(displayName);
       }, 600);
     });
