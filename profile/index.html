@@ -11,7 +11,7 @@
     <aside class="home-sidebar" aria-label="Primary navigation">
       <div class="sidebar-user">
         <a class="sidebar-avatar-link" href="/profile/" title="User Profile &amp; Settings" aria-label="Open profile page">
-          <div class="sidebar-avatar" aria-hidden="true">MA</div>
+          <div class="sidebar-avatar" aria-hidden="true">H</div>
         </a>
       </div>
       <a class="sb-item home-entry" href="/home.html" title="Home">
@@ -178,17 +178,34 @@
         return trimmed;
       }
 
+      function getStoredValue(key) {
+        try {
+          return window.localStorage.getItem(key) || '';
+        } catch (error) {
+          console.warn('Unable to access localStorage key:', key, error);
+          return '';
+        }
+      }
+
       const emailLabel = document.getElementById('profile-email-label');
       const avatarInitial = document.getElementById('profile-avatar-initial');
+      const employeeIdField = document.getElementById('profile-employee-id');
+      const departmentField = document.getElementById('profile-department');
+      const jobTitleField = document.getElementById('profile-job-title');
+      const phoneField = document.getElementById('contact-phone');
+
+      const storedFormattedName = sanitizeTemplateValue(getStoredValue('adSlidesUserFormattedName'));
+      const storedEmail = sanitizeTemplateValue(getStoredValue('adSlidesUserEmail'));
+      const storedInitial = sanitizeTemplateValue(getStoredValue('adSlidesUserFirstInitial')) || (storedFormattedName ? storedFormattedName.charAt(0).toUpperCase() : '');
 
       const FALLBACK_PROFILE = {
-        formattedName: 'Huda-Alzahrani',
-        email: 'huda.alzahrani@aramcodigital.com',
+        formattedName: storedFormattedName || 'Huda-Alzahrani',
+        email: storedEmail || 'huda.alzahrani@aramcodigital.com',
         employeeId: 'AD-18012',
         department: 'Digital Strategy Office',
         jobTitle: 'UX/UI Designer',
         contactPhone: '+966 50 123 4567',
-        initial: 'H'
+        initial: storedInitial || 'H'
       };
 
       function formatDisplayNameFromEmail(email) {
@@ -242,6 +259,19 @@
 
         applyIdentityName(initialDisplay);
         applyEmailLabel(finalEmail);
+
+        if (employeeIdField && (!employeeIdField.textContent || replaceExisting)) {
+          employeeIdField.textContent = FALLBACK_PROFILE.employeeId;
+        }
+        if (departmentField && (!departmentField.textContent || replaceExisting)) {
+          departmentField.textContent = FALLBACK_PROFILE.department;
+        }
+        if (jobTitleField && (!jobTitleField.textContent || replaceExisting)) {
+          jobTitleField.textContent = FALLBACK_PROFILE.jobTitle;
+        }
+        if (phoneField && (!phoneField.value || replaceExisting)) {
+          phoneField.value = FALLBACK_PROFILE.contactPhone;
+        }
       }
 
       display && display.addEventListener('input', (e) => {
@@ -323,11 +353,6 @@
             display.value = resolvedDisplay;
           }
           applyIdentityName(resolvedDisplay);
-
-          const employeeIdField = document.getElementById('profile-employee-id');
-          const departmentField = document.getElementById('profile-department');
-          const jobTitleField = document.getElementById('profile-job-title');
-          const phoneField = document.getElementById('contact-phone');
 
           if (employeeIdField) {
             employeeIdField.textContent = sanitizeTemplateValue(employeeId) || FALLBACK_PROFILE.employeeId;

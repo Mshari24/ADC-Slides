@@ -123,20 +123,28 @@
             }).join(' ')
           : 'User';
 
+        var formattedName = displayNameParts.length
+          ? displayNameParts.map(function (part) {
+              return part.charAt(0).toUpperCase() + part.slice(1);
+            }).join('-')
+          : displayName.replace(/\s+/g, '-') || 'User';
+
         var initials = displayNameParts.length
           ? displayNameParts.map(function (part) { return part.charAt(0).toUpperCase(); }).join('').slice(0, 2)
           : (emailValue ? emailValue.slice(0, 2).toUpperCase() : 'AD');
 
         try {
           window.localStorage.setItem('adSlidesUserName', displayName);
+          window.localStorage.setItem('adSlidesUserFormattedName', formattedName);
           window.localStorage.setItem('adSlidesUserEmail', emailValue);
           window.localStorage.setItem('adSlidesUserInitials', initials);
+          window.localStorage.setItem('adSlidesUserFirstInitial', formattedName.charAt(0).toUpperCase());
         } catch (error) {
           console.warn('Unable to persist user session info', error);
         }
 
         var redirectParam = params.get('redirect') || '';
-        var targetUrl = './home.html?name=' + encodeURIComponent(displayName);
+        var targetUrl = './profile/?name=' + encodeURIComponent(formattedName) + '&email=' + encodeURIComponent(emailValue);
         if (redirectParam) {
           if (/^https?:\/\//i.test(redirectParam)) {
             targetUrl = redirectParam;
