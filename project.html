@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Command Center</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="home-body">
+  <div class="home-root">
+    <aside class="home-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" aria-hidden="true">MA</div>
+      </div>
+      <a class="sb-item" href="./home.html" title="Home">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <span class="sb-label">Home</span>
+      </a>
+      <a class="sb-item new-entry" href="./index.html" title="New">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <span class="sb-label">New</span>
+      </a>
+      <a class="sb-item" href="./groups.html" title="Groups">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <span class="sb-label">Groups</span>
+      </a>
+      <a class="sb-item active" href="./project.html" title="Project">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <path d="M12 9v6"></path>
+            <path d="M9 12h6"></path>
+          </svg>
+        </div>
+        <span class="sb-label">Project</span>
+      </a>
+      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
+        <div class="sb-icon">
+          <img src="./pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
+        </div>
+        <span class="sb-label">Outlook</span>
+      </a>
+      <a class="sb-item" href="https://teams.microsoft.com/" target="_blank" rel="noopener noreferrer" title="Microsoft Teams">
+        <div class="sb-icon">
+          <img src="./pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
+        </div>
+        <span class="sb-label">Teams</span>
+      </a>
+    </aside>
+
+    <main class="home-main">
+      <header class="home-top">
+        <div class="top-brand">
+          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="brand-logo" />
+          <div class="brand-meta">
+            <span class="brand-title">AD Slides</span>
+            <span class="brand-subtitle">Every deck you’ve created and saved in one place</span>
+          </div>
+        </div>
+        <div class="home-top-actions">
+          <button id="btn-top-notifications" class="icon-button" type="button" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="badge" id="notif-count" aria-hidden="true">3</span>
+          </button>
+          <div class="notification-panel hidden" id="notification-panel">
+            <h3>Notifications</h3>
+            <ul>
+              <li>Innovation Summit prep deck shared with you.</li>
+              <li>Sales Enablement Kickoff updated by Marketing Ops.</li>
+            </ul>
+          </div>
+        </div>
+      </header>
+
+      <section class="home-hero">
+        <div class="hero-card hero-single">
+          <div class="hero-copy">
+            <span class="hero-eyebrow">Saved deck overview</span>
+            <h1 class="greeting">Your saved presentations</h1>
+            <p class="panel-subtitle">Browse, reopen, or share any deck you’ve built across teams.</p>
+            <div class="hero-actions">
+              <a class="btn-primary new-highlight" href="./index.html?open=latest-draft">Resume latest deck</a>
+            </div>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric">
+              <span class="metric-value">12</span>
+              <span class="metric-label">Total decks</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value">5</span>
+              <span class="metric-label">Updated this week</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value">3</span>
+              <span class="metric-label">Shared with execs</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-panels">
+        <div class="panel project-status-panel">
+          <div class="panel-head">
+            <div>
+              <h2>My saved presentations</h2>
+              <p class="panel-subtitle">Quick access to decks you created</p>
+            </div>
+            <a class="panel-link" href="./index.html">Open Slides editor</a>
+          </div>
+          <div class="recent-table" id="my-decks">
+            <a class="recent-row" href="./index.html?open=neptune-migration" data-title="Neptune Migration">
+              <div class="recent-primary">
+                <span class="recent-name">Neptune Migration</span>
+                <span class="recent-meta">Updated • Nov 7, 2025</span>
+              </div>
+              <span class="recent-owner">You</span>
+              <span class="recent-status">Draft</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=q3-report" data-title="Q3 Report">
+              <div class="recent-primary">
+                <span class="recent-name">Q3 Report</span>
+                <span class="recent-meta">Updated • Nov 3, 2025</span>
+              </div>
+              <span class="recent-owner">You</span>
+              <span class="recent-status">Ready</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=board-brief" data-title="Board Briefing">
+              <div class="recent-primary">
+                <span class="recent-name">Board Briefing</span>
+                <span class="recent-meta">Updated • Oct 28, 2025</span>
+              </div>
+              <span class="recent-owner">You</span>
+              <span class="recent-status">Final</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=innovation-review" data-title="Innovation Review">
+              <div class="recent-primary">
+                <span class="recent-name">Innovation Review</span>
+                <span class="recent-meta">Updated • Oct 21, 2025</span>
+              </div>
+              <span class="recent-owner">You</span>
+              <span class="recent-status">In progress</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="panel project-log-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Shared with you</h2>
+              <p class="panel-subtitle">Collaborative decks from your teams</p>
+            </div>
+            <a class="panel-link" href="./notifications.html">See collaboration updates</a>
+          </div>
+          <div class="recent-table" id="shared-decks">
+            <a class="recent-row" href="./index.html?open=sales-enablement" data-title="Sales Enablement Kickoff">
+              <div class="recent-primary">
+                <span class="recent-name">Sales Enablement Kickoff</span>
+                <span class="recent-meta">Shared Nov 9, 2025</span>
+              </div>
+              <span class="recent-owner">Nora Al-Qahtani</span>
+              <span class="recent-status">Marketing Ops</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=esg-update" data-title="ESG Council Update">
+              <div class="recent-primary">
+                <span class="recent-name">ESG Council Update</span>
+                <span class="recent-meta">Shared Nov 7, 2025</span>
+              </div>
+              <span class="recent-owner">Hassan Al-Sayed</span>
+              <span class="recent-status">Strategy Office</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=innovation-summit" data-title="Innovation Summit Preview">
+              <div class="recent-primary">
+                <span class="recent-name">Innovation Summit Preview</span>
+                <span class="recent-meta">Shared Nov 5, 2025</span>
+              </div>
+              <span class="recent-owner">Layla Haddad</span>
+              <span class="recent-status">Innovation Lab</span>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      const computeInitials = (value) => {
+        if (!value) return '';
+        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+        if (parts.length) {
+          return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+        }
+        return value.slice(0, 2).toUpperCase();
+      };
+
+      let storedName = '';
+      let storedEmail = '';
+      let storedInitials = '';
+
+      try {
+        storedName = window.localStorage.getItem('adSlidesUserName') || '';
+        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
+        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
+      } catch (error) {
+        console.warn('Unable to access stored session info', error);
+      }
+
+      if (!storedEmail) {
+        const loginUrl = new URL('./login.html', window.location.href);
+        loginUrl.searchParams.set('redirect', 'project.html');
+        window.location.replace(loginUrl.toString());
+        return;
+      }
+
+      const avatar = document.querySelector('.sidebar-avatar');
+      if (avatar) {
+        const initials = storedInitials || computeInitials(storedName) || computeInitials(storedEmail) || 'AD';
+        avatar.textContent = initials;
+      }
+
+      const notifButton = document.getElementById('btn-top-notifications');
+      const notifCount = document.getElementById('notif-count');
+      const notifPanel = document.getElementById('notification-panel');
+
+      notifButton?.addEventListener('click', () => {
+        notifPanel?.classList.toggle('hidden');
+        notifCount?.classList.add('hidden');
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.home-top') && !notifPanel?.classList.contains('hidden')) {
+          notifPanel.classList.add('hidden');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+

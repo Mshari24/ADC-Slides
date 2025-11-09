@@ -3,38 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Team & Group Management</title>
+  <title>Groups</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="home-body">
   <div class="home-root">
-    <aside class="home-sidebar" aria-label="Main">
-      <a class="sb-item" href="/profile/" title="Profile">
-        <div class="sb-icon avatar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </div>
-        <div class="sb-label">Profile</div>
-      </a>
-      <a class="sb-item" href="./home.html" title="Home">
+    <aside class="home-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-user">
+        <a class="sidebar-avatar-link" href="/profile/" title="User Profile &amp; Settings" aria-label="Open profile page">
+          <div class="sidebar-avatar" aria-hidden="true">MA</div>
+        </a>
+      </div>
+      <a class="sb-item home-entry" href="./home.html" title="Home">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
         </div>
-        <div class="sb-label">Home</div>
+        <span class="sb-label">Home</span>
       </a>
-      <a class="sb-item" href="./notifications.html" title="Notifications">
+      <a class="sb-item new-entry" href="./index.html" title="New">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </div>
-        <div class="sb-label">Notifications</div>
+        <span class="sb-label">New</span>
       </a>
       <a class="sb-item active" href="./groups.html" title="Groups">
         <div class="sb-icon">
@@ -45,578 +41,386 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
         </div>
-        <div class="sb-label">Groups</div>
+        <span class="sb-label">Groups</span>
       </a>
-      <a class="sb-item" href="./projects.html" title="Projects">
+      <a class="sb-item" href="./project.html" title="Project">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <path d="M12 9v6"></path>
+            <path d="M9 12h6"></path>
           </svg>
         </div>
-        <div class="sb-label">Projects</div>
+        <span class="sb-label">Project</span>
       </a>
       <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
         <div class="sb-icon">
           <img src="./pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
         </div>
-        <div class="sb-label">Outlook</div>
+        <span class="sb-label">Outlook</span>
       </a>
       <a class="sb-item" href="https://teams.microsoft.com/" target="_blank" rel="noopener noreferrer" title="Microsoft Teams">
         <div class="sb-icon">
           <img src="./pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
         </div>
-        <div class="sb-label">Teams</div>
+        <span class="sb-label">Teams</span>
       </a>
     </aside>
+
     <main class="home-main">
       <header class="home-top">
-        <h1 class="greeting">Team & Group Management</h1>
-        <div class="top-logo">
-          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="header-logo" />
+        <div class="top-brand">
+          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="brand-logo" />
+          <div class="brand-meta">
+            <span class="brand-title">AD Slides</span>
+            <span class="brand-subtitle">Group collaboration hub</span>
+          </div>
+        </div>
+        <button id="btn-top-notifications" class="icon-button" type="button" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="badge" id="notif-count" aria-hidden="true">1</span>
+        </button>
+        <div class="notification-panel hidden" id="notification-panel">
+          <h3>Notifications</h3>
+          <ul>
+            <li>New members awaiting approval in ESG Council.</li>
+            <li>Neptune Migration agenda draft shared.</li>
+          </ul>
         </div>
       </header>
-      <section class="home-middle">
-        <div class="panel" style="margin-bottom: 20px;">
+
+      <section class="groups-shell">
+        <div class="panel group-create-panel">
           <div class="panel-head">
-            <h2 class="page-title">Team & Group Management</h2>
+            <div>
+              <h2>Create new group</h2>
+              <p class="panel-subtitle">Spin up collaboration spaces in seconds</p>
+            </div>
+          </div>
+          <div class="group-create-actions">
+            <button class="group-create-card" type="button" id="btn-create-group">
+              <span class="group-create-icon">＋</span>
+              <span class="group-create-title">Create blank group</span>
+              <span class="group-create-meta">Define name, description, and members</span>
+            </button>
+            <button class="group-create-card" type="button" id="btn-import-group">
+              <span class="group-create-icon">⇪</span>
+              <span class="group-create-title">Import roster</span>
+              <span class="group-create-meta">Upload CSV or connect Outlook group</span>
+            </button>
           </div>
         </div>
-        <div class="groups-layout">
-          <div class="groups-left">
-            <div class="panel">
-              <div class="panel-head">
-                <h2>Group List</h2>
-              </div>
-              
-              <div class="group-search-wrapper">
-                <input type="search" id="group-search" class="group-search" placeholder="Search groups..." aria-label="Search groups" />
-              </div>
-              
-              <button id="btn-create-group" class="btn-create-group" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"></line>
-                  <line x1="5" y1="12" x2="19" y2="12"></line>
-                </svg>
-                Create New Group
-              </button>
-              
-              <ul class="group-list" id="group-list">
-                <li class="group-item" data-group="Q3 Marketing Team">Q3 Marketing Team</li>
-                <li class="group-item" data-group="HR Management">HR Management</li>
-                <li class="group-item" data-group="Engineering Squad">Engineering Squad</li>
-                <li class="group-item" data-group="Design Team">Design Team</li>
-              </ul>
+
+        <div class="panel group-icon-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Active groups</h2>
+              <p class="panel-subtitle">Tap a group icon to open conversation</p>
             </div>
           </div>
+          <div class="group-icon-grid" id="group-icon-grid"></div>
         </div>
-        <div class="groups-right">
-          <div class="panel" id="group-details-panel">
-            <div class="panel-head">
-              <h2 id="group-details-title">Group Details</h2>
+
+        <div class="panel group-chat-panel hidden" id="group-chat-panel">
+          <header class="group-chat-header">
+            <div class="group-chat-title">
+              <span class="group-pill" id="group-tag">Engineering</span>
+              <h2 id="group-title">Neptune Migration</h2>
+              <p id="group-description">Steering committee for platform modernisation.</p>
             </div>
-            <div id="group-details-empty" class="group-details-empty">
-              <p>Select a group to view details.</p>
-            </div>
-            <div id="group-details-content" class="group-details-content hidden">
-              <div class="tabs">
-                <button class="tab-btn active" data-tab="members">Members</button>
-                <button class="tab-btn" data-tab="content">Shared Content</button>
-                <button class="tab-btn" data-tab="settings">Group Settings</button>
+            <div class="group-chat-metrics">
+              <div class="group-metric">
+                <span class="metric-label">Owner</span>
+                <span class="metric-value" id="group-owner">noor.ahmed@adslab.com</span>
               </div>
-              
-              <div id="tab-members" class="tab-content active">
-                <div class="discussion-section">
-                  <a href="#" class="discussion-link" id="discussion-link">
-                    <div class="discussion-icon">💬</div>
-                    <div class="discussion-info">
-                      <div class="discussion-title">Group Discussion Channel</div>
-                      <div class="discussion-subtitle">Open group chat and messaging</div>
-                    </div>
-                  </a>
-                </div>
-                <div class="members-list" id="members-list">
-                  <!-- Members will be populated here -->
-                </div>
+              <div class="group-metric">
+                <span class="metric-label">Next review</span>
+                <span class="metric-value" id="group-review">Nov 24, 2025</span>
               </div>
-              
-              <div id="tab-content" class="tab-content">
-                <div class="shared-content-list" id="shared-content-list">
-                  <!-- Shared content will be populated here -->
-                </div>
-              </div>
-              
-              <div id="tab-settings" class="tab-content">
-                <form id="group-settings-form" class="settings-form">
-                  <label class="form-item">
-                    <span>Group Name</span>
-                    <input id="settings-name" type="text" required />
-                  </label>
-                  <label class="form-item">
-                    <span>Group Description</span>
-                    <textarea id="settings-description" rows="4"></textarea>
-                  </label>
-                  <div class="settings-actions">
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                    <button type="button" id="btn-delete-group" class="btn-delete">Delete Group</button>
-                  </div>
-                </form>
+              <div class="group-metric">
+                <span class="metric-label">Members</span>
+                <span class="metric-value" id="group-members">18</span>
               </div>
             </div>
-          </div>
+          </header>
+          <ul id="group-points" class="group-points"></ul>
+          <div class="chat-timeline" id="chat-timeline"></div>
+          <form id="chat-form" class="chat-composer">
+            <input id="chat-input" type="text" placeholder="Share an update with the group…" autocomplete="off" />
+            <button class="btn-primary" type="submit">Send</button>
+          </form>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Create Group Modal -->
   <div id="create-group-modal" class="modal hidden">
     <div class="modal-backdrop"></div>
-    <div class="modal-dialog modal-large" role="dialog" aria-modal="true" aria-labelledby="cg-title">
-      <h3 id="cg-title">Create New Group</h3>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="cg-title">
+      <h3 id="cg-title">Create new group</h3>
       <form id="create-group-form">
         <label class="form-item">
-          <span>Group Name</span>
-          <input id="group-name" type="text" placeholder="Enter group name" required />
+          <span>Group name</span>
+          <input id="group-name" type="text" placeholder="e.g. Transformation PMO" required />
         </label>
         <label class="form-item">
-          <span>Group Description</span>
-          <textarea id="group-description" rows="4" placeholder="Enter group description"></textarea>
+          <span>Description</span>
+          <textarea id="group-description" rows="3" placeholder="What is this group for?"></textarea>
         </label>
-        <div class="form-item">
-          <span>Group Owner</span>
-          <input type="text" value="You (current user)" readonly class="readonly" />
-        </div>
         <label class="form-item">
-          <span>Add Members</span>
-          <div class="members-input-wrapper">
-            <textarea id="members-input" rows="4" placeholder="Enter email addresses (one per line or comma-separated)"></textarea>
-            <div id="suggestions" class="suggestions hidden"></div>
-          </div>
+          <span>Add members</span>
+          <textarea id="members-input" rows="3" placeholder="Enter emails"></textarea>
         </label>
         <div class="modal-actions">
           <button type="button" id="cg-cancel" class="btn">Cancel</button>
-          <button type="submit" class="btn-primary">Create Group</button>
+          <button type="submit" class="btn-primary">Create group</button>
         </div>
       </form>
     </div>
   </div>
 
   <script>
-    (function() {
-      // Sample corporate emails for auto-suggest
-      const corporateEmails = [
-        'ahmed.ali@aramco.com',
-        'sara.mohammed@aramco.com',
-        'khalid.hassan@aramco.com',
-        'fatima.ibrahim@aramco.com',
-        'mohammed.abdullah@aramco.com',
-        'noor.ahmed@aramco.com',
-        'omar.khalil@aramco.com',
-        'layla.ismail@aramco.com'
-      ];
-
-      const btnCreate = document.getElementById('btn-create-group');
-      const modal = document.getElementById('create-group-modal');
-      const membersInput = document.getElementById('members-input');
-      const suggestions = document.getElementById('suggestions');
-      const form = document.getElementById('create-group-form');
-
-      // Group search functionality
-      const groupSearch = document.getElementById('group-search');
-      const groupList = document.getElementById('group-list');
-      const groupItems = document.querySelectorAll('.group-item');
-      
-      groupSearch && groupSearch.addEventListener('input', function(e) {
-        const query = e.target.value.toLowerCase().trim();
-        groupItems.forEach(item => {
-          const groupName = item.textContent.toLowerCase();
-          if (query === '' || groupName.includes(query)) {
-            item.style.display = '';
-          } else {
-            item.style.display = 'none';
-          }
-        });
-      });
-
-      function openModal() {
-        modal.classList.remove('hidden');
-      }
-
-      function closeModal() {
-        modal.classList.add('hidden');
-        form.reset();
-        suggestions.classList.add('hidden');
-      }
-
-      btnCreate && btnCreate.addEventListener('click', openModal);
-      document.getElementById('cg-cancel').addEventListener('click', closeModal);
-      modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
-
-      // Auto-suggest for email addresses
-      membersInput && membersInput.addEventListener('input', (e) => {
-        const text = e.target.value;
-        const lastWord = text.split(/[\s,]+/).pop().toLowerCase();
-        
-        if (lastWord.length > 0 && lastWord.includes('@')) {
-          const domain = lastWord.split('@')[1] || '';
-          const matches = corporateEmails.filter(email => 
-            email.toLowerCase().includes(lastWord) || 
-            (domain && email.includes('@' + domain))
-          ).slice(0, 5);
-          
-          if (matches.length > 0) {
-            suggestions.innerHTML = matches.map(email => 
-              `<div class="suggestion-item" data-email="${email}">${email}</div>`
-            ).join('');
-            suggestions.classList.remove('hidden');
-          } else {
-            suggestions.classList.add('hidden');
-          }
-        } else {
-          suggestions.classList.add('hidden');
+    (function () {
+      const computeInitials = (value) => {
+        if (!value) return '';
+        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+        if (parts.length) {
+          return parts.map((part) => part.charAt(0).toUpperCase()).join('').slice(0, 2);
         }
-      });
-
-      suggestions && suggestions.addEventListener('click', (e) => {
-        const item = e.target.closest('.suggestion-item');
-        if (item) {
-          const email = item.dataset.email;
-          const text = membersInput.value;
-          const lastWord = text.split(/[\s,]+/).pop();
-          const newText = text.substring(0, text.length - lastWord.length) + email;
-          membersInput.value = newText;
-          suggestions.classList.add('hidden');
-          membersInput.focus();
-        }
-      });
-
-      form && form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const groupName = document.getElementById('group-name').value;
-        const members = document.getElementById('members-input').value;
-        
-        const msg = document.createElement('div');
-        msg.textContent = `Group "${groupName}" created successfully!`;
-        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-        msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-        document.body.appendChild(msg);
-        setTimeout(() => msg.remove(), 2000);
-        
-        closeModal();
-      });
-
-      // Sample group data
-      const groupsData = {
-        'Q3 Marketing Team': {
-          name: 'Q3 Marketing Team',
-          description: 'Marketing activities for Q3',
-          members: [
-            { email: 'you@aramco.com', name: 'You', role: 'Owner' },
-            { email: 'ahmed.ali@aramco.com', name: 'Ahmed Ali', role: 'Admin' },
-            { email: 'sara.mohammed@aramco.com', name: 'Sara Mohammed', role: 'Member' },
-            { email: 'khalid.hassan@aramco.com', name: 'Khalid Hassan', role: 'Member' }
-          ],
-          sharedContent: [
-            { title: 'Q3 Campaign Strategy', type: 'Presentation', link: './projects.html?file=q3-campaign' },
-            { title: 'Market Research Data', type: 'Document', link: './projects.html?file=market-research' },
-            { title: 'Budget Overview', type: 'Spreadsheet', link: './projects.html?file=budget' }
-          ]
-        },
-        'HR Management': {
-          name: 'HR Management',
-          description: 'Human Resources team group',
-          members: [
-            { email: 'you@aramco.com', name: 'You', role: 'Admin' },
-            { email: 'fatima.ibrahim@aramco.com', name: 'Fatima Ibrahim', role: 'Owner' },
-            { email: 'mohammed.abdullah@aramco.com', name: 'Mohammed Abdullah', role: 'Member' }
-          ],
-          sharedContent: [
-            { title: 'Employee Handbook', type: 'Document', link: './projects.html?file=handbook' },
-            { title: 'Recruitment Process', type: 'Presentation', link: './projects.html?file=recruitment' }
-          ]
-        },
-        'Engineering Squad': {
-          name: 'Engineering Squad',
-          description: 'Engineering and development team',
-          members: [
-            { email: 'you@aramco.com', name: 'You', role: 'Member' },
-            { email: 'noor.ahmed@aramco.com', name: 'Noor Ahmed', role: 'Owner' },
-            { email: 'omar.khalil@aramco.com', name: 'Omar Khalil', role: 'Admin' }
-          ],
-          sharedContent: [
-            { title: 'Tech Stack Overview', type: 'Document', link: './projects.html?file=tech-stack' },
-            { title: 'Sprint Planning', type: 'Presentation', link: './projects.html?file=sprint' }
-          ]
-        },
-        'Design Team': {
-          name: 'Design Team',
-          description: 'Design and creative team collaboration',
-          members: [
-            { email: 'you@aramco.com', name: 'You', role: 'Admin' },
-            { email: 'layla.ismail@aramco.com', name: 'Layla Ismail', role: 'Owner' }
-          ],
-          sharedContent: [
-            { title: 'Design System', type: 'Document', link: './projects.html?file=design-system' },
-            { title: 'Brand Guidelines', type: 'Presentation', link: './projects.html?file=brand' }
-          ]
-        }
+        return value.slice(0, 2).toUpperCase();
       };
 
+      let storedInitials = '';
+      let storedName = '';
+      let storedEmail = '';
+      try {
+        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
+        storedName = window.localStorage.getItem('adSlidesUserName') || '';
+        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
+      } catch (error) {
+        console.warn('Unable to access stored user profile', error);
+      }
+
+      const avatar = document.querySelector('.sidebar-avatar');
+      if (avatar) {
+        const initials = storedInitials || computeInitials(storedName) || computeInitials(storedEmail) || 'AD';
+        avatar.textContent = initials;
+      }
+
+      const notifButton = document.getElementById('btn-top-notifications');
+      const notifCount = document.getElementById('notif-count');
+      const notifPanel = document.getElementById('notification-panel');
+      const groupIconGrid = document.getElementById('group-icon-grid');
+      const chatPanel = document.getElementById('group-chat-panel');
+      const chatTimeline = document.getElementById('chat-timeline');
+      const chatForm = document.getElementById('chat-form');
+      const chatInput = document.getElementById('chat-input');
+      const overviewTitle = document.getElementById('group-title');
+      const overviewTag = document.getElementById('group-tag');
+      const overviewOwner = document.getElementById('group-owner');
+      const overviewReview = document.getElementById('group-review');
+      const overviewMembers = document.getElementById('group-members');
+      const overviewDescription = document.getElementById('group-description');
+      const overviewPoints = document.getElementById('group-points');
+      const modal = document.getElementById('create-group-modal');
+      const btnCreateGroup = document.getElementById('btn-create-group');
+      const btnImportGroup = document.getElementById('btn-import-group');
+      const btnCancel = document.getElementById('cg-cancel');
+      const form = document.getElementById('create-group-form');
+
+      const showToast = (msg) => {
+        const el = document.createElement('div');
+        el.textContent = msg;
+        el.style.position = 'fixed';
+        el.style.bottom = '16px';
+        el.style.left = '50%';
+        el.style.transform = 'translateX(-50%)';
+        el.style.background = '#111827';
+        el.style.color = '#fff';
+        el.style.padding = '10px 14px';
+        el.style.borderRadius = '10px';
+        el.style.zIndex = '9999';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1600);
+      };
+
+      notifButton?.addEventListener('click', () => {
+        notifPanel?.classList.toggle('hidden');
+        notifCount?.classList.add('hidden');
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!event.target.closest('.home-top') && !notifPanel?.classList.contains('hidden')) {
+          notifPanel.classList.add('hidden');
+        }
+      });
+
+      const groupsData = [
+        {
+          id: 'neptune',
+          name: 'Neptune Migration',
+          tag: 'Engineering',
+          members: 18,
+          owner: 'noor.ahmed@adslab.com',
+          review: 'Nov 24, 2025',
+          description: 'Stabilise data pipelines and finalise automation rollout for core sites.',
+          points: [
+            'Finalise site readiness checklist by Nov 18',
+            'Distribute automation briefing to regional leads',
+            'Prep steering deck for executive review'
+          ],
+          chat: [
+            { author: 'Layla Ismail', role: 'Design lead', time: '09:10', message: 'Slides 6-8 refreshed with the updated site metrics.' },
+            { author: 'Ahmed Ali', role: 'Strategy', time: '09:22', message: 'Added risk appendix requested by finance.' },
+            { author: 'You', role: 'Owner', time: '09:40', message: 'Great work—will spotlight these changes in tomorrow’s brief.', self: true }
+          ]
+        },
+        {
+          id: 'esg',
+          name: 'ESG Council',
+          tag: 'Sustainability',
+          members: 12,
+          owner: 'layla.ismail@adslab.com',
+          review: 'Dec 02, 2025',
+          description: 'Cross-functional council aligning ESG narrative, data, and stakeholder outreach.',
+          points: [
+            'Publish emissions dashboard update by Nov 20',
+            'Align talking points with investor relations',
+            'Coordinate December townhall narrative'
+          ],
+          chat: [
+            { author: 'Khalid Hassan', role: 'Policy', time: '08:55', message: 'Draft narrative uploaded—please review focus slide 4.' },
+            { author: 'You', role: 'Moderator', time: '09:05', message: 'Will circulate to investor relations once comms signs off.', self: true }
+          ]
+        }
+      ];
+
       let currentGroup = null;
-      let currentUserRole = 'Member'; // Will be determined from group data
-      const currentUserEmail = 'you@aramco.com'; // Current logged-in user
-      const detailsEmpty = document.getElementById('group-details-empty');
-      const detailsContent = document.getElementById('group-details-content');
-      const detailsTitle = document.getElementById('group-details-title');
 
-      // Get current user's role in the group
-      function getUserRole(group) {
-        const user = group.members.find(m => m.email === currentUserEmail);
-        return user ? user.role : null;
-      }
-
-      // Check if user has permission
-      function canEdit() {
-        return currentUserRole === 'Owner' || currentUserRole === 'Admin';
-      }
-
-      function canDelete() {
-        return currentUserRole === 'Owner';
-      }
-
-      // Group selection
-      groupItems.forEach(item => {
-        item.addEventListener('click', () => {
-          groupItems.forEach(i => i.classList.remove('active'));
-          item.classList.add('active');
-          
-          const groupName = item.textContent;
-          currentGroup = groupsData[groupName];
-          
-          if (currentGroup) {
-            currentUserRole = getUserRole(currentGroup) || 'Member';
-            detailsTitle.textContent = currentGroup.name;
-            detailsEmpty.classList.add('hidden');
-            detailsContent.classList.remove('hidden');
-            loadGroupDetails(currentGroup);
-          }
+      const renderIcons = () => {
+        groupIconGrid.innerHTML = '';
+        groupsData.forEach(group => {
+          const initials = group.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+          const button = document.createElement('button');
+          button.className = 'group-icon-button';
+          if (currentGroup && group.id === currentGroup.id) button.classList.add('active');
+          button.dataset.id = group.id;
+          button.innerHTML = `
+            <span class="group-icon-avatar">${initials}</span>
+            <span class="group-icon-label">${group.name}</span>
+          `;
+          button.addEventListener('click', () => selectGroup(group.id));
+          groupIconGrid.appendChild(button);
         });
-      });
+      };
 
-      // Discussion channel link
-      document.getElementById('discussion-link') && document.getElementById('discussion-link').addEventListener('click', (e) => {
-        e.preventDefault();
-        if (currentGroup) {
-          const msg = document.createElement('div');
-          msg.textContent = `Opening discussion channel for ${currentGroup.name}`;
-          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-          msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-          document.body.appendChild(msg);
-          setTimeout(() => msg.remove(), 2000);
-          // In production, this would navigate to a chat interface or open a chat modal
-        }
-      });
+      const renderOverview = (group) => {
+        overviewTitle.textContent = group.name;
+        overviewTag.textContent = group.tag;
+        overviewOwner.textContent = group.owner;
+        overviewReview.textContent = group.review;
+        overviewMembers.textContent = group.members;
+        overviewDescription.textContent = group.description;
+        overviewPoints.innerHTML = group.points
+          .map(point => `<li><span class="point-bullet"></span><span>${point}</span></li>`)
+          .join('');
+      };
 
-      // Tab switching
-      const tabBtns = document.querySelectorAll('.tab-btn');
-      const tabContents = document.querySelectorAll('.tab-content');
-      
-      tabBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-          const targetTab = btn.dataset.tab;
-          
-          tabBtns.forEach(b => b.classList.remove('active'));
-          tabContents.forEach(c => c.classList.remove('active'));
-          
-          btn.classList.add('active');
-          document.getElementById(`tab-${targetTab}`).classList.add('active');
-        });
-      });
-
-      function loadGroupDetails(group) {
-        // Load Members
-        const membersList = document.getElementById('members-list');
-        const canModifyMembers = canEdit();
-        membersList.innerHTML = group.members.map(member => {
-          const isCurrentUser = member.email === currentUserEmail;
-          const canRemove = canModifyMembers && !isCurrentUser && member.role !== 'Owner';
-          const canChangeRole = canModifyMembers && !isCurrentUser;
-          
-          // Get initials from name
-          const initials = member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-          // Determine role badge color
-          const roleColors = {
-            'Owner': '#0F2C67',
-            'Admin': '#00A38D',
-            'Member': '#6b7280'
-          };
-          const roleColor = roleColors[member.role] || '#6b7280';
-          
-          return `
-          <div class="member-item">
-            <div class="member-avatar">
-              <div class="member-initials">${initials}</div>
-            </div>
-            <div class="member-info">
-              <div class="member-name">${member.name} ${isCurrentUser ? '<span class="member-you">(You)</span>' : ''}</div>
-              <div class="member-role-badge" style="background: ${roleColor}20; color: ${roleColor};">
-                ${member.role}
-              </div>
-            </div>
-            <div class="member-actions">
-              <select class="role-select" data-email="${member.email}" ${canChangeRole ? '' : 'disabled'}>
-                <option value="Owner" ${member.role === 'Owner' ? 'selected' : ''}>Owner</option>
-                <option value="Admin" ${member.role === 'Admin' ? 'selected' : ''}>Admin</option>
-                <option value="Member" ${member.role === 'Member' ? 'selected' : ''}>Member</option>
-              </select>
-              <button class="btn-remove" data-email="${member.email}" type="button" ${canRemove ? '' : 'disabled'}>Remove</button>
-            </div>
-          </div>
-        `;
-        }).join('');
-
-        // Role change handler
-        membersList.querySelectorAll('.role-select').forEach(select => {
-          if (!select.disabled) {
-            select.addEventListener('change', (e) => {
-              if (!canEdit()) {
-                alert('You do not have permission to change member roles.');
-                e.target.value = group.members.find(m => m.email === e.target.dataset.email).role;
-                return;
-              }
-              const email = e.target.dataset.email;
-              const msg = document.createElement('div');
-              msg.textContent = `Role updated for ${email}`;
-              msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-              msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-              document.body.appendChild(msg);
-              setTimeout(() => msg.remove(), 1500);
-            });
-          }
-        });
-
-        // Remove member handler
-        membersList.querySelectorAll('.btn-remove').forEach(btn => {
-          if (!btn.disabled) {
-            btn.addEventListener('click', (e) => {
-              if (!canEdit()) {
-                alert('You do not have permission to remove members.');
-                return;
-              }
-              const email = e.target.dataset.email;
-              if (confirm(`Remove ${email} from this group?`)) {
-                const msg = document.createElement('div');
-                msg.textContent = `${email} removed from group`;
-                msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-                msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-                document.body.appendChild(msg);
-                setTimeout(() => msg.remove(), 1500);
-                loadGroupDetails(group); // Reload
-              }
-            });
-          }
-        });
-
-        // Load Shared Content
-        const contentList = document.getElementById('shared-content-list');
-        contentList.innerHTML = group.sharedContent.length > 0 
-          ? group.sharedContent.map(item => {
-              const iconMap = {
-                'Presentation': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="3" y1="9" x2="21" y2="9"></line>
-                  <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>`,
-                'Document': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>`,
-                'Spreadsheet': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="3" y1="9" x2="21" y2="9"></line>
-                  <line x1="9" y1="21" x2="9" y2="9"></line>
-                </svg>`
-              };
-              const icon = iconMap[item.type] || iconMap['Document'];
-              
-              return `
-              <a href="${item.link}" class="shared-content-card">
-                <div class="content-card-thumbnail">
-                  <div class="content-card-icon">${icon}</div>
-                </div>
-                <div class="content-card-info">
-                  <div class="content-card-title">${item.title}</div>
-                  <div class="content-card-type">${item.type}</div>
-                </div>
-              </a>
-            `;
-            }).join('')
-          : '<div class="empty-content-message"><p>No shared content yet.</p></div>';
-
-        // Load Settings with permissions
-        const settingsName = document.getElementById('settings-name');
-        const settingsDesc = document.getElementById('settings-description');
-        const btnDelete = document.getElementById('btn-delete-group');
-        
-        settingsName.value = group.name;
-        settingsDesc.value = group.description || '';
-        
-        if (!canEdit()) {
-          settingsName.disabled = true;
-          settingsDesc.disabled = true;
-        } else {
-          settingsName.disabled = false;
-          settingsDesc.disabled = false;
-        }
-        
-        if (canDelete()) {
-          btnDelete.style.display = 'block';
-          btnDelete.disabled = false;
-        } else {
-          btnDelete.style.display = 'none';
-          btnDelete.disabled = true;
-        }
-      }
-
-      // Settings form
-      const settingsForm = document.getElementById('group-settings-form');
-      settingsForm && settingsForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (!canEdit()) {
-          alert('You do not have permission to edit group settings. Only Owners and Admins can modify settings.');
+      const renderChat = (group) => {
+        if (!group) {
+          chatPanel.classList.add('hidden');
           return;
         }
-        const msg = document.createElement('div');
-        msg.textContent = 'Settings saved successfully';
-        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-        msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-        document.body.appendChild(msg);
-        setTimeout(() => msg.remove(), 1500);
-      });
 
-      // Delete group
-      const btnDelete = document.getElementById('btn-delete-group');
-      btnDelete && btnDelete.addEventListener('click', () => {
-        if (!canDelete()) {
-          alert('Only the group Owner can delete the group.');
+        chatPanel.classList.remove('hidden');
+        chatTimeline.innerHTML = '';
+
+        if (!group.chat.length) {
+          chatTimeline.innerHTML = '<div class="chat-empty">No messages yet. Start the conversation below.</div>';
           return;
         }
-        if (confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
-          const msg = document.createElement('div');
-          msg.textContent = 'Group deleted successfully';
-          msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-          msg.style.background='#dc2626'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-          document.body.appendChild(msg);
-          setTimeout(() => {
-            msg.remove();
-            detailsEmpty.classList.remove('hidden');
-            detailsContent.classList.add('hidden');
-            groupItems.forEach(i => i.classList.remove('active'));
-          }, 1500);
-        }
+
+        group.chat.forEach(entry => {
+          const message = document.createElement('div');
+          message.className = 'chat-message' + (entry.self ? ' is-self' : '');
+          message.innerHTML = `
+            <div class="chat-meta">
+              <span class="chat-author">${entry.author}</span>
+              ${entry.role ? `<span class="chat-role">${entry.role}</span>` : ''}
+              <span class="chat-time">${entry.time}</span>
+            </div>
+            <div class="chat-text">${entry.message}</div>
+          `;
+          chatTimeline.appendChild(message);
+        });
+
+        chatTimeline.scrollTop = chatTimeline.scrollHeight;
+      };
+
+      const selectGroup = (id) => {
+        const found = groupsData.find(g => g.id === id);
+        if (!found) return;
+        currentGroup = found;
+        renderIcons();
+        renderOverview(found);
+        renderChat(found);
+      };
+
+      renderIcons();
+      renderChat(null);
+
+      chatForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const value = chatInput.value.trim();
+        if (!value || !currentGroup) return;
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        currentGroup.chat.push({ author: 'You', role: 'Owner', time, message: value, self: true });
+        chatInput.value = '';
+        renderChat(currentGroup);
+      });
+
+      const openModal = () => modal.classList.remove('hidden');
+      const closeModal = () => {
+        modal.classList.add('hidden');
+        form.reset();
+      };
+
+      btnCreateGroup?.addEventListener('click', openModal);
+      btnCancel?.addEventListener('click', closeModal);
+      modal.querySelector('.modal-backdrop')?.addEventListener('click', closeModal);
+
+      btnImportGroup?.addEventListener('click', () => {
+        showToast('Roster import coming soon (demo).');
+      });
+
+      form?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('group-name').value.trim() || 'Untitled group';
+        const description = document.getElementById('group-description').value.trim() || 'Description pending';
+
+        const newGroup = {
+          id: `grp-${Date.now()}`,
+          name,
+          tag: 'Custom',
+          members: 1,
+          owner: 'you@adslab.com',
+          review: 'Set review date',
+          description,
+          points: [
+            'Define charter and success measures',
+            'Invite core stakeholders',
+            'Schedule first sync session'
+          ],
+          chat: []
+        };
+
+        groupsData.unshift(newGroup);
+        selectGroup(newGroup.id);
+        closeModal();
+        showToast(`Group "${name}" created`);
       });
     })();
   </script>

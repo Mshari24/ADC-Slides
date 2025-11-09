@@ -8,33 +8,29 @@
 </head>
 <body class="home-body">
   <div class="home-root">
-    <aside class="home-sidebar" aria-label="Main">
-      <a class="sb-item" href="/profile/" title="Profile">
-        <div class="sb-icon avatar">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </div>
-        <div class="sb-label">Profile</div>
-      </a>
-      <a class="sb-item active" href="./home.html" title="Home">
+    <aside class="home-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-user">
+        <a class="sidebar-avatar-link" href="/profile/" title="User Profile &amp; Settings" aria-label="Open profile page">
+          <div class="sidebar-avatar" aria-hidden="true">MA</div>
+        </a>
+      </div>
+      <a class="sb-item active home-entry" href="./home.html" title="Home">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
         </div>
-        <div class="sb-label">Home</div>
+        <span class="sb-label">Home</span>
       </a>
-      <a class="sb-item" href="./notifications.html" title="Notifications">
+      <a class="sb-item new-entry" href="./index.html" title="New">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </div>
-        <div class="sb-label">Notifications</div>
+        <span class="sb-label">New</span>
       </a>
       <a class="sb-item" href="./groups.html" title="Groups">
         <div class="sb-icon">
@@ -45,105 +41,167 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
         </div>
-        <div class="sb-label">Groups</div>
+        <span class="sb-label">Groups</span>
       </a>
-      <a class="sb-item" href="./projects.html" title="Projects">
+      <a class="sb-item" href="./project.html" title="Project">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <path d="M12 9v6"></path>
+            <path d="M9 12h6"></path>
           </svg>
         </div>
-        <div class="sb-label">Projects</div>
+        <span class="sb-label">Project</span>
       </a>
       <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
         <div class="sb-icon">
           <img src="./pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
         </div>
-        <div class="sb-label">Outlook</div>
+        <span class="sb-label">Outlook</span>
       </a>
       <a class="sb-item" href="https://teams.microsoft.com/" target="_blank" rel="noopener noreferrer" title="Microsoft Teams">
         <div class="sb-icon">
           <img src="./pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
         </div>
-        <div class="sb-label">Teams</div>
+        <span class="sb-label">Teams</span>
       </a>
     </aside>
 
     <main class="home-main">
       <header class="home-top">
-        <h1 id="greeting" class="greeting">Good Morning!</h1>
-        <div class="top-logo">
-          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="header-logo" />
+        <div class="top-brand">
+          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="brand-logo" />
+          <div class="brand-meta">
+            <span class="brand-title">AD Slides</span>
+            <span class="brand-subtitle">Executive presentation workspace</span>
+          </div>
+        </div>
+        <div class="home-top-actions">
+          <button id="btn-top-notifications" class="icon-button" type="button" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="badge" id="notif-count" aria-hidden="true">3</span>
+          </button>
+          <div class="notification-panel hidden" id="notification-panel">
+            <h3>Notifications</h3>
+            <ul>
+              <li>Neptune Migration deck review scheduled for Nov 24.</li>
+              <li>ESG Council requested updated metrics.</li>
+            </ul>
+          </div>
         </div>
       </header>
 
       <section class="home-search">
-        <div class="search-wrap" role="search">
-          <input id="home-search" class="search-input" type="search" placeholder="Search Recent and Projects…" aria-label="Search Recent and Projects" />
-          <div id="search-results" class="search-results hidden">
-            <div class="search-category">
-              <h3 class="search-category-title">Files</h3>
-              <div class="search-category-items" id="search-files"></div>
-            </div>
-            <div class="search-category">
-              <h3 class="search-category-title">People/Groups</h3>
-              <div class="search-category-items" id="search-people"></div>
+        <div class="search-wrap">
+          <div class="search-inline" role="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input id="home-search" class="search-inline-input search-input" type="search" placeholder="Search decks, teams, or people…" aria-label="Search decks, teams, or people" />
+            <div id="search-results" class="search-results hidden">
+              <div class="search-category">
+                <h3 class="search-category-title">Files</h3>
+                <div class="search-category-items" id="search-files"></div>
+              </div>
+              <div class="search-category">
+                <h3 class="search-category-title">People & Groups</h3>
+                <div class="search-category-items" id="search-people"></div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="home-middle">
-        <div class="panel create">
-          <div class="panel-head">
-            <h2>Create</h2>
-          </div>
-          <div class="panel-grid four create-grid">
-            <button id="btn-blank" class="tile tile-blank" type="button" title="Blank Presentation">
-              <div class="tile-label">Blank Presentation</div>
-            </button>
-            <button id="btn-ad" class="tile tile-ad" type="button" title="AD Template">
-              <div class="tile-label">AD</div>
-            </button>
-            <button id="btn-import" class="tile" type="button" title="Import Slides">
-              <div class="tile-label">Import Slides</div>
-            </button>
-            <button id="btn-theme" class="tile" type="button" title="Import Theme">
-              <div class="tile-label">Import Theme</div>
-            </button>
-            <input id="input-import-slides" type="file" accept=".json,.ppt,.pptx,.odp" style="display:none" />
-            <input id="input-import-theme" type="file" accept=".json,.zip,.thm" style="display:none" />
+      <section class="home-hero">
+        <div class="hero-card hero-single">
+          <div class="hero-copy">
+            <span class="hero-eyebrow">Active project</span>
+            <h1 id="greeting" class="greeting">Neptune Migration</h1>
+            <div class="hero-actions">
+              <a class="btn-primary new-highlight" href="./index.html?open=neptune-migration">Open deck</a>
+            </div>
           </div>
         </div>
+      </section>
 
-        <div class="panel recent">
+      <section class="home-panels">
+        <div class="panel create-panel" id="section-create">
           <div class="panel-head">
-            <h2>Recent</h2>
+            <div>
+              <h2>Quick create</h2>
+              <p class="panel-subtitle">Start from Aramco-branded building blocks</p>
+            </div>
           </div>
-          <div class="panel-grid four" id="recent-list">
-            <a class="file-card" href="./index.html?open=q3-report" data-title="Q3 Report">
-              <div class="file-card-content">
-                <div class="file-name">Q3 Report</div>
-                <div class="file-date">Sep 18, 2025</div>
+          <div class="create-grid">
+            <button id="btn-blank" class="create-card" type="button">
+              <span class="create-icon">＋</span>
+              <span class="create-title">Blank presentation</span>
+              <span class="create-meta">16:9 canvas</span>
+            </button>
+            <button id="btn-ad" class="create-card" type="button">
+              <span class="create-icon">✦</span>
+              <span class="create-title">Aramco template</span>
+              <span class="create-meta">Corporate theme</span>
+            </button>
+            <button id="btn-import" class="create-card" type="button">
+              <span class="create-icon">⇪</span>
+              <span class="create-title">Import slides</span>
+              <span class="create-meta">PPT, PPTX, ODP</span>
+            </button>
+            <button id="btn-theme" class="create-card" type="button">
+              <span class="create-icon">⌘</span>
+              <span class="create-title">Apply theme</span>
+              <span class="create-meta">Brand color kits</span>
+            </button>
+          </div>
+          <input id="input-import-slides" type="file" accept=".json,.ppt,.pptx,.odp" hidden />
+          <input id="input-import-theme" type="file" accept=".json,.zip,.thm" hidden />
+        </div>
+
+        <div class="panel recent-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Recent work</h2>
+              <p class="panel-subtitle">Continue where your teams paused</p>
+            </div>
+            <a class="panel-link" href="./project.html">View all activity</a>
+          </div>
+          <div class="recent-table" id="recent-list">
+            <a class="recent-row" href="./index.html?open=q3-report" data-title="Q3 Report">
+              <div class="recent-primary">
+                <span class="recent-name">Q3 Report</span>
+                <span class="recent-meta">Presentation • Sep 18, 2025</span>
               </div>
+              <span class="recent-owner">Strategy Office</span>
+              <span class="recent-status">In review</span>
             </a>
-            <a class="file-card" href="./index.html?open=all-hands" data-title="Team All-Hands">
-              <div class="file-card-content">
-                <div class="file-name">Team All-Hands</div>
-                <div class="file-date">Oct 2, 2025</div>
+            <a class="recent-row" href="./index.html?open=all-hands" data-title="Team All-Hands">
+              <div class="recent-primary">
+                <span class="recent-name">Team All-Hands</span>
+                <span class="recent-meta">Presentation • Oct 2, 2025</span>
               </div>
+              <span class="recent-owner">Digital PMO</span>
+              <span class="recent-status">Ready</span>
             </a>
-            <a class="file-card" href="./index.html?open=roadmap" data-title="Product Roadmap">
-              <div class="file-card-content">
-                <div class="file-name">Product Roadmap</div>
-                <div class="file-date">Oct 31, 2025</div>
+            <a class="recent-row" href="./index.html?open=roadmap" data-title="Product Roadmap">
+              <div class="recent-primary">
+                <span class="recent-name">Product Roadmap</span>
+                <span class="recent-meta">Presentation • Oct 31, 2025</span>
               </div>
+              <span class="recent-owner">Innovation Lab</span>
+              <span class="recent-status">Draft</span>
             </a>
-            <a class="file-card" href="./index.html?open=proposal" data-title="Client Proposal">
-              <div class="file-card-content">
-                <div class="file-name">Client Proposal</div>
-                <div class="file-date">Nov 1, 2025</div>
+            <a class="recent-row" href="./index.html?open=proposal" data-title="Client Proposal">
+              <div class="recent-primary">
+                <span class="recent-name">Client Proposal</span>
+                <span class="recent-meta">Presentation • Nov 1, 2025</span>
               </div>
+              <span class="recent-owner">Advisory Group</span>
+              <span class="recent-status">Awaiting sign-off</span>
             </a>
           </div>
         </div>
@@ -152,190 +210,235 @@
   </div>
 
   <script>
-    // Derive name from query string and set greeting; also set avatar initial
     (function () {
       const params = new URLSearchParams(location.search);
       const nameParam = params.get('name') || '';
+      let storedName = '';
+      let storedEmail = '';
+      let storedInitials = '';
+
+      const computeInitials = (value) => {
+        if (!value) return '';
+        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+        if (parts.length) {
+          return parts.map((part) => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+        }
+        return value.slice(0, 2).toUpperCase();
+      };
+
+      try {
+        storedName = window.localStorage.getItem('adSlidesUserName') || '';
+        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
+        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
+      } catch (error) {
+        console.warn('Unable to access stored user profile', error);
+      }
+
       const now = new Date();
       const hour = now.getHours();
       const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
-      const name = nameParam.trim();
+      let name = (nameParam.trim()) || storedName.trim();
+      if (!name) {
+        const fallback = storedEmail.split('@')[0] || '';
+        name = fallback ? fallback.charAt(0).toUpperCase() + fallback.slice(1) : '';
+      }
+
+      if (nameParam) {
+        try {
+          window.localStorage.setItem('adSlidesUserName', name);
+        } catch (error) {
+          console.warn('Unable to persist user name', error);
+        }
+      }
+
       const greeting = document.getElementById('greeting');
       greeting.textContent = `Good ${part}${name ? ', ' + name + '!' : '!'}`;
 
-      // Avatar icon is now an SVG, so we don't need to set text content
-      // The avatar initial is handled by the SVG icon itself
-      
-      // Contextual Search with Categories
+      const avatar = document.querySelector('.sidebar-avatar');
+      if (avatar) {
+        let initials = storedInitials;
+        if (nameParam || !initials) {
+          initials = computeInitials(name) || computeInitials(storedEmail) || 'AD';
+          try {
+            window.localStorage.setItem('adSlidesUserInitials', initials);
+          } catch (error) {
+            console.warn('Unable to persist avatar initials', error);
+          }
+        }
+        avatar.textContent = initials || 'AD';
+      }
+
       const input = document.getElementById('home-search');
       const searchResults = document.getElementById('search-results');
       const searchFiles = document.getElementById('search-files');
       const searchPeople = document.getElementById('search-people');
-      const lists = [document.getElementById('recent-list'), document.getElementById('projects-list')];
-      
-      // Sample data for search (in a real app, this would come from an API)
+      const recentList = document.getElementById('recent-list');
+      const teamList = document.getElementById('projects-list');
+
       const searchData = {
         files: [
           { title: 'Q3 Report', type: 'Presentation', date: 'Sep 18, 2025', link: './index.html?open=q3-report' },
           { title: 'Team All-Hands', type: 'Presentation', date: 'Oct 2, 2025', link: './index.html?open=all-hands' },
           { title: 'Product Roadmap', type: 'Presentation', date: 'Oct 31, 2025', link: './index.html?open=roadmap' },
-          { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' },
-          { title: 'Neptune Migration', type: 'Project', date: 'Oct 15, 2025', link: './projects.html' },
-          { title: 'SaaS Analytics', type: 'Project', date: 'Oct 20, 2025', link: './projects.html' },
-          { title: 'Slides Editor', type: 'Project', date: 'Oct 25, 2025', link: './projects.html' },
-          { title: 'AI Assistant', type: 'Project', date: 'Nov 1, 2025', link: './projects.html' }
+          { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' }
         ],
         people: [
-          { name: 'John Doe', role: 'Software Engineer', group: 'Q3 Marketing Team', link: './groups.html' },
-          { name: 'Sarah Smith', role: 'Product Manager', group: 'Product Team', link: './groups.html' },
-          { name: 'Ahmed Al-Rashid', role: 'Design Lead', group: 'Design Team', link: './groups.html' },
-          { name: 'Maria Garcia', role: 'Data Analyst', group: 'Analytics Team', link: './groups.html' },
           { name: 'Q3 Marketing Team', type: 'Group', members: 12, link: './groups.html' },
-          { name: 'Product Team', type: 'Group', members: 8, link: './groups.html' },
-          { name: 'Design Team', type: 'Group', members: 6, link: './groups.html' },
-          { name: 'Analytics Team', type: 'Group', members: 10, link: './groups.html' }
+          { name: 'Digital PMO', type: 'Group', members: 9, link: './groups.html' },
+          { name: 'Innovation Lab', type: 'Group', members: 7, link: './groups.html' },
+          { name: 'Advisory Group', type: 'Group', members: 6, link: './groups.html' }
         ]
       };
-      
+
+      const searchCollections = [recentList, teamList];
+
       function renderSearchResults(query) {
         const q = (query || '').trim().toLowerCase();
-        
         if (!q) {
           searchResults.classList.add('hidden');
           return;
         }
-        
-        // Filter files
-        const matchingFiles = searchData.files.filter(item => 
-          item.title.toLowerCase().includes(q) || 
+
+        const matchingFiles = searchData.files.filter(item =>
+          item.title.toLowerCase().includes(q) ||
           item.type.toLowerCase().includes(q)
         );
-        
-        // Filter people/groups
-        const matchingPeople = searchData.people.filter(item => 
+
+        const matchingPeople = searchData.people.filter(item =>
           item.name.toLowerCase().includes(q) ||
-          (item.role && item.role.toLowerCase().includes(q)) ||
-          (item.group && item.group.toLowerCase().includes(q)) ||
           (item.type && item.type.toLowerCase().includes(q))
         );
-        
-        // Render files
-        if (matchingFiles.length > 0) {
-          searchFiles.innerHTML = matchingFiles.map(file => `
-            <a href="${file.link}" class="search-result-item">
-              <div class="search-result-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  ${file.type === 'Presentation' 
-                    ? '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>'
-                    : '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>'
-                  }
-                </svg>
-              </div>
-              <div class="search-result-content">
-                <div class="search-result-title">${file.title}</div>
-                <div class="search-result-meta">${file.type} • ${file.date}</div>
-              </div>
-            </a>
-          `).join('');
-        } else {
-          searchFiles.innerHTML = '<div class="search-result-empty">No files found</div>';
-        }
-        
-        // Render people/groups
-        if (matchingPeople.length > 0) {
-          searchPeople.innerHTML = matchingPeople.map(person => `
-            <a href="${person.link}" class="search-result-item">
-              <div class="search-result-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  ${person.type === 'Group'
-                    ? '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>'
-                    : '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>'
-                  }
-                </svg>
-              </div>
-              <div class="search-result-content">
-                <div class="search-result-title">${person.name}</div>
-                <div class="search-result-meta">${person.role || person.type}${person.group ? ' • ' + person.group : ''}${person.members ? ' • ' + person.members + ' members' : ''}</div>
-              </div>
-            </a>
-          `).join('');
-        } else {
-          searchPeople.innerHTML = '<div class="search-result-empty">No people or groups found</div>';
-        }
-        
-        // Show results if there are any matches
-        if (matchingFiles.length > 0 || matchingPeople.length > 0) {
-          searchResults.classList.remove('hidden');
-        } else {
-          searchResults.classList.add('hidden');
-        }
+
+        searchFiles.innerHTML = matchingFiles.length
+          ? matchingFiles.map(file => `
+              <a href="${file.link}" class="search-result-item">
+                <div class="search-result-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                  </svg>
+                </div>
+                <div class="search-result-content">
+                  <div class="search-result-title">${file.title}</div>
+                  <div class="search-result-meta">${file.type} • ${file.date}</div>
+                </div>
+              </a>
+            `).join('')
+          : '<div class="search-result-empty">No files found</div>';
+
+        searchPeople.innerHTML = matchingPeople.length
+          ? matchingPeople.map(person => `
+              <a href="${person.link}" class="search-result-item">
+                <div class="search-result-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                <div class="search-result-content">
+                  <div class="search-result-title">${person.name}</div>
+                  <div class="search-result-meta">${person.type}${person.members ? ' • ' + person.members + ' members' : ''}</div>
+                </div>
+              </a>
+            `).join('')
+          : '<div class="search-result-empty">No people or groups found</div>';
+
+        searchResults.classList.toggle('hidden', !matchingFiles.length && !matchingPeople.length);
       }
-      
-      function applyFilter(q) {
-        const query = (q || '').trim().toLowerCase();
-        lists.forEach(list => {
+
+      function applyFilter(query) {
+        const q = (query || '').trim().toLowerCase();
+        searchCollections.forEach(list => {
           if (!list) return;
-          const items = list.classList.contains('panel-grid') ? list.children : list.querySelectorAll('.card');
-          Array.from(items).forEach(card => {
-            const title = (card.getAttribute('data-title') || card.textContent || '').toLowerCase();
-            card.style.display = query && !title.includes(query) ? 'none' : '';
+          Array.from(list.children).forEach(el => {
+            const title = (el.getAttribute('data-title') || el.textContent || '').toLowerCase();
+            el.style.display = q && !title.includes(q) ? 'none' : '';
           });
         });
       }
-      
+
       if (input) {
         input.addEventListener('input', (e) => {
           const query = e.target.value;
           renderSearchResults(query);
           applyFilter(query);
         });
-        
+
         input.addEventListener('focus', (e) => {
           if (e.target.value.trim()) {
             renderSearchResults(e.target.value);
           }
         });
-        
-        // Hide results when clicking outside
+
         document.addEventListener('click', (e) => {
-          if (!e.target.closest('.search-wrap')) {
+          if (!e.target.closest('.search-inline')) {
             searchResults.classList.add('hidden');
           }
         });
       }
 
-      // Create tiles actions
       const btnBlank = document.getElementById('btn-blank');
       const btnAd = document.getElementById('btn-ad');
       const btnImport = document.getElementById('btn-import');
       const btnTheme = document.getElementById('btn-theme');
+      const heroUpload = document.getElementById('hero-upload');
       const inputSlides = document.getElementById('input-import-slides');
       const inputTheme = document.getElementById('input-import-theme');
 
-      btnBlank && btnBlank.addEventListener('click', () => {
+      btnBlank?.addEventListener('click', () => {
         window.location.href = './index.html';
       });
-      btnAd && btnAd.addEventListener('click', () => {
+
+      btnAd?.addEventListener('click', () => {
         window.location.href = './index.html?template=ad';
       });
-      btnImport && btnImport.addEventListener('click', () => inputSlides && inputSlides.click());
-      btnTheme && btnTheme.addEventListener('click', () => inputTheme && inputTheme.click());
+
+      const triggerSlides = () => inputSlides && inputSlides.click();
+      btnImport?.addEventListener('click', triggerSlides);
+      heroUpload?.addEventListener('click', triggerSlides);
+
+      btnTheme?.addEventListener('click', () => inputTheme && inputTheme.click());
 
       function showToast(msg) {
         const el = document.createElement('div');
-        el.textContent = msg; el.style.position='fixed'; el.style.bottom='16px'; el.style.left='50%'; el.style.transform='translateX(-50%)';
-        el.style.background='#111827'; el.style.color='#fff'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.style.zIndex='9999';
-        document.body.appendChild(el); setTimeout(()=>{ el.remove(); }, 1800);
+        el.textContent = msg;
+        el.style.position = 'fixed';
+        el.style.bottom = '16px';
+        el.style.left = '50%';
+        el.style.transform = 'translateX(-50%)';
+        el.style.background = '#111827';
+        el.style.color = '#fff';
+        el.style.padding = '10px 14px';
+        el.style.borderRadius = '10px';
+        el.style.zIndex = '9999';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1800);
       }
-      inputSlides && inputSlides.addEventListener('change', (e) => {
-        const f = e.target.files && e.target.files[0];
-        if (f) showToast('Imported: ' + f.name + ' (demo)');
+
+      inputSlides?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) showToast('Imported: ' + file.name + ' (demo)');
         e.target.value = '';
       });
-      inputTheme && inputTheme.addEventListener('change', (e) => {
-        const f = e.target.files && e.target.files[0];
-        if (f) showToast('Theme imported: ' + f.name + ' (demo)');
+
+      inputTheme?.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (file) showToast('Theme imported: ' + file.name + ' (demo)');
         e.target.value = '';
+      });
+
+      const notifButton = document.getElementById('btn-top-notifications');
+      const notifCount = document.getElementById('notif-count');
+      const notifPanel = document.getElementById('notification-panel');
+      notifButton?.addEventListener('click', () => {
+        notifPanel?.classList.toggle('hidden');
+        notifCount?.classList.add('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.home-top') && !notifPanel?.classList.contains('hidden')) {
+          notifPanel.classList.add('hidden');
+        }
       });
     })();
   </script>
