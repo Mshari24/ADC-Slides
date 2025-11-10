@@ -3,16 +3,17 @@
   const STORAGE_KEY = 'adcNotificationsReadAt';
 
   const notifications = [
-    { id: 'notif-001', title: 'John Doe shared a slide with you', meta: '2 minutes ago' },
-    { id: 'notif-002', title: 'System maintenance tonight at 11 PM', meta: '1 hour ago' },
-    { id: 'notif-003', title: 'Sarah Smith commented on your presentation', meta: '3 hours ago' },
-    { id: 'notif-004', title: 'You were added to the Q4 Planning group', meta: '5 hours ago' },
-    { id: 'notif-005', title: 'Your presentation was successfully exported', meta: 'Yesterday' },
-    { id: 'notif-006', title: 'ESG Council requested updated metrics', meta: '2 days ago' },
+    { id: 'notif-001', unread: true, title: 'John Doe shared a slide with you', meta: '2 minutes ago' },
+    { id: 'notif-002', unread: true, title: 'System maintenance tonight at 11 PM', meta: '1 hour ago' },
+    { id: 'notif-003', unread: true, title: 'Sarah Smith commented on your presentation', meta: '3 hours ago' },
+    { id: 'notif-004', unread: true, title: 'You were added to the Q4 Planning group', meta: '5 hours ago' },
+    { id: 'notif-005', unread: false, title: 'Your presentation was successfully exported', meta: 'Yesterday' },
+    { id: 'notif-006', unread: false, title: 'ESG Council requested updated metrics', meta: '2 days ago' },
   ];
 
-  const listTemplate = (item) => `
-    <li class="notification-list-item" data-notification-id="${item.id}">
+  const listTemplate = (item, isUnread) => `
+    <li class="notification-list-item${isUnread ? ' unread' : ' read'}" data-notification-id="${item.id}">
+      ${!isUnread ? '<span class="notification-checkmark" aria-label="Read">✓</span>' : ''}
       <span class="notification-list-item-title">${item.title}</span>
       <span class="notification-list-item-meta">${item.meta}</span>
     </li>
@@ -38,6 +39,13 @@
 
   const hasMarkedAllRead = () => Boolean(readState.timestamp);
 
+  const getPreviewItems = () => notifications.slice(0, PREVIEW_LIMIT);
+
+  const getUnreadCount = () => {
+    if (hasMarkedAllRead()) return 0;
+    return notifications.filter(item => item.unread === true).length;
+  };
+
   const hidePanel = (panel, button) => {
     if (!panel || panel.classList.contains('hidden')) return;
     panel.classList.add('hidden');
@@ -57,21 +65,41 @@
 
   const renderList = (listEl, emptyEl) => {
     if (!listEl) return [];
-    const items = hasMarkedAllRead() ? [] : notifications.slice(0, PREVIEW_LIMIT);
-    listEl.innerHTML = items.map(listTemplate).join('');
+    const items = getPreviewItems();
+    const allMarkedRead = hasMarkedAllRead();
+    listEl.innerHTML = items
+      .map(item => {
+        // If user clicked "Mark all read", show all as read (with checkmark)
+        // Otherwise, respect the item's unread property
+        const isUnread = allMarkedRead ? false : (item.unread === true);
+        return listTemplate(item, isUnread);
+      })
+      .join('');
     if (emptyEl) {
       emptyEl.classList.toggle('hidden', items.length > 0);
     }
     return items;
   };
 
-  const markAllRead = (badge, emptyEl, listEl) => {
-    readState.timestamp = String(Date.now());
-    const items = renderList(listEl, emptyEl);
-    if (badge) {
-      badge.classList.add('hidden');
-      badge.textContent = String(items.length);
+  const updateBadge = (badge, button) => {
+    if (!badge) return;
+    const unread = getUnreadCount();
+    const display = unread > 99 ? '99+' : String(unread);
+    const hasUnread = unread > 0;
+    badge.textContent = display;
+    badge.classList.toggle('hidden', !hasUnread);
+    badge.setAttribute('aria-hidden', hasUnread ? 'false' : 'true');
+    if (button) {
+      const baseLabel = 'Notifications';
+      button.setAttribute('aria-label', hasUnread ? `${baseLabel} (${display} unread)` : baseLabel);
     }
+  };
+
+  const markAllRead = (badge, emptyEl, listEl, button) => {
+    notifications.forEach(item => { item.unread = false; });
+    readState.timestamp = String(Date.now());
+    renderList(listEl, emptyEl);
+    updateBadge(badge, button);
   };
 
   const bindDropdown = () => {
@@ -86,12 +114,8 @@
     const seeAll = panel.querySelector('[data-notification-see-all]');
     const badge = document.getElementById('notif-count');
 
-    const items = renderList(listEl, emptyEl);
-    if (badge) {
-      const count = Math.min(items.length, 9);
-      badge.textContent = String(count);
-      badge.classList.toggle('hidden', count === 0);
-    }
+    renderList(listEl, emptyEl);
+    updateBadge(badge, button);
 
     const closePanel = () => hidePanel(panel, button);
 
@@ -101,7 +125,6 @@
       const isHidden = panel.classList.contains('hidden');
       if (isHidden) {
         showPanel(panel, button);
-        badge?.classList.add('hidden');
       } else {
         closePanel();
       }
@@ -127,8 +150,7 @@
     });
 
     markButton?.addEventListener('click', () => {
-      markAllRead(badge, emptyEl, listEl);
-      hidePanel(panel, button);
+      markAllRead(badge, emptyEl, listEl, button);
     });
 
     seeAll?.addEventListener('click', (event) => {
@@ -139,6 +161,9 @@
   };
 
   const init = () => {
+    if (hasMarkedAllRead()) {
+      notifications.forEach(item => { item.unread = false; });
+    }
     bindDropdown();
   };
 
