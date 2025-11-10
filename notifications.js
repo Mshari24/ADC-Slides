@@ -7,14 +7,14 @@
     { id: 'notif-002', unread: true, type: 'system', title: 'System maintenance tonight at 11 PM', meta: '1 hour ago' },
     { id: 'notif-003', unread: true, type: 'collaboration', title: 'Sarah Smith commented on your presentation', meta: '3 hours ago' },
     { id: 'notif-004', unread: true, type: 'collaboration', title: 'You were added to the Q4 Planning group', meta: '5 hours ago' },
-    { id: 'notif-005', unread: false, type: 'system', title: 'Your presentation was successfully exported', meta: 'Yesterday' },
-    { id: 'notif-006', unread: false, type: 'system', title: 'ESG Council requested updated metrics', meta: '2 days ago' },
-    { id: 'notif-007', unread: false, type: 'collaboration', title: 'Layla Haddad mentioned you in Innovation Review', meta: '3 days ago' },
-    { id: 'notif-008', unread: false, type: 'system', title: 'New templates available in Quick create', meta: 'Last week' },
+    { id: 'notif-005', unread: true, type: 'system', title: 'Your presentation was successfully exported', meta: 'Yesterday' },
+    { id: 'notif-006', unread: true, type: 'system', title: 'ESG Council requested updated metrics', meta: '2 days ago' },
+    { id: 'notif-007', unread: true, type: 'collaboration', title: 'Layla Haddad mentioned you in Innovation Review', meta: '3 days ago' },
+    { id: 'notif-008', unread: true, type: 'system', title: 'New templates available in Quick create', meta: 'Last week' },
   ];
 
   const listTemplate = (item, isUnread) => `
-    <li class="notification-list-item${isUnread ? ' unread' : ' read'}" data-notification-id="${item.id}">
+    <li class="notification-list-item${isUnread ? ' unread' : ' read'}" data-notification-id="${item.id}" role="button" tabindex="0">
       ${!isUnread ? '<span class="notification-checkmark" aria-label="Read">✓</span>' : ''}
       <span class="notification-list-item-title">${item.title}</span>
       <span class="notification-list-item-meta">${item.meta}</span>
@@ -32,7 +32,11 @@
     },
     set timestamp(value) {
       try {
-        window.localStorage.setItem(STORAGE_KEY, value);
+        if (!value) {
+          window.localStorage.removeItem(STORAGE_KEY);
+        } else {
+          window.localStorage.setItem(STORAGE_KEY, value);
+        }
       } catch (err) {
         console.warn('Unable to store notifications state', err);
       }
@@ -70,7 +74,7 @@
   };
 
   const pageItemTemplate = (item, isUnread) => `
-    <div class="notification-item${isUnread ? ' unread' : ''}" data-type="${item.type || 'collaboration'}" data-notification-id="${item.id}">
+    <div class="notification-item${isUnread ? ' unread' : ''}" data-type="${item.type || 'collaboration'}" data-notification-id="${item.id}" role="button" tabindex="0">
       <div class="notification-indicator"></div>
       <div class="notification-icon ${item.type || 'collaboration'}">
         ${getIconForType(item.type || 'collaboration')}
@@ -141,6 +145,13 @@
     readState.timestamp = String(Date.now());
     renderList(listEl, emptyEl);
     updateBadge(badge, button);
+  };
+
+  const markNotificationRead = (id) => {
+    const found = notifications.find(item => item.id === id);
+    if (found) {
+      found.unread = false;
+    }
   };
 
   const renderPageFeed = (listEl, emptyEl) => {
@@ -215,9 +226,24 @@
       markAllRead(badge, emptyEl, listEl, button);
     });
 
+    const handleListInteraction = (event) => {
+      const item = event.target.closest('.notification-list-item');
+      if (!item) return;
+      const notificationId = item.getAttribute('data-notification-id');
+      markNotificationRead(notificationId);
+      renderList(listEl, emptyEl);
+      updateBadge(badge, button);
+    };
+
+    listEl?.addEventListener('click', handleListInteraction);
+    listEl?.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      handleListInteraction(event);
+    });
+
     seeAll?.addEventListener('click', (event) => {
       event.preventDefault();
-      window.location.assign('./notifications.html');
       window.location.assign('./notification.html');
     });
   };
@@ -229,6 +255,10 @@
     const emptyEl = document.querySelector('[data-notifications-page-empty]');
     const filterButtons = document.querySelectorAll('.filter-btn');
     const markButton = document.querySelector('[data-page-mark-read]');
+    const dropdownList = document.querySelector('[data-notification-list]');
+    const dropdownEmpty = document.querySelector('[data-notification-empty]');
+    const headerBadge = document.getElementById('notif-count');
+    const headerButton = document.getElementById('btn-top-notifications');
     let currentFilter = 'all';
 
     const applyFilter = (filter) => {
@@ -268,28 +298,53 @@
     });
 
     markButton?.addEventListener('click', () => {
-      markAllRead();
+      markAllRead(headerBadge, dropdownEmpty, dropdownList, headerButton);
       rerender();
     });
 
+    const syncPreview = () => {
+      renderList(dropdownList, dropdownEmpty);
+      updateBadge(headerBadge, headerButton);
+    };
+
     listEl.addEventListener('click', (event) => {
-      const dismissButton = event.target.closest('[data-dismiss-notification]');
-      if (!dismissButton) return;
-      const parent = dismissButton.closest('.notification-item');
-      if (!parent) return;
-      const id = parent.getAttribute('data-notification-id');
-      parent.classList.add('removing');
-      setTimeout(() => {
-        dismissNotification(id);
-        rerender();
-      }, 200);
+      const itemRow = event.target.closest('.notification-item');
+      if (!itemRow) return;
+      const id = itemRow.getAttribute('data-notification-id');
+
+      if (event.target.closest('[data-dismiss-notification]')) {
+        itemRow.classList.add('removing');
+        setTimeout(() => {
+          dismissNotification(id);
+          rerender();
+          syncPreview();
+        }, 200);
+        return;
+      }
+
+      markNotificationRead(id);
+      rerender();
+      syncPreview();
+    });
+
+    listEl.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const itemRow = event.target.closest('.notification-item');
+      if (!itemRow) return;
+      event.preventDefault();
+      const id = itemRow.getAttribute('data-notification-id');
+      markNotificationRead(id);
+      rerender();
+      syncPreview();
     });
 
     rerender();
   };
 
   const init = () => {
-    if (hasMarkedAllRead()) {
+    if (notifications.some(item => item.unread === true)) {
+      readState.timestamp = null;
+    } else if (hasMarkedAllRead()) {
       notifications.forEach(item => { item.unread = false; });
     }
     bindDropdown();
