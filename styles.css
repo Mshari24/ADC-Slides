@@ -981,6 +981,20 @@ body {
   text-transform: uppercase;
 }
 
+.sb-item.logout-link {
+  margin-top: auto;
+  color: #e74c3c;
+}
+
+.sb-item.logout-link:hover {
+  color: #c53728;
+  background: rgba(231, 76, 60, 0.12);
+}
+
+.sb-item.logout-link .logout-icon {
+  color: currentColor;
+}
+
 /* Color system – Saudi Aramco theme */
 :root {
   --aramco-green: #006c35;
