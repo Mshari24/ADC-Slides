@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notification</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="home-body">
+  <div class="home-root">
+    <aside class="home-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-user">
+        <a class="sidebar-avatar-link" href="/profile/" title="User Profile &amp; Settings" aria-label="Open profile page">
+          <div class="sidebar-avatar" aria-hidden="true">AD</div>
+        </a>
+      </div>
+      <a class="sb-item" href="./home.html" title="Home">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <span class="sb-label">Home</span>
+      </a>
+      <a class="sb-item new-entry" href="./index.html" title="New">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <span class="sb-label">New</span>
+      </a>
+      <a class="sb-item" href="./groups.html" title="Groups">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <span class="sb-label">Groups</span>
+      </a>
+      <a class="sb-item active" href="./notification.html" title="Notification">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </div>
+        <span class="sb-label">Notification</span>
+      </a>
+      <a class="sb-item" href="./project.html" title="Projects">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <path d="M12 9v6"></path>
+            <path d="M9 12h6"></path>
+          </svg>
+        </div>
+        <span class="sb-label">Projects</span>
+      </a>
+      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
+        <div class="sb-icon">
+          <img src="./pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
+        </div>
+        <span class="sb-label">Outlook</span>
+      </a>
+      <a class="sb-item" href="https://teams.microsoft.com/" target="_blank" rel="noopener noreferrer" title="Microsoft Teams">
+        <div class="sb-icon">
+          <img src="./pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
+        </div>
+        <span class="sb-label">Teams</span>
+      </a>
+      <a class="sb-item logout-link" href="./login.html" title="Log out">
+        <div class="sb-icon logout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </div>
+        <span class="sb-label">Logout</span>
+      </a>
+    </aside>
+
+    <main class="home-main">
+      <header class="home-top">
+        <div class="top-brand">
+          <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="brand-logo" />
+          <div class="brand-meta">
+            <span class="brand-title">Notification Center</span>
+            <span class="brand-subtitle">Stay on top of every update across your slides</span>
+          </div>
+        </div>
+      </header>
+
+      <section class="home-panels">
+        <div class="panel notifications-panel">
+          <div class="panel-head">
+            <div>
+              <h2>All notifications</h2>
+              <p class="panel-subtitle">Workspace alerts, collaboration updates, and system notices</p>
+            </div>
+            <button class="notification-panel-action" type="button" data-page-mark-read>
+              Mark all read
+            </button>
+          </div>
+
+          <div class="notifications-controls">
+            <div class="filter-bar">
+              <button class="filter-btn active" data-filter="all" type="button">All</button>
+              <button class="filter-btn" data-filter="unread" type="button">Unread</button>
+              <button class="filter-btn" data-filter="system" type="button">System Alerts</button>
+              <button class="filter-btn" data-filter="collaboration" type="button">Collaboration</button>
+            </div>
+          </div>
+
+          <div class="notifications-list" data-notifications-page-list>
+            <div class="empty-state hidden" data-notifications-page-empty>
+              <div class="empty-state-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <h3 class="empty-state-title">All caught up!</h3>
+              <p class="empty-state-message">You have no new notifications right now.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./notifications.js"></script>
+  <script>
+    (function () {
+      const redirectToLogin = () => {
+        const loginUrl = new URL('./login.html', window.location.href);
+        loginUrl.searchParams.set('redirect', 'notification.html');
+        window.location.replace(loginUrl.toString());
+      };
+
+      const computeInitials = (value) => {
+        if (!value) return '';
+        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+        if (parts.length) {
+          return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+        }
+        return value.slice(0, 2).toUpperCase();
+      };
+
+      let storedName = '';
+      let storedEmail = '';
+      let storedInitials = '';
+
+      try {
+        storedName = window.localStorage.getItem('adSlidesUserName') || '';
+        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
+        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
+      } catch (error) {
+        console.warn('Unable to access stored session info', error);
+      }
+
+      if (!storedEmail) {
+        redirectToLogin();
+        return;
+      }
+
+      const avatar = document.querySelector('.sidebar-avatar');
+      if (avatar) {
+        const initials = storedInitials || computeInitials(storedName) || computeInitials(storedEmail) || 'AD';
+        avatar.textContent = initials;
+      }
+    })();
+  </script>
+</body>
+</html>
+
+
