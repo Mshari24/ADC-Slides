@@ -144,7 +144,7 @@
         }
 
         var redirectParam = params.get('redirect') || '';
-        var targetUrl = './profile/?name=' + encodeURIComponent(formattedName) + '&email=' + encodeURIComponent(emailValue);
+        var targetUrl = './home.html?name=' + encodeURIComponent(displayName);
         if (redirectParam) {
           if (/^https?:\/\//i.test(redirectParam)) {
             targetUrl = redirectParam;
