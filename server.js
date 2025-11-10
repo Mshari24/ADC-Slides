@@ -31,30 +31,47 @@ const server = http.createServer((req, res) => {
   const parsed = url.parse(req.url);
   let safePath = decodeURIComponent(parsed.pathname || '/');
   if (safePath.endsWith('/')) safePath += 'index.html';
+  safePath = safePath.replace(/^\/+/, '');
+  if (!safePath) safePath = 'index.html';
 
-  const filePath = path.join(root, safePath);
+  const normalizedPath = path.normalize(safePath);
+  const basePath = path.join(root, normalizedPath);
+  const candidates = [];
 
-  // Prevent path traversal
-  if (!filePath.startsWith(root)) {
-    return send(res, 403, 'Forbidden');
+  if (!path.extname(normalizedPath)) {
+    candidates.push(`${basePath}.html`);
   }
+  candidates.push(basePath);
 
-  fs.stat(filePath, (err, stat) => {
-    if (!err && stat.isFile()) {
-      const ext = path.extname(filePath).toLowerCase();
-      fs.readFile(filePath, (e, data) => {
-        if (e) return send(res, 500, 'Internal Server Error');
-        send(res, 200, data, { 'Content-Type': mime[ext] || 'application/octet-stream' });
-      });
-    } else {
-      // SPA fallback to index.html
+  const attemptServe = (index) => {
+    if (index >= candidates.length) {
       const indexPath = path.join(root, 'index.html');
-      fs.readFile(indexPath, (e, data) => {
+      return fs.readFile(indexPath, (e, data) => {
         if (e) return send(res, 404, 'Not Found');
         send(res, 200, data, { 'Content-Type': 'text/html; charset=utf-8' });
       });
     }
-  });
+
+    const candidate = candidates[index];
+
+    if (!candidate.startsWith(root)) {
+      return send(res, 403, 'Forbidden');
+    }
+
+    fs.stat(candidate, (err, stat) => {
+      if (!err && stat.isFile()) {
+        const ext = path.extname(candidate).toLowerCase();
+        fs.readFile(candidate, (e, data) => {
+          if (e) return send(res, 500, 'Internal Server Error');
+          send(res, 200, data, { 'Content-Type': mime[ext] || 'application/octet-stream' });
+        });
+      } else {
+        attemptServe(index + 1);
+      }
+    });
+  };
+
+  attemptServe(0);
 });
 
 const host = process.env.HOST || '127.0.0.1';
