@@ -155,8 +155,7 @@
 
     seeAll?.addEventListener('click', (event) => {
       event.preventDefault();
-      const targetPath = '/notifications';
-      window.location.assign(targetPath);
+      window.location.assign('./notifications.html');
     });
   };
 
