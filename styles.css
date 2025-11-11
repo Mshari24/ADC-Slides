@@ -4,7 +4,7 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   color: #111;
-  background: #000;
+  background: #f9fafb;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -202,9 +202,216 @@ body {
   background: #f3f4f6;
 }
 
+/* Secondary Bar */
+.secondary-bar {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.secondary-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #374151;
+}
+
+.hamburger-btn:hover {
+  background: #f3f4f6;
+}
+
+.hamburger-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.secondary-file {
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.pen-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #374151;
+}
+
+.pen-indicator svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pen-indicator span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.secondary-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.document-title {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  min-width: 100px;
+  text-align: center;
+}
+
+.document-title:focus {
+  outline: 2px solid #4f46e5;
+  background: #f0f3ff;
+}
+
+.secondary-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  color: #374151;
+}
+
+.icon-btn:hover {
+  background: #f3f4f6;
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .workspace { flex: 1; display: flex; min-height: 0; }
 .sidebar {
   width: 240px; background: #fff; border-right: 1px solid #e5e7eb; overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+
+/* Editor Sidebar */
+.editor-sidebar {
+  width: 80px;
+  background: #fff;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+  gap: 24px;
+}
+
+.sidebar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+  width: 64px;
+}
+
+.sidebar-item:hover {
+  background: #f3f4f6;
+}
+
+.sidebar-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+}
+
+.sidebar-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-label {
+  font-size: 11px;
+  color: #374151;
+  text-align: center;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Slide Navigation Bar */
+.slide-nav-bar {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 0 16px;
+}
+
+.slide-nav-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid #d1d5db;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.slide-nav-btn:hover {
+  border-color: #93c5fd;
+  background: #f0f9ff;
+}
+
+.slide-nav-btn.add-slide {
+  font-size: 24px;
+  color: #4f46e5;
+  border-color: #4f46e5;
+}
+
+.slide-nav-btn.add-slide:hover {
+  background: #eef2ff;
 }
 .slide-thumb {
   position: relative;
@@ -304,7 +511,47 @@ body {
 .handle-sw { left: -4px; bottom: -4px; }
 .handle-se { right: -4px; bottom: -4px; }
 
-.statusbar { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #fff; border-top: 1px solid #e5e7eb; }
+.statusbar { 
+  height: 34px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between;
+  padding: 0 12px; 
+  background: #fff; 
+  border-top: 1px solid #e5e7eb; 
+}
+
+.status-left {
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.status-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.status-center svg {
+  width: 16px;
+  height: 16px;
+}
+
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.status-right svg {
+  width: 16px;
+  height: 16px;
+}
 
 .present { position: fixed; inset: 0; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .present.hidden { display: none; }
