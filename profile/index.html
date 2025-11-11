@@ -23,15 +23,34 @@
         </div>
         <span class="sb-label">Home</span>
       </a>
-      <a class="sb-item new-entry" href="/index.html" title="New">
+      <div class="sb-item new-entry" role="button" tabindex="0" data-default-href="/index.html" aria-haspopup="true" aria-expanded="false">
         <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </div>
         <span class="sb-label">New</span>
-      </a>
+        <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
+          <span class="new-menu-heading">Start a deck</span>
+          <div class="new-menu-options">
+            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="/index.html">
+              <span class="new-menu-icon">＋</span>
+              <span class="new-menu-text">
+                <strong>Blank presentation</strong>
+                <small>Empty canvas, 16:9 layout</small>
+              </span>
+            </button>
+            <button type="button" class="new-menu-item" data-new-action="template" data-new-href="/index.html?template=ad">
+              <span class="new-menu-icon">✦</span>
+              <span class="new-menu-text">
+                <strong>AD template</strong>
+                <small>Aramco Digital branded masters</small>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
       <a class="sb-item" href="/groups.html" title="Groups">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -227,6 +246,111 @@
         window.location.replace(loginUrl.toString());
         return;
       }
+
+  const setupSidebarNewMenu = () => {
+    const entry = document.querySelector('.home-sidebar .new-entry');
+    if (!entry) return;
+    const menu = entry.querySelector('[data-new-menu]');
+    if (!menu) return;
+
+    const menuItems = Array.from(menu.querySelectorAll('[data-new-href]'));
+    const defaultHref = entry.dataset.defaultHref || menuItems[0]?.dataset.newHref || '/index.html';
+    let isOpen = false;
+
+    const handleDocumentClick = (event) => {
+      if (!entry.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    const setOpen = (state) => {
+      if (isOpen === state) return;
+      isOpen = state;
+      entry.dataset.open = state ? 'true' : 'false';
+      entry.setAttribute('aria-expanded', state ? 'true' : 'false');
+      menu.classList.toggle('tw-opacity-0', !state);
+      menu.classList.toggle('tw-opacity-100', state);
+      menu.classList.toggle('tw-pointer-events-none', !state);
+      menu.classList.toggle('tw-pointer-events-auto', state);
+
+      if (state) {
+        document.addEventListener('click', handleDocumentClick);
+      } else {
+        document.removeEventListener('click', handleDocumentClick);
+      }
+    };
+
+    const toggleMenu = () => setOpen(!isOpen);
+
+    entry.addEventListener('click', (event) => {
+      const actionTarget = event.target.closest('[data-new-href]');
+      if (actionTarget) {
+        return;
+      }
+      event.preventDefault();
+      setOpen(true);
+    });
+
+    entry.addEventListener('mouseenter', () => setOpen(true));
+
+    entry.addEventListener('mouseleave', () => {
+      if (isOpen) {
+        setOpen(false);
+      }
+    });
+
+    entry.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleMenu();
+      } else if (event.key === 'Escape' && isOpen) {
+        event.preventDefault();
+        setOpen(false);
+        entry.blur();
+      } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isOpen) {
+        event.preventDefault();
+        setOpen(true);
+        (menuItems[0] || entry).focus();
+      }
+    });
+
+    menu.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    menu.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && isOpen) {
+        event.preventDefault();
+        setOpen(false);
+        entry.focus();
+      }
+    });
+
+    entry.addEventListener('focusout', (event) => {
+      if (!entry.contains(event.relatedTarget)) {
+        setOpen(false);
+      }
+    });
+
+    menu.addEventListener('focusout', (event) => {
+      if (!menu.contains(event.relatedTarget)) {
+        setOpen(false);
+      }
+    });
+
+    menuItems.forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const target = button.dataset.newHref || defaultHref;
+        setOpen(false);
+        if (target) {
+          window.location.href = target;
+        }
+      });
+    });
+  };
+
+  setupSidebarNewMenu();
 
       const FALLBACK_PROFILE = {
         formattedName: storedFormattedName || 'Huda-Alzahrani',

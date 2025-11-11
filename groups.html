@@ -6,7 +6,7 @@
   <title>Groups</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
-<body class="home-body">
+<body class="home-body groups-page">
   <div class="home-root">
     <aside class="home-sidebar" aria-label="Primary navigation">
       <div class="sidebar-user">
@@ -23,15 +23,34 @@
         </div>
         <span class="sb-label">Home</span>
       </a>
-      <a class="sb-item new-entry" href="./index.html" title="New">
+      <div class="sb-item new-entry" role="button" tabindex="0" data-default-href="./index.html" aria-haspopup="true" aria-expanded="false">
         <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </div>
         <span class="sb-label">New</span>
-      </a>
+        <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
+          <span class="new-menu-heading">Start a deck</span>
+          <div class="new-menu-options">
+            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./index.html">
+              <span class="new-menu-icon">＋</span>
+              <span class="new-menu-text">
+                <strong>Blank presentation</strong>
+                <small>Empty canvas, 16:9 layout</small>
+              </span>
+            </button>
+            <button type="button" class="new-menu-item" data-new-action="template" data-new-href="./index.html?template=ad">
+              <span class="new-menu-icon">✦</span>
+              <span class="new-menu-text">
+                <strong>AD template</strong>
+                <small>Aramco Digital branded masters</small>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
       <a class="sb-item active" href="./groups.html" title="Groups">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -108,66 +127,62 @@
         </div>
       </header>
 
-      <section class="groups-shell">
-        <div class="panel group-create-panel">
-          <div class="panel-head">
-            <div>
-              <h2>Create new group</h2>
-              <p class="panel-subtitle">Spin up collaboration spaces in seconds</p>
-            </div>
+      <section class="groups-decks">
+        <div class="deck create-group-deck">
+          <div class="deck-header">
+            <h2 class="deck-title">Create Group</h2>
+            <p class="deck-subtitle">Start a new collaboration space</p>
           </div>
-          <div class="group-create-actions">
-            <button class="group-create-card" type="button" id="btn-create-group">
-              <span class="group-create-icon">＋</span>
-              <span class="group-create-title">Create blank group</span>
-              <span class="group-create-meta">Define name, description, and members</span>
-            </button>
-            <button class="group-create-card" type="button" id="btn-import-group">
-              <span class="group-create-icon">⇪</span>
-              <span class="group-create-title">Import roster</span>
-              <span class="group-create-meta">Upload CSV or connect Outlook group</span>
-            </button>
+          <div class="deck-content">
+            <div class="create-group-options">
+              <button class="create-option-card" type="button" id="btn-create-group">
+                <div class="option-icon">＋</div>
+                <div class="option-content">
+                  <h3>Create blank group</h3>
+                  <p>Define name, description, and members manually</p>
+                </div>
+              </button>
+            </div>
+            <div class="groups-list-section">
+              <div class="list-header">
+                <h3>Your Groups</h3>
+                <input id="group-search" type="search" placeholder="Search groups…" autocomplete="off" class="group-search-input" />
+              </div>
+              <div id="group-list" class="group-list"></div>
+            </div>
           </div>
         </div>
 
-        <div class="panel group-icon-panel">
-          <div class="panel-head">
-            <div>
-              <h2>Active groups</h2>
-              <p class="panel-subtitle">Tap a group icon to open conversation</p>
-            </div>
-          </div>
-          <div class="group-icon-grid" id="group-icon-grid"></div>
-        </div>
-
-        <div class="panel group-chat-panel hidden" id="group-chat-panel">
-          <header class="group-chat-header">
-            <div class="group-chat-title">
+        <div class="deck chat-deck hidden" id="group-chat-panel">
+          <div class="deck-header">
+            <div class="chat-header-info">
               <span class="group-pill" id="group-tag">Engineering</span>
-              <h2 id="group-title">Neptune Migration</h2>
-              <p id="group-description">Steering committee for platform modernisation.</p>
+              <h2 class="deck-title" id="group-title">Select a group</h2>
             </div>
-            <div class="group-chat-metrics">
-              <div class="group-metric">
-                <span class="metric-label">Owner</span>
-                <span class="metric-value" id="group-owner">noor.ahmed@adslab.com</span>
-              </div>
-              <div class="group-metric">
-                <span class="metric-label">Next review</span>
-                <span class="metric-value" id="group-review">Nov 24, 2025</span>
-              </div>
-              <div class="group-metric">
-                <span class="metric-label">Members</span>
-                <span class="metric-value" id="group-members">18</span>
+            <div class="chat-header-meta">
+              <div class="meta-item">
+                <span class="meta-label">Members</span>
+                <span class="meta-value" id="group-members">0</span>
               </div>
             </div>
-          </header>
-          <ul id="group-points" class="group-points"></ul>
-          <div class="chat-timeline" id="chat-timeline"></div>
-          <form id="chat-form" class="chat-composer">
-            <input id="chat-input" type="text" placeholder="Share an update with the group…" autocomplete="off" />
-            <button class="btn-primary" type="submit">Send</button>
-          </form>
+          </div>
+          <div class="deck-content">
+            <div class="chat-container">
+              <aside class="chat-members">
+                <h3 class="chat-members-title">Members</h3>
+                <ul class="chat-members-list" id="chat-members-list"></ul>
+              </aside>
+              <div class="chat-main">
+                <div class="chat-timeline" id="chat-timeline">
+                  <div class="chat-empty">Select a group from the left to start chatting.</div>
+                </div>
+                <form id="chat-form" class="chat-composer">
+                  <input id="chat-input" type="text" placeholder="Share an update with the group…" autocomplete="off" />
+                  <button class="btn-primary" type="submit">Send</button>
+                </form>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -227,21 +242,122 @@
         avatar.textContent = initials;
       }
 
-      const groupIconGrid = document.getElementById('group-icon-grid');
+      const setupSidebarNewMenu = () => {
+        const entry = document.querySelector('.home-sidebar .new-entry');
+        if (!entry) return;
+        const menu = entry.querySelector('[data-new-menu]');
+        if (!menu) return;
+
+        const menuItems = Array.from(menu.querySelectorAll('[data-new-href]'));
+        const defaultHref = entry.dataset.defaultHref || menuItems[0]?.dataset.newHref || './index.html';
+        let isOpen = false;
+
+        const handleDocumentClick = (event) => {
+          if (!entry.contains(event.target)) {
+            setOpen(false);
+          }
+        };
+
+        const setOpen = (state) => {
+          if (isOpen === state) return;
+          isOpen = state;
+          entry.dataset.open = state ? 'true' : 'false';
+          entry.setAttribute('aria-expanded', state ? 'true' : 'false');
+          menu.classList.toggle('tw-opacity-0', !state);
+          menu.classList.toggle('tw-opacity-100', state);
+          menu.classList.toggle('tw-pointer-events-none', !state);
+          menu.classList.toggle('tw-pointer-events-auto', state);
+
+          if (state) {
+            document.addEventListener('click', handleDocumentClick);
+          } else {
+            document.removeEventListener('click', handleDocumentClick);
+          }
+        };
+
+        const toggleMenu = () => setOpen(!isOpen);
+
+        entry.addEventListener('click', (event) => {
+          const actionTarget = event.target.closest('[data-new-href]');
+          if (actionTarget) {
+            return;
+          }
+          event.preventDefault();
+          setOpen(true);
+        });
+
+        entry.addEventListener('mouseenter', () => setOpen(true));
+
+        entry.addEventListener('mouseleave', () => {
+          if (isOpen) {
+            setOpen(false);
+          }
+        });
+
+        entry.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleMenu();
+          } else if (event.key === 'Escape' && isOpen) {
+            event.preventDefault();
+            setOpen(false);
+            entry.blur();
+          } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isOpen) {
+            event.preventDefault();
+            setOpen(true);
+            (menuItems[0] || entry).focus();
+          }
+        });
+
+        menu.addEventListener('click', (event) => {
+          event.stopPropagation();
+        });
+
+        menu.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && isOpen) {
+            event.preventDefault();
+            setOpen(false);
+            entry.focus();
+          }
+        });
+
+        entry.addEventListener('focusout', (event) => {
+          if (!entry.contains(event.relatedTarget)) {
+            setOpen(false);
+          }
+        });
+
+        menu.addEventListener('focusout', (event) => {
+          if (!menu.contains(event.relatedTarget)) {
+            setOpen(false);
+          }
+        });
+
+        menuItems.forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const target = button.dataset.newHref || defaultHref;
+            setOpen(false);
+            if (target) {
+              window.location.href = target;
+            }
+          });
+        });
+      };
+
+      setupSidebarNewMenu();
+
+      const groupList = document.getElementById('group-list');
+      const groupSearch = document.getElementById('group-search');
       const chatPanel = document.getElementById('group-chat-panel');
       const chatTimeline = document.getElementById('chat-timeline');
+      const chatMembersList = document.getElementById('chat-members-list');
       const chatForm = document.getElementById('chat-form');
       const chatInput = document.getElementById('chat-input');
-      const overviewTitle = document.getElementById('group-title');
-      const overviewTag = document.getElementById('group-tag');
-      const overviewOwner = document.getElementById('group-owner');
-      const overviewReview = document.getElementById('group-review');
-      const overviewMembers = document.getElementById('group-members');
-      const overviewDescription = document.getElementById('group-description');
-      const overviewPoints = document.getElementById('group-points');
+      const groupTitle = document.getElementById('group-title');
+      const groupTag = document.getElementById('group-tag');
+      const groupMembers = document.getElementById('group-members');
       const modal = document.getElementById('create-group-modal');
-      const btnCreateGroup = document.getElementById('btn-create-group');
-      const btnImportGroup = document.getElementById('btn-import-group');
       const btnCancel = document.getElementById('cg-cancel');
       const form = document.getElementById('create-group-form');
 
@@ -305,44 +421,108 @@
 
       let currentGroup = null;
 
-      const renderIcons = () => {
-        groupIconGrid.innerHTML = '';
-        groupsData.forEach(group => {
-          const initials = group.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-          const button = document.createElement('button');
-          button.className = 'group-icon-button';
-          if (currentGroup && group.id === currentGroup.id) button.classList.add('active');
-          button.dataset.id = group.id;
-          button.innerHTML = `
-            <span class="group-icon-avatar">${initials}</span>
-            <span class="group-icon-label">${group.name}</span>
-          `;
-          button.addEventListener('click', () => selectGroup(group.id));
-          groupIconGrid.appendChild(button);
-        });
+      const getInitials = (value = '') => {
+        const trimmed = value.trim();
+        if (!trimmed) return 'NA';
+        const parts = trimmed.split(/\s+/);
+        if (parts.length === 1) {
+          return parts[0].slice(0, 2).toUpperCase();
+        }
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
       };
 
-      const renderOverview = (group) => {
-        overviewTitle.textContent = group.name;
-        overviewTag.textContent = group.tag;
-        overviewOwner.textContent = group.owner;
-        overviewReview.textContent = group.review;
-        overviewMembers.textContent = group.members;
-        overviewDescription.textContent = group.description;
-        overviewPoints.innerHTML = group.points
-          .map(point => `<li><span class="point-bullet"></span><span>${point}</span></li>`)
-          .join('');
+
+      const renderGroupList = (query = '') => {
+        if (!groupList) return;
+        const q = query.trim().toLowerCase();
+        let matches = 0;
+        groupList.innerHTML = '';
+
+        groupsData.forEach(group => {
+          const matchesQuery =
+            !q ||
+            group.name.toLowerCase().includes(q) ||
+            (group.tag && group.tag.toLowerCase().includes(q));
+          if (!matchesQuery) {
+            return;
+          }
+          matches += 1;
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'group-list-item';
+          if (currentGroup && group.id === currentGroup.id) {
+            button.classList.add('is-active');
+          }
+          button.dataset.id = group.id;
+          const initials = group.name.split(' ').map(word => word.charAt(0)).join('').slice(0, 2).toUpperCase();
+          button.innerHTML = `
+            <span class="group-list-initials">${initials}</span>
+            <span class="group-list-copy">
+              <span class="group-list-name">${group.name}</span>
+              <span class="group-list-meta">${group.tag} • ${group.members} members</span>
+            </span>
+          `;
+          button.addEventListener('click', () => selectGroup(group.id));
+          groupList.appendChild(button);
+        });
+
+        if (!matches) {
+          groupList.innerHTML = '<div class="group-list-empty">No groups match your search. Try a different keyword.</div>';
+        }
       };
 
       const renderChat = (group) => {
         if (!group) {
-          chatPanel.classList.add('hidden');
+          chatPanel?.classList.add('hidden');
           return;
         }
 
-        chatPanel.classList.remove('hidden');
+        chatPanel?.classList.remove('hidden');
         chatTimeline.innerHTML = '';
+        chatMembersList.innerHTML = '';
 
+        // Update header
+        if (groupTitle) groupTitle.textContent = group.name;
+        if (groupTag) groupTag.textContent = group.tag;
+        if (groupMembers) groupMembers.textContent = group.members;
+
+        // Extract unique members from chat messages
+        const membersMap = new Map();
+        group.chat.forEach(entry => {
+          if (!membersMap.has(entry.author)) {
+            membersMap.set(entry.author, {
+              name: entry.author,
+              role: entry.role || '',
+              isSelf: entry.self || false
+            });
+          }
+        });
+
+        // Render member list
+        const sortedMembers = Array.from(membersMap.values()).sort((a, b) => {
+          if (a.isSelf) return -1;
+          if (b.isSelf) return 1;
+          return a.name.localeCompare(b.name);
+        });
+
+        if (sortedMembers.length) {
+          sortedMembers.forEach(member => {
+            const memberItem = document.createElement('li');
+            memberItem.className = 'chat-member-item' + (member.isSelf ? ' is-self' : '');
+            memberItem.innerHTML = `
+              <span class="chat-member-avatar">${getInitials(member.name)}</span>
+              <span class="chat-member-text">
+                <span class="chat-member-name">${member.name}</span>
+                ${member.role ? `<span class="chat-member-role">${member.role}</span>` : ''}
+              </span>
+            `;
+            chatMembersList.appendChild(memberItem);
+          });
+        } else {
+          chatMembersList.innerHTML = '<li class="chat-member-item is-empty">No contributors yet. Share the first update.</li>';
+        }
+
+        // Render chat messages
         if (!group.chat.length) {
           chatTimeline.innerHTML = '<div class="chat-empty">No messages yet. Start the conversation below.</div>';
           return;
@@ -352,12 +532,16 @@
           const message = document.createElement('div');
           message.className = 'chat-message' + (entry.self ? ' is-self' : '');
           message.innerHTML = `
-            <div class="chat-meta">
-              <span class="chat-author">${entry.author}</span>
-              ${entry.role ? `<span class="chat-role">${entry.role}</span>` : ''}
-              <span class="chat-time">${entry.time}</span>
+            <div class="chat-bubble">
+              <span class="chat-avatar">${getInitials(entry.author)}</span>
+              <div class="chat-content">
+                <div class="chat-meta">
+                  <span class="chat-author">${entry.author}</span>
+                  ${entry.role ? `<span class="chat-role">${entry.role}</span>` : ''}
+                </div>
+                <div class="chat-text">${entry.message}</div>
+              </div>
             </div>
-            <div class="chat-text">${entry.message}</div>
           `;
           chatTimeline.appendChild(message);
         });
@@ -369,13 +553,16 @@
         const found = groupsData.find(g => g.id === id);
         if (!found) return;
         currentGroup = found;
-        renderIcons();
-        renderOverview(found);
+        renderGroupList(groupSearch?.value || '');
         renderChat(found);
       };
 
-      renderIcons();
-      renderChat(null);
+      renderGroupList();
+      if (groupsData.length) {
+        selectGroup(groupsData[0].id);
+      } else {
+        chatPanel?.classList.add('hidden');
+      }
 
       chatForm?.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -387,19 +574,21 @@
         renderChat(currentGroup);
       });
 
+      groupSearch?.addEventListener('input', (event) => {
+        renderGroupList(event.target.value);
+      });
+
       const openModal = () => modal.classList.remove('hidden');
       const closeModal = () => {
         modal.classList.add('hidden');
         form.reset();
       };
 
+      const btnCreateGroup = document.getElementById('btn-create-group');
+
       btnCreateGroup?.addEventListener('click', openModal);
       btnCancel?.addEventListener('click', closeModal);
       modal.querySelector('.modal-backdrop')?.addEventListener('click', closeModal);
-
-      btnImportGroup?.addEventListener('click', () => {
-        showToast('Roster import coming soon (demo).');
-      });
 
       form?.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -423,6 +612,7 @@
         };
 
         groupsData.unshift(newGroup);
+        renderGroupList(groupSearch?.value || '');
         selectGroup(newGroup.id);
         closeModal();
         showToast(`Group "${name}" created`);
