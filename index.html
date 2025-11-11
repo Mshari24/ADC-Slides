@@ -106,6 +106,38 @@
           </div>
           <span class="sidebar-label">Text</span>
         </div>
+        <div id="text-options-panel" class="sidebar-panel hidden">
+          <div class="panel-view panel-view-options">
+            <button class="text-option-btn" data-option="heading">
+              <span class="text-option-label">Add a heading</span>
+            </button>
+            <button class="text-option-btn" data-option="subheading">
+              <span class="text-option-label">Add a subheading</span>
+            </button>
+            <button class="text-option-btn" data-option="body">
+              <span class="text-option-label">Add a little bit of body text</span>
+            </button>
+            <button class="text-option-btn" data-option="pagenumber">
+              <span class="text-option-label">Page number</span>
+            </button>
+          </div>
+          <div class="panel-view panel-view-page-number hidden">
+            <div class="panel-header">
+              <button class="panel-back-btn" id="page-number-back" aria-label="Back to text options">
+                <span aria-hidden="true">‹</span> Back
+              </button>
+              <span class="panel-title">Choose page number position</span>
+            </div>
+            <div class="page-number-positions">
+              <button class="position-btn" data-position="top-left">Top Left</button>
+              <button class="position-btn" data-position="top-center">Top Center</button>
+              <button class="position-btn" data-position="top-right">Top Right</button>
+              <button class="position-btn" data-position="bottom-left">Bottom Left</button>
+              <button class="position-btn" data-position="bottom-center">Bottom Center</button>
+              <button class="position-btn" data-position="bottom-right">Bottom Right</button>
+            </div>
+          </div>
+        </div>
         <div class="sidebar-item" title="AD">
           <div class="sidebar-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -146,6 +178,107 @@
       <!-- Main Content Area -->
       <section class="stage-wrap">
         <div id="stage" class="stage" tabindex="0"></div>
+        
+        <!-- Context Toolbar -->
+        <div id="context-toolbar" class="context-toolbar hidden">
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="btn-copy" title="Copy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+            <button class="toolbar-btn" id="btn-paste" title="Paste">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span>Paste</span>
+            </button>
+            <button class="toolbar-btn" id="btn-duplicate" title="Duplicate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Duplicate</span>
+            </button>
+          </div>
+          
+          <div class="toolbar-divider"></div>
+          
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="btn-delete" title="Delete">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Delete</span>
+            </button>
+            <button class="toolbar-btn" id="btn-lock" title="Lock">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <span>Lock</span>
+            </button>
+          </div>
+          
+          <div class="toolbar-divider"></div>
+          
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="btn-align" title="Align">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="10" x2="6" y2="10"></line>
+                <line x1="21" y1="6" x2="3" y2="6"></line>
+                <line x1="21" y1="14" x2="3" y2="14"></line>
+                <line x1="18" y1="18" x2="6" y2="18"></line>
+              </svg>
+              <span>Align</span>
+            </button>
+            <button class="toolbar-btn" id="btn-to-page" title="To Page">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              </svg>
+              <span>To Page</span>
+            </button>
+          </div>
+          
+          <div class="toolbar-divider"></div>
+          
+          <div class="toolbar-group">
+            <button class="toolbar-btn" id="btn-link" title="Link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              <span>Link</span>
+            </button>
+            <button class="toolbar-btn" id="btn-timing" title="Show Element Timing">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>Timing</span>
+            </button>
+            <button class="toolbar-btn" id="btn-comment" title="Comment">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Comment</span>
+            </button>
+            <button class="toolbar-btn" id="btn-alt-text" title="Alternative Text">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Alt Text</span>
+            </button>
+          </div>
+        </div>
       </section>
     </main>
 
