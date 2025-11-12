@@ -10,9 +10,10 @@
   <div class="home-root">
     <aside class="home-sidebar" aria-label="Primary navigation">
       <div class="sidebar-user">
-        <a class="sidebar-avatar-link" href="/profile/" title="User Profile &amp; Settings" aria-label="Open profile page">
+        <a class="sidebar-avatar-link" href="./profile/index.html" title="User Profile &amp; Settings" aria-label="Open profile page">
           <div class="sidebar-avatar" aria-hidden="true">MA</div>
         </a>
+        <span class="sidebar-username" data-sidebar-username>Your Name</span>
       </div>
       <a class="sb-item active home-entry" href="./home.html" title="Home">
         <div class="sb-icon">
@@ -51,17 +52,6 @@
           </div>
         </div>
       </div>
-      <a class="sb-item" href="./groups.html" title="Groups">
-        <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-        </div>
-        <span class="sb-label">Groups</span>
-      </a>
       <a class="sb-item" href="./project.html" title="Projects">
         <div class="sb-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -288,6 +278,12 @@
       const greeting = document.getElementById('greeting');
       greeting.textContent = `Good ${part}${name ? ', ' + name + '!' : '!'}`;
 
+      const sidebarNameEl = document.querySelector('[data-sidebar-username]');
+      if (sidebarNameEl) {
+        const resolvedSidebarName = name || (storedEmail.split('@')[0] || '').replace(/[\.\_\-]+/g, ' ');
+        sidebarNameEl.textContent = resolvedSidebarName ? resolvedSidebarName : 'Your Name';
+      }
+
       const avatar = document.querySelector('.sidebar-avatar');
       if (avatar) {
         let initials = storedInitials;
@@ -422,10 +418,10 @@
           { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' }
         ],
         people: [
-          { name: 'Q3 Marketing Team', type: 'Group', members: 12, link: './groups.html' },
-          { name: 'Digital PMO', type: 'Group', members: 9, link: './groups.html' },
-          { name: 'Innovation Lab', type: 'Group', members: 7, link: './groups.html' },
-          { name: 'Advisory Group', type: 'Group', members: 6, link: './groups.html' }
+          { name: 'Q3 Marketing Team', type: 'Chat', members: 12, link: './chat.html' },
+          { name: 'Digital PMO', type: 'Chat', members: 9, link: './chat.html' },
+          { name: 'Innovation Lab', type: 'Chat', members: 7, link: './chat.html' },
+          { name: 'Advisory Group', type: 'Chat', members: 6, link: './chat.html' }
         ]
       };
 

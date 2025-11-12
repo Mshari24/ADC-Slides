@@ -6,190 +6,124 @@
   <title>User Profile &amp; Settings</title>
   <link rel="stylesheet" href="../styles.css" />
 </head>
-<body class="home-body">
-  <div class="home-root">
-    <aside class="home-sidebar" aria-label="Primary navigation">
-      <div class="sidebar-user">
-        <a class="sidebar-avatar-link" href="/profile/" title="User Profile &amp; Settings" aria-label="Open profile page">
-          <div class="sidebar-avatar" aria-hidden="true">H</div>
-        </a>
+<body class="home-body profile-body">
+  <div class="profile-root">
+    <header class="profile-header">
+      <button id="btn-profile-back" class="profile-back-button" type="button" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Back</span>
+      </button>
+      <div class="profile-header-text">
+        <h1 class="profile-page-title">User Profile &amp; Settings</h1>
+        <p class="profile-page-subtitle">Manage your identity, security, and collaboration preferences.</p>
       </div>
-      <a class="sb-item home-entry" href="/home.html" title="Home">
-        <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-        </div>
-        <span class="sb-label">Home</span>
-      </a>
-      <div class="sb-item new-entry" role="button" tabindex="0" data-default-href="/index.html" aria-haspopup="true" aria-expanded="false">
-        <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </div>
-        <span class="sb-label">New</span>
-        <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
-          <span class="new-menu-heading">Start a deck</span>
-          <div class="new-menu-options">
-            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="/index.html">
-              <span class="new-menu-icon">＋</span>
-              <span class="new-menu-text">
-                <strong>Blank presentation</strong>
-                <small>Empty canvas, 16:9 layout</small>
-              </span>
-            </button>
-            <button type="button" class="new-menu-item" data-new-action="template" data-new-href="/index.html?template=ad">
-              <span class="new-menu-icon">✦</span>
-              <span class="new-menu-text">
-                <strong>AD template</strong>
-                <small>Aramco Digital branded masters</small>
-              </span>
-            </button>
-          </div>
-        </div>
+      <div class="profile-header-avatar">
+        <div class="profile-header-icon" id="profile-header-initial">H</div>
+        <span class="profile-header-name" id="profile-header-name">Huda-Alzahrani</span>
       </div>
-      <a class="sb-item" href="/groups.html" title="Groups">
-        <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-        </div>
-        <span class="sb-label">Groups</span>
-      </a>
-      <a class="sb-item" href="/project.html" title="Projects">
-        <div class="sb-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"></rect>
-            <rect x="14" y="3" width="7" height="7"></rect>
-            <rect x="14" y="14" width="7" height="7"></rect>
-            <rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-        </div>
-        <span class="sb-label">Projects</span>
-      </a>
-      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
-        <div class="sb-icon">
-          <img src="../pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
-        </div>
-        <span class="sb-label">Outlook</span>
-      </a>
-      <a class="sb-item" href="https://teams.microsoft.com/" target="_blank" rel="noopener noreferrer" title="Microsoft Teams">
-        <div class="sb-icon">
-          <img src="../pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
-        </div>
-        <span class="sb-label">Teams</span>
-      </a>
-    </aside>
+    </header>
 
-    <main class="home-main">
-      <header class="home-top">
-        <h1 class="greeting page-title">User Profile &amp; Settings</h1>
-        <div class="top-logo">
-          <img src="../pic/aramco-digital.png" alt="Aramco Digital" class="header-logo" />
-        </div>
-      </header>
-
-      <section class="home-middle">
-        <div class="profile-card identity-card">
-          <div class="identity-card-head">
-            <div class="identity-avatar-block">
-              <div class="profile-avatar-wrapper">
-                <img id="profile-avatar" class="profile-avatar-img" alt="Profile picture" />
-                <div class="profile-avatar-placeholder" id="profile-avatar-initial">H</div>
+    <main class="profile-main">
+      <section class="profile-section">
+        <div class="profile-grid">
+          <article class="profile-card identity-card">
+            <div class="identity-card-head">
+              <div class="identity-avatar-block">
+                <div class="profile-avatar-wrapper">
+                  <img id="profile-avatar" class="profile-avatar-img" alt="Profile picture" />
+                  <div class="profile-avatar-placeholder" id="profile-avatar-initial">H</div>
+                </div>
+                <button id="btn-avatar" class="btn-upload-avatar" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+                  Upload Photo
+                </button>
+                <input id="input-avatar" type="file" accept="image/*" style="display:none" />
               </div>
-              <button id="btn-avatar" class="btn-upload-avatar" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                Upload Photo
-              </button>
-              <input id="input-avatar" type="file" accept="image/*" style="display:none" />
-            </div>
-            <div class="identity-heading">
-              <h2 id="profile-name">Huda-Alzahrani</h2>
-              <p class="identity-subtitle" id="profile-email-label">huda.alzahrani@aramcodigital.com</p>
-            </div>
-          </div>
-          <div class="identity-core-grid">
-            <div class="identity-core-field">
-              <span class="identity-field-label">Employee ID</span>
-              <span class="identity-field-value" id="profile-employee-id">AD-18012</span>
-            </div>
-            <div class="identity-core-field">
-              <span class="identity-field-label">Department</span>
-              <span class="identity-field-value" id="profile-department">Digital Strategy Office</span>
-            </div>
-            <div class="identity-core-field">
-              <span class="identity-field-label">Job Title</span>
-              <span class="identity-field-value" id="profile-job-title">UX/UI Designer</span>
-            </div>
-          </div>
-          <form id="profile-form" class="identity-form" onsubmit="return false;">
-            <div class="identity-form-grid">
-              <label class="profile-form-item">
-                <span class="profile-label">Corporate Email</span>
-                <input id="email-address" type="email" value="huda.alzahrani@aramcodigital.com" class="profile-input readonly" readonly />
-              </label>
-              <label class="profile-form-item">
-                <span class="profile-label">Preferred Display Name</span>
-                <input id="display-name" type="text" value="Huda-Alzahrani" class="profile-input" />
-              </label>
-              <label class="profile-form-item">
-                <span class="profile-label">Contact Phone</span>
-                <input id="contact-phone" type="tel" value="+966 50 123 4567" class="profile-input" />
-              </label>
-            </div>
-            <div class="profile-actions">
-              <button id="btn-save" class="btn-save-profile" type="submit">Save Changes</button>
-            </div>
-          </form>
-        </div>
-        <div class="security-card account-security-card">
-          <div class="security-card-header">
-            <h2>Account &amp; Security</h2>
-            <p class="security-card-subtitle">Manage your credentials and communication settings.</p>
-          </div>
-          <div class="account-security-body">
-            <div class="account-security-section">
-              <h3 class="account-security-title">Security</h3>
-              <p class="account-security-text">Update your password regularly to keep your account secure.</p>
-              <button id="btn-change-pass" class="btn-change-password" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                </svg>
-                Change Password
-              </button>
-            </div>
-
-            <div class="account-security-section">
-              <h3 class="account-security-title">Preferences</h3>
-              <div class="security-switch-group">
-                <label class="security-toggle">
-                  <span class="security-toggle-label">Dark Mode</span>
-                  <input id="toggle-dark" type="checkbox" />
-                  <span class="security-toggle-slider" aria-hidden="true"></span>
-                </label>
-                <label class="security-toggle">
-                  <span class="security-toggle-label">Email Notifications</span>
-                  <input id="toggle-email" type="checkbox" checked />
-                  <span class="security-toggle-slider" aria-hidden="true"></span>
-                </label>
+              <div class="identity-heading">
+                <h2 id="profile-name">Huda-Alzahrani</h2>
+                <p class="identity-subtitle" id="profile-email-label">huda.alzahrani@aramcodigital.com</p>
               </div>
             </div>
-          </div>
+            <div class="identity-core-grid">
+              <div class="identity-core-field">
+                <span class="identity-field-label">Employee ID</span>
+                <span class="identity-field-value" id="profile-employee-id">AD-18012</span>
+              </div>
+              <div class="identity-core-field">
+                <span class="identity-field-label">Department</span>
+                <span class="identity-field-value" id="profile-department">Digital Strategy Office</span>
+              </div>
+              <div class="identity-core-field">
+                <span class="identity-field-label">Job Title</span>
+                <span class="identity-field-value" id="profile-job-title">UX/UI Designer</span>
+              </div>
+            </div>
+            <form id="profile-form" class="identity-form" onsubmit="return false;">
+              <div class="identity-form-grid">
+                <label class="profile-form-item">
+                  <span class="profile-label">Corporate Email</span>
+                  <input id="email-address" type="email" value="huda.alzahrani@aramcodigital.com" class="profile-input readonly" readonly />
+                </label>
+                <label class="profile-form-item">
+                  <span class="profile-label">Preferred Display Name</span>
+                  <input id="display-name" type="text" value="Huda-Alzahrani" class="profile-input" />
+                </label>
+                <label class="profile-form-item">
+                  <span class="profile-label">Contact Phone</span>
+                  <input id="contact-phone" type="tel" value="+966 50 123 4567" class="profile-input" />
+                </label>
+              </div>
+              <div class="profile-actions">
+                <button id="btn-save" class="btn-save-profile" type="submit">Save Changes</button>
+              </div>
+            </form>
+          </article>
+
+          <article class="security-card account-security-card">
+            <div class="security-card-header">
+              <h2>Account &amp; Security</h2>
+              <p class="security-card-subtitle">Manage your credentials and communication settings.</p>
+            </div>
+            <div class="account-security-body">
+              <div class="account-security-section">
+                <h3 class="account-security-title">Security</h3>
+                <p class="account-security-text">Update your password regularly to keep your account secure.</p>
+                <button id="btn-change-pass" class="btn-change-password" type="button">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                  </svg>
+                  Change Password
+                </button>
+              </div>
+
+              <div class="account-security-section">
+                <h3 class="account-security-title">Preferences</h3>
+                <div class="security-switch-group">
+                  <label class="security-toggle">
+                    <span class="security-toggle-label">Dark Mode</span>
+                    <input id="toggle-dark" type="checkbox" />
+                    <span class="security-toggle-slider" aria-hidden="true"></span>
+                  </label>
+                  <label class="security-toggle">
+                    <span class="security-toggle-label">Email Notifications</span>
+                    <input id="toggle-email" type="checkbox" checked />
+                    <span class="security-toggle-slider" aria-hidden="true"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </article>
         </div>
       </section>
 
-      <div class="logout-section">
+      <section class="profile-logout">
         <button id="btn-logout" class="btn-logout" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
@@ -198,19 +132,34 @@
           </svg>
           Log Out
         </button>
-      </div>
+      </section>
     </main>
   </div>
 
   <script>
-    (function() {
+    (function () {
       const params = new URLSearchParams(location.search);
       const nameParam = (params.get('name') || '').trim();
       const emailParam = (params.get('email') || '').trim();
-      const sidebarAvatar = document.querySelector('.sidebar-avatar');
+
       const nameHeading = document.getElementById('profile-name');
-      const display = document.getElementById('display-name');
+      const displayInput = document.getElementById('display-name');
       const emailInput = document.getElementById('email-address');
+      const emailLabel = document.getElementById('profile-email-label');
+      const avatarInitial = document.getElementById('profile-avatar-initial');
+      const headerInitial = document.getElementById('profile-header-initial');
+      const headerName = document.getElementById('profile-header-name');
+      const profileAvatarImg = document.getElementById('profile-avatar');
+      const employeeIdField = document.getElementById('profile-employee-id');
+      const departmentField = document.getElementById('profile-department');
+      const jobTitleField = document.getElementById('profile-job-title');
+      const phoneField = document.getElementById('contact-phone');
+      const backButton = document.getElementById('btn-profile-back');
+
+      backButton && backButton.addEventListener('click', () => {
+        window.location.href = '../home.html';
+      });
+
       const TEMPLATE_TOKEN = '{{';
 
       function sanitizeTemplateValue(value, fallback = '') {
@@ -220,137 +169,34 @@
         return trimmed;
       }
 
+      function storeValue(key, value) {
+        if (!key || !value) return;
+        try {
+          window.localStorage.setItem(key, value);
+        } catch (error) {
+          console.warn('Unable to store key', key, error);
+        }
+      }
+
       function getStoredValue(key) {
         try {
           return window.localStorage.getItem(key) || '';
         } catch (error) {
-          console.warn('Unable to access localStorage key:', key, error);
+          console.warn('Unable to access storage key:', key, error);
           return '';
         }
       }
 
-      const emailLabel = document.getElementById('profile-email-label');
-      const avatarInitial = document.getElementById('profile-avatar-initial');
-      const employeeIdField = document.getElementById('profile-employee-id');
-      const departmentField = document.getElementById('profile-department');
-      const jobTitleField = document.getElementById('profile-job-title');
-      const phoneField = document.getElementById('contact-phone');
-
       const storedFormattedName = sanitizeTemplateValue(getStoredValue('adSlidesUserName'));
       const storedEmail = sanitizeTemplateValue(getStoredValue('adSlidesUserEmail'));
-      const storedInitial = sanitizeTemplateValue(getStoredValue('adSlidesUserInitials')) || (storedFormattedName ? storedFormattedName.charAt(0).toUpperCase() : '');
+      const storedInitial = sanitizeTemplateValue(getStoredValue('adSlidesUserInitials'));
 
-      if (!storedEmail) {
+      if (!storedEmail && !sanitizeTemplateValue(emailParam)) {
         const loginUrl = new URL('../login.html', window.location.href);
         loginUrl.searchParams.set('redirect', 'profile/');
         window.location.replace(loginUrl.toString());
         return;
       }
-
-  const setupSidebarNewMenu = () => {
-    const entry = document.querySelector('.home-sidebar .new-entry');
-    if (!entry) return;
-    const menu = entry.querySelector('[data-new-menu]');
-    if (!menu) return;
-
-    const menuItems = Array.from(menu.querySelectorAll('[data-new-href]'));
-    const defaultHref = entry.dataset.defaultHref || menuItems[0]?.dataset.newHref || '/index.html';
-    let isOpen = false;
-
-    const handleDocumentClick = (event) => {
-      if (!entry.contains(event.target)) {
-        setOpen(false);
-      }
-    };
-
-    const setOpen = (state) => {
-      if (isOpen === state) return;
-      isOpen = state;
-      entry.dataset.open = state ? 'true' : 'false';
-      entry.setAttribute('aria-expanded', state ? 'true' : 'false');
-      menu.classList.toggle('tw-opacity-0', !state);
-      menu.classList.toggle('tw-opacity-100', state);
-      menu.classList.toggle('tw-pointer-events-none', !state);
-      menu.classList.toggle('tw-pointer-events-auto', state);
-
-      if (state) {
-        document.addEventListener('click', handleDocumentClick);
-      } else {
-        document.removeEventListener('click', handleDocumentClick);
-      }
-    };
-
-    const toggleMenu = () => setOpen(!isOpen);
-
-    entry.addEventListener('click', (event) => {
-      const actionTarget = event.target.closest('[data-new-href]');
-      if (actionTarget) {
-        return;
-      }
-      event.preventDefault();
-      setOpen(true);
-    });
-
-    entry.addEventListener('mouseenter', () => setOpen(true));
-
-    entry.addEventListener('mouseleave', () => {
-      if (isOpen) {
-        setOpen(false);
-      }
-    });
-
-    entry.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        toggleMenu();
-      } else if (event.key === 'Escape' && isOpen) {
-        event.preventDefault();
-        setOpen(false);
-        entry.blur();
-      } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isOpen) {
-        event.preventDefault();
-        setOpen(true);
-        (menuItems[0] || entry).focus();
-      }
-    });
-
-    menu.addEventListener('click', (event) => {
-      event.stopPropagation();
-    });
-
-    menu.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && isOpen) {
-        event.preventDefault();
-        setOpen(false);
-        entry.focus();
-      }
-    });
-
-    entry.addEventListener('focusout', (event) => {
-      if (!entry.contains(event.relatedTarget)) {
-        setOpen(false);
-      }
-    });
-
-    menu.addEventListener('focusout', (event) => {
-      if (!menu.contains(event.relatedTarget)) {
-        setOpen(false);
-      }
-    });
-
-    menuItems.forEach((button) => {
-      button.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const target = button.dataset.newHref || defaultHref;
-        setOpen(false);
-        if (target) {
-          window.location.href = target;
-        }
-      });
-    });
-  };
-
-  setupSidebarNewMenu();
 
       const FALLBACK_PROFILE = {
         formattedName: storedFormattedName || 'Huda-Alzahrani',
@@ -359,54 +205,71 @@
         department: 'Digital Strategy Office',
         jobTitle: 'UX/UI Designer',
         contactPhone: '+966 50 123 4567',
-        initial: storedInitial || 'H'
+        initial: (storedInitial || storedFormattedName || 'H').trim().charAt(0).toUpperCase() || 'H'
       };
+
+      function deriveInitial(fromValue) {
+        const text = (fromValue || '').trim();
+        return text ? text.charAt(0).toUpperCase() : FALLBACK_PROFILE.initial;
+      }
 
       function formatDisplayNameFromEmail(email) {
         if (!email || !email.includes('@')) return '';
         const [local] = email.split('@');
-        const segments = local.split(/[\.\-_]/).filter(Boolean);
-        if (segments.length === 0) return '';
-        if (segments.length === 1) {
-          return segments[0].charAt(0).toUpperCase() + segments[0].slice(1);
-        }
-        const first = segments[0];
-        const last = segments[segments.length - 1];
-        return `${first.charAt(0).toUpperCase() + first.slice(1)}-${last.charAt(0).toUpperCase() + last.slice(1)}`;
+        return local
+          .split(/[\.\-_]/)
+          .filter(Boolean)
+          .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+          .join(' ');
       }
 
-      function applyIdentityName(raw) {
-        const text = (raw || '').trim();
+      function applyIdentityName(raw, persist = false) {
+        const sanitized = sanitizeTemplateValue(raw);
+        const finalName = sanitized || FALLBACK_PROFILE.formattedName;
         if (nameHeading) {
-          nameHeading.textContent = text || FALLBACK_PROFILE.formattedName;
+          nameHeading.textContent = finalName;
         }
-        if (sidebarAvatar) {
-          sidebarAvatar.textContent = text ? text.charAt(0).toUpperCase() : FALLBACK_PROFILE.initial;
+        if (headerName) {
+          headerName.textContent = finalName;
         }
+        const initial = deriveInitial(finalName);
         if (avatarInitial) {
-          avatarInitial.textContent = text ? text.charAt(0).toUpperCase() : FALLBACK_PROFILE.initial;
+          avatarInitial.textContent = initial;
+        }
+        if (headerInitial) {
+          headerInitial.textContent = initial;
+        }
+        if (persist && sanitized) {
+          storeValue('adSlidesUserName', finalName);
+          storeValue('adSlidesUserInitials', initial);
         }
       }
 
-      function applyEmailLabel(value) {
+      function applyEmailLabel(value, persist = false) {
+        const sanitized = sanitizeTemplateValue(value);
+        const finalEmail = sanitized || FALLBACK_PROFILE.email;
         if (emailLabel) {
-          emailLabel.textContent = value || FALLBACK_PROFILE.email;
+          emailLabel.textContent = finalEmail;
         }
+        if (emailInput) {
+          emailInput.value = finalEmail;
+        }
+        if (persist && sanitized) {
+          storeValue('adSlidesUserEmail', finalEmail);
+        }
+        return finalEmail;
       }
 
       function seedFromParams(replaceExisting = false) {
-        const existingEmail = emailInput ? sanitizeTemplateValue(emailInput.value) : '';
-        const finalEmail =
+        const preferredEmail =
           sanitizeTemplateValue(emailParam) ||
+          sanitizeTemplateValue(emailInput?.value) ||
           storedEmail ||
-          existingEmail ||
           FALLBACK_PROFILE.email;
-        if (emailInput && (!emailInput.value || replaceExisting)) {
-          emailInput.value = finalEmail || '';
-        }
 
-        const existingDisplay =
-          display && display.value && !replaceExisting ? sanitizeTemplateValue(display.value) : '';
+        const finalEmail = applyEmailLabel(preferredEmail, true);
+
+        const existingDisplay = !replaceExisting && displayInput ? sanitizeTemplateValue(displayInput.value) : '';
         const initialDisplay =
           sanitizeTemplateValue(nameParam) ||
           storedFormattedName ||
@@ -414,63 +277,81 @@
           formatDisplayNameFromEmail(finalEmail) ||
           FALLBACK_PROFILE.formattedName;
 
-        if (display && (!display.value || replaceExisting)) {
-          display.value = initialDisplay;
+        if (displayInput && (replaceExisting || !displayInput.value)) {
+          displayInput.value = initialDisplay;
         }
 
-        applyIdentityName(initialDisplay);
-        applyEmailLabel(finalEmail);
+        applyIdentityName(initialDisplay, true);
 
-        if (employeeIdField && (!employeeIdField.textContent || replaceExisting)) {
+        if (employeeIdField && (replaceExisting || !employeeIdField.textContent)) {
           employeeIdField.textContent = FALLBACK_PROFILE.employeeId;
         }
-        if (departmentField && (!departmentField.textContent || replaceExisting)) {
+        if (departmentField && (replaceExisting || !departmentField.textContent)) {
           departmentField.textContent = FALLBACK_PROFILE.department;
         }
-        if (jobTitleField && (!jobTitleField.textContent || replaceExisting)) {
+        if (jobTitleField && (replaceExisting || !jobTitleField.textContent)) {
           jobTitleField.textContent = FALLBACK_PROFILE.jobTitle;
         }
-        if (phoneField && (!phoneField.value || replaceExisting)) {
+        if (phoneField && (replaceExisting || !phoneField.value)) {
           phoneField.value = FALLBACK_PROFILE.contactPhone;
         }
       }
 
-      display && display.addEventListener('input', (e) => {
-        applyIdentityName(e.target.value);
+      displayInput && displayInput.addEventListener('input', (event) => {
+        applyIdentityName(event.target.value);
       });
 
-      // Profile interactions
       const inputAvatar = document.getElementById('input-avatar');
       const btnAvatar = document.getElementById('btn-avatar');
-      const imgAvatar = document.getElementById('profile-avatar');
       const avatarPlaceholder = document.querySelector('.profile-avatar-placeholder');
-      
+
       btnAvatar && btnAvatar.addEventListener('click', () => inputAvatar && inputAvatar.click());
-      inputAvatar && inputAvatar.addEventListener('change', (e) => {
-        const file = e.target.files && e.target.files[0];
+      inputAvatar && inputAvatar.addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          imgAvatar.src = reader.result;
-          if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+          if (profileAvatarImg) {
+            profileAvatarImg.src = reader.result;
+          }
+          if (avatarPlaceholder) {
+            avatarPlaceholder.style.display = 'none';
+          }
         };
         reader.readAsDataURL(file);
-        e.target.value = '';
+        event.target.value = '';
       });
 
+      function showToast(message, duration = 1500) {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.position = 'fixed';
+        toast.style.bottom = '24px';
+        toast.style.left = '50%';
+        toast.style.transform = 'translateX(-50%)';
+        toast.style.background = 'var(--primary, #005b49)';
+        toast.style.color = '#ffffff';
+        toast.style.padding = '10px 16px';
+        toast.style.borderRadius = '12px';
+        toast.style.boxShadow = '0 16px 36px rgba(15, 44, 103, 0.28)';
+        toast.style.fontWeight = '600';
+        toast.style.zIndex = '9999';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), duration);
+      }
+
       const form = document.getElementById('profile-form');
-      form && form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const msg = document.createElement('div');
-        msg.textContent = 'Saved';
-        msg.style.position='fixed'; msg.style.bottom='16px'; msg.style.left='50%'; msg.style.transform='translateX(-50%)';
-        msg.style.background='var(--primary)'; msg.style.color='#fff'; msg.style.padding='10px 14px'; msg.style.borderRadius='10px'; msg.style.zIndex='9999';
-        document.body.appendChild(msg); setTimeout(()=>msg.remove(), 1500);
-        if (display && display.value) {
-          applyIdentityName(display.value);
+      form && form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        showToast('Saved');
+        if (displayInput) {
+          applyIdentityName(displayInput.value, true);
         }
         if (emailInput) {
-          applyEmailLabel(sanitizeTemplateValue(emailInput.value));
+          applyEmailLabel(emailInput.value, true);
+        }
+        if (phoneField) {
+          storeValue('adSlidesUserPhone', sanitizeTemplateValue(phoneField.value));
         }
       });
 
@@ -479,6 +360,7 @@
           const response = await fetch('/api/session/profile', { credentials: 'include' });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const data = await response.json();
+          if (!data) return;
 
           const {
             email,
@@ -490,30 +372,25 @@
             phone,
             displayName,
             avatarUrl
-          } = data || {};
+          } = data;
 
           const resolvedEmail =
             sanitizeTemplateValue(email) ||
             sanitizeTemplateValue(emailInput?.value) ||
             FALLBACK_PROFILE.email;
-          if (emailInput) {
-            emailInput.value = resolvedEmail;
-          }
-          applyEmailLabel(resolvedEmail);
+          applyEmailLabel(resolvedEmail, true);
 
           const resolvedDisplay =
             sanitizeTemplateValue(displayName) ||
-            [sanitizeTemplateValue(firstName), sanitizeTemplateValue(lastName)]
-              .filter(Boolean)
-              .join('-') ||
+            [sanitizeTemplateValue(firstName), sanitizeTemplateValue(lastName)].filter(Boolean).join(' ') ||
             formatDisplayNameFromEmail(resolvedEmail) ||
-            sanitizeTemplateValue(display?.value) ||
+            sanitizeTemplateValue(displayInput?.value) ||
             FALLBACK_PROFILE.formattedName;
 
-          if (display) {
-            display.value = resolvedDisplay;
+          if (displayInput) {
+            displayInput.value = resolvedDisplay;
           }
-          applyIdentityName(resolvedDisplay);
+          applyIdentityName(resolvedDisplay, true);
 
           if (employeeIdField) {
             employeeIdField.textContent = sanitizeTemplateValue(employeeId) || FALLBACK_PROFILE.employeeId;
@@ -528,9 +405,11 @@
             phoneField.value = sanitizeTemplateValue(phone) || FALLBACK_PROFILE.contactPhone;
           }
 
-          if (imgAvatar && avatarUrl) {
-            imgAvatar.src = avatarUrl;
-            if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+          if (profileAvatarImg && sanitizeTemplateValue(avatarUrl)) {
+            profileAvatarImg.src = avatarUrl;
+            if (avatarPlaceholder) {
+              avatarPlaceholder.style.display = 'none';
+            }
           }
         } catch (error) {
           console.warn('Failed to load authenticated profile, falling back to defaults.', error);
@@ -542,8 +421,7 @@
       seedFromParams();
       loadAuthenticatedProfile();
 
-      // Security modal: Change Password
-      const btnChange = document.getElementById('btn-change-pass');
+      const btnChangePass = document.getElementById('btn-change-pass');
       const modal = document.createElement('div');
       modal.className = 'modal hidden';
       modal.innerHTML = `
@@ -561,51 +439,53 @@
           </form>
         </div>`;
       document.body.appendChild(modal);
-      function openModal(){ modal.classList.remove('hidden'); }
-      function closeModal(){ modal.classList.add('hidden'); }
-      btnChange && btnChange.addEventListener('click', openModal);
-      modal.querySelector('#cp-cancel').addEventListener('click', closeModal);
-      modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
-      modal.querySelector('#cp-form').addEventListener('submit', (e)=>{
-        e.preventDefault();
-        const a = modal.querySelector('#cp-new');
-        const b = modal.querySelector('#cp-confirm');
-        if (a.value !== b.value) { alert('Passwords do not match'); return; }
-        closeModal();
-        const n = document.createElement('div'); n.textContent='Password updated';
-        n.style.position='fixed'; n.style.bottom='16px'; n.style.left='50%'; n.style.transform='translateX(-50%)';
-        n.style.background='var(--primary)'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='10px'; n.style.zIndex='9999';
-        document.body.appendChild(n); setTimeout(()=>n.remove(),1500);
+
+      const closePasswordModal = () => modal.classList.add('hidden');
+      const openPasswordModal = () => modal.classList.remove('hidden');
+
+      btnChangePass && btnChangePass.addEventListener('click', openPasswordModal);
+      modal.querySelector('#cp-cancel').addEventListener('click', closePasswordModal);
+      modal.querySelector('.modal-backdrop').addEventListener('click', closePasswordModal);
+      modal.querySelector('#cp-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const newPassword = modal.querySelector('#cp-new');
+        const confirmPassword = modal.querySelector('#cp-confirm');
+        if (newPassword.value !== confirmPassword.value) {
+          alert('Passwords do not match');
+          return;
+        }
+        closePasswordModal();
+        showToast('Password updated');
       });
 
-      // Dark Mode toggle
-      const tDark = document.getElementById('toggle-dark');
-      const saved = localStorage.getItem('darkMode') === 'true';
-      if (saved) document.body.classList.add('dark-mode');
-      tDark && (tDark.checked = saved);
-      tDark && tDark.addEventListener('change', () => {
-        document.body.classList.toggle('dark-mode', tDark.checked);
-        localStorage.setItem('darkMode', String(tDark.checked));
-      });
+      const darkModeToggle = document.getElementById('toggle-dark');
+      const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+      if (savedDarkMode) {
+        document.body.classList.add('dark-mode');
+      }
+      if (darkModeToggle) {
+        darkModeToggle.checked = savedDarkMode;
+        darkModeToggle.addEventListener('change', () => {
+          document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+          localStorage.setItem('darkMode', String(darkModeToggle.checked));
+        });
+      }
 
-      // Language selector
       const emailToggle = document.getElementById('toggle-email');
       emailToggle && emailToggle.addEventListener('change', () => {
-        const n = document.createElement('div'); n.textContent = emailToggle.checked ? 'Email notifications enabled' : 'Email notifications disabled';
-        n.style.position='fixed'; n.style.bottom='16px'; n.style.left='50%'; n.style.transform='translateX(-50%)';
-        n.style.background='var(--primary)'; n.style.color='#fff'; n.style.padding='10px 14px'; n.style.borderRadius='10px'; n.style.zIndex='9999';
-        document.body.appendChild(n); setTimeout(()=>n.remove(), 1200);
+        showToast(emailToggle.checked ? 'Email notifications enabled' : 'Email notifications disabled', 1200);
+        localStorage.setItem('emailNotifications', String(emailToggle.checked));
       });
 
-      // Log Out
+      const btnLogout = document.getElementById('btn-logout');
       function clearSessionArtifacts() {
-        const keys = ['darkMode', 'language', 'authToken', 'sessionToken', 'emailNotifications'];
-        keys.forEach(key => {
+        const keys = ['darkMode', 'language', 'authToken', 'sessionToken', 'emailNotifications', 'adSlidesUserName', 'adSlidesUserInitials', 'adSlidesUserEmail'];
+        keys.forEach((key) => {
           try { localStorage.removeItem(key); } catch (_) {}
         });
         try { sessionStorage.clear(); } catch (_) {}
         try {
-          document.cookie.split(';').forEach(cookie => {
+          document.cookie.split(';').forEach((cookie) => {
             const eqPos = cookie.indexOf('=');
             const name = eqPos > -1 ? cookie.slice(0, eqPos) : cookie;
             document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
@@ -613,7 +493,6 @@
         } catch (_) {}
       }
 
-      const btnLogout = document.getElementById('btn-logout');
       btnLogout && btnLogout.addEventListener('click', () => {
         if (confirm('Are you sure you want to log out?')) {
           clearSessionArtifacts();
