@@ -1,3 +1,129 @@
+.text-control-bar {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  z-index: 1100;
+}
+
+.text-control-bar.hidden {
+  display: none;
+}
+
+.text-control-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-control-select {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  color: #0f172a;
+  background: #fff;
+}
+
+.text-control-number {
+  width: 64px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  padding: 0 10px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.text-color-picker {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.text-color-picker input[type="color"] {
+  opacity: 0;
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+}
+
+.color-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  background: var(--swatch-color, #111);
+}
+
+.text-control-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.text-control-btn span {
+  font-weight: 600;
+}
+
+#text-italic span {
+  font-style: italic;
+}
+
+#text-underline span {
+  text-decoration: underline;
+}
+
+.text-control-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.text-control-btn:hover {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.text-control-btn.active {
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.formatting-buttons .divider {
+  width: 1px;
+  height: 22px;
+  background: rgba(148, 163, 184, 0.45);
+  margin: 0 2px;
+}
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
@@ -503,8 +629,14 @@ body {
 .stage { position: relative; width: 1280px; height: 720px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; outline: none; }
 
 .el { position: absolute; border: 1px solid transparent; }
-.el.selected { border: 1px dashed #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.15); }
+.el.selected {
+  border: 2px solid #0033A0 !important;
+  border-radius: 10px;
+  box-shadow: 0 0 0 4px rgba(0, 51, 160, 0.12);
+}
 .el.text { padding: 4px 6px; white-space: pre-wrap; word-wrap: break-word; }
+.el.text.editing { outline: 2px solid rgba(37, 99, 235, 0.4); }
+.el.text.dragging { border-color: rgba(37, 99, 235, 0.4); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14); }
 .el.shape { background: #ffffff; }
 .resize-handle { position: absolute; width: 8px; height: 8px; background: #4f46e5; border-radius: 2px; }
 .handle-nw { left: -4px; top: -4px; }
@@ -512,6 +644,63 @@ body {
 .handle-sw { left: -4px; bottom: -4px; }
 .handle-se { right: -4px; bottom: -4px; }
 
+.drag-indicator {
+  position: absolute;
+  padding: 4px 8px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+  font-size: 12px;
+  border-radius: 6px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.35);
+  pointer-events: none;
+  transform: translate(-50%, -150%);
+  z-index: 1200;
+}
+.drag-indicator.hidden { display: none; }
+
+.text-control-icons { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); display: inline-flex; gap: 8px; pointer-events: auto; z-index: 1100; }
+
+.resize-handle.se {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  right: -7px;
+  bottom: -7px;
+  background: #2563eb;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  cursor: nwse-resize;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.text-move-handle {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: rgba(15, 23, 42, 0.9);
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, calc(100% + 12px));
+  cursor: grab;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+}
+.text-move-handle:active {
+  cursor: grabbing;
+}
+.text-move-handle svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .statusbar { 
   height: 34px; 
   display: flex; 
