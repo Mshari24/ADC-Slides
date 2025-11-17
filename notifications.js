@@ -1,57 +1,71 @@
 (() => {
   const PREVIEW_LIMIT = 5;
-  const STORAGE_KEY = 'adcNotificationsReadAt';
+  const storage = window.AccountStorage;
+  const fallbackStore = {
+    notifications: [],
+    notificationsReadAt: null
+  };
 
-  const notifications = [
-    { id: 'notif-001', unread: true, type: 'collaboration', title: 'John Doe shared a slide with you', meta: '2 minutes ago' },
-    { id: 'notif-002', unread: true, type: 'system', title: 'System maintenance tonight at 11 PM', meta: '1 hour ago' },
-    { id: 'notif-003', unread: true, type: 'collaboration', title: 'Sarah Smith commented on your presentation', meta: '3 hours ago' },
-    { id: 'notif-004', unread: true, type: 'collaboration', title: 'You were added to the Q4 Planning group', meta: '5 hours ago' },
-    { id: 'notif-005', unread: true, type: 'system', title: 'Your presentation was successfully exported', meta: 'Yesterday' },
-    { id: 'notif-006', unread: true, type: 'system', title: 'ESG Council requested updated metrics', meta: '2 days ago' },
-    { id: 'notif-007', unread: true, type: 'collaboration', title: 'Layla Haddad mentioned you in Innovation Review', meta: '3 days ago' },
-    { id: 'notif-008', unread: true, type: 'system', title: 'New templates available in Quick create', meta: 'Last week' },
-  ];
-
-  const listTemplate = (item, isUnread) => `
-    <li class="notification-list-item${isUnread ? ' unread' : ' read'}" data-notification-id="${item.id}" role="button" tabindex="0">
-      ${!isUnread ? '<span class="notification-checkmark" aria-label="Read">✓</span>' : ''}
-      <span class="notification-list-item-title">${item.title}</span>
-      <span class="notification-list-item-meta">${item.meta}</span>
-    </li>
-  `;
-
-  const readState = {
-    get timestamp() {
-      try {
-        return window.localStorage.getItem(STORAGE_KEY) || null;
-      } catch (err) {
-        console.warn('Unable to access notifications state', err);
-        return null;
+  const ensureAccountNotifications = () => {
+    if (!storage) return;
+    storage.updateCurrentAccount((account) => {
+      account.notifications = Array.isArray(account.notifications) ? account.notifications : [];
+      if (typeof account.notificationsReadAt === 'undefined') {
+        account.notificationsReadAt = null;
       }
-    },
-    set timestamp(value) {
-      try {
-        if (!value) {
-          window.localStorage.removeItem(STORAGE_KEY);
-        } else {
-          window.localStorage.setItem(STORAGE_KEY, value);
-        }
-      } catch (err) {
-        console.warn('Unable to store notifications state', err);
+    }, { createIfMissing: true });
+  };
+
+  const getNotificationList = () => {
+    if (storage) {
+      const account = storage.getCurrentAccount(true);
+      if (account && Array.isArray(account.notifications)) {
+        return account.notifications;
       }
+      return [];
+    }
+    return fallbackStore.notifications;
+  };
+
+  const updateNotifications = (mutator) => {
+    if (storage && storage.getCurrentAccount()) {
+      storage.updateCurrentAccount((account) => {
+        const list = Array.isArray(account.notifications) ? account.notifications : [];
+        mutator(list);
+        account.notifications = list;
+      });
+    } else {
+      mutator(fallbackStore.notifications);
     }
   };
 
-  const hasMarkedAllRead = () => Boolean(readState.timestamp);
+  const getReadTimestamp = () => {
+    if (storage) {
+      const account = storage.getCurrentAccount();
+      return account ? account.notificationsReadAt || null : null;
+    }
+    return fallbackStore.notificationsReadAt;
+  };
 
-  const getActiveNotifications = () => notifications.filter(item => item.dismissed !== true);
+  const setReadTimestamp = (value) => {
+    if (storage && storage.getCurrentAccount()) {
+      storage.updateCurrentAccount((account) => {
+        account.notificationsReadAt = value || null;
+      });
+    } else {
+      fallbackStore.notificationsReadAt = value || null;
+    }
+  };
+
+  const hasMarkedAllRead = () => Boolean(getReadTimestamp());
+
+  const getActiveNotifications = () => getNotificationList().filter(item => item && item.dismissed !== true);
 
   const getPreviewItems = () => getActiveNotifications().slice(0, PREVIEW_LIMIT);
 
   const getUnreadCount = () => {
     if (hasMarkedAllRead()) return 0;
-    return getActiveNotifications().filter(item => item.unread === true).length;
+    return getActiveNotifications().filter(item => item.unread !== false).length;
   };
 
   const getIconForType = (type) => {
@@ -141,17 +155,23 @@
   };
 
   const markAllRead = (badge, emptyEl, listEl, button) => {
-    getActiveNotifications().forEach(item => { item.unread = false; });
-    readState.timestamp = String(Date.now());
+    updateNotifications(list => {
+      list.forEach(item => {
+        if (item) item.unread = false;
+      });
+    });
+    setReadTimestamp(String(Date.now()));
     renderList(listEl, emptyEl);
     updateBadge(badge, button);
   };
 
   const markNotificationRead = (id) => {
-    const found = notifications.find(item => item.id === id);
-    if (found) {
-      found.unread = false;
-    }
+    updateNotifications(list => {
+      const found = list.find(item => item && item.id === id);
+      if (found) {
+        found.unread = false;
+      }
+    });
   };
 
   const renderPageFeed = (listEl, emptyEl) => {
@@ -168,11 +188,12 @@
   };
 
   const dismissNotification = (id) => {
-    const found = notifications.find(item => item.id === id);
-    if (found) {
-      found.unread = false;
-      found.dismissed = true;
-    }
+    updateNotifications(list => {
+      const index = list.findIndex(item => item && item.id === id);
+      if (index > -1) {
+        list.splice(index, 1);
+      }
+    });
   };
 
   const bindDropdown = () => {
@@ -342,10 +363,16 @@
   };
 
   const init = () => {
-    if (notifications.some(item => item.unread === true)) {
-      readState.timestamp = null;
+    ensureAccountNotifications();
+    const list = getNotificationList();
+    if (list.some(item => item && item.unread === true)) {
+      setReadTimestamp(null);
     } else if (hasMarkedAllRead()) {
-      notifications.forEach(item => { item.unread = false; });
+      updateNotifications(items => {
+        items.forEach(item => {
+          if (item) item.unread = false;
+        });
+      });
     }
     bindDropdown();
     bindPage();

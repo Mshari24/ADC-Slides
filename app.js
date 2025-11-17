@@ -1,28 +1,65 @@
 // Minimal Slides Clone: very basic deck with add/select slides and editable text boxes
 
 (function () {
+  const AccountStorage = window.AccountStorage;
   const LOCAL_STORAGE_KEY = 'adc_slides_autosave_v1';
-  function persistState() {
-    if (typeof localStorage === 'undefined') return;
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
-    } catch (err) {
-      console.warn('Failed to persist state', err);
+
+  const savePresentationSnapshot = (snapshot) => {
+    if (AccountStorage && AccountStorage.getCurrentAccount()) {
+      AccountStorage.updateCurrentAccount((account) => {
+        account.presentations = account.presentations || {};
+        account.presentations.autosave = snapshot;
+      });
+    } else if (typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(snapshot));
+      } catch (err) {
+        console.warn('Failed to persist state', err);
+      }
     }
-  }
-  function loadPersistedState() {
+  };
+
+  const loadPresentationSnapshot = () => {
+    if (AccountStorage) {
+      const account = AccountStorage.getCurrentAccount();
+      if (account && account.presentations && account.presentations.autosave) {
+        return account.presentations.autosave;
+      }
+    }
     if (typeof localStorage === 'undefined') return null;
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.slides)) return null;
+      if (parsed && AccountStorage && AccountStorage.getCurrentAccount()) {
+        AccountStorage.updateCurrentAccount((account) => {
+          account.presentations = account.presentations || {};
+          account.presentations.autosave = parsed;
+        });
+        try {
+          localStorage.removeItem(LOCAL_STORAGE_KEY);
+        } catch (err) {
+          console.warn('Unable to clear legacy presentation state', err);
+        }
+      }
       return parsed;
     } catch (err) {
       console.warn('Failed to load persisted state', err);
       return null;
     }
+  };
+
+  function persistState() {
+    const snapshot = JSON.parse(JSON.stringify(state));
+    savePresentationSnapshot(snapshot);
   }
+
+  function loadPersistedState() {
+    const persisted = loadPresentationSnapshot();
+    if (!persisted || !Array.isArray(persisted.slides)) return null;
+    return persisted;
+  }
+
   function normalizeState(st) {
     if (!st || !Array.isArray(st.slides) || st.slides.length === 0) {
       st.slides = [defaultSlide()];

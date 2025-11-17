@@ -115,51 +115,44 @@
     </main>
   </div>
 
-  <script src="./notifications.js"></script>
+  <script src="./storage.js"></script>
   <script>
     (function () {
-      const redirectToLogin = () => {
+      const storage = window.AccountStorage;
+      const account = storage?.getCurrentAccount();
+
+      if (!account) {
         const loginUrl = new URL('./login.html', window.location.href);
         loginUrl.searchParams.set('redirect', 'notification.html');
         window.location.replace(loginUrl.toString());
-      };
-
-      const computeInitials = (value) => {
-        if (!value) return '';
-        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
-        if (parts.length) {
-          return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
-        }
-        return value.slice(0, 2).toUpperCase();
-      };
-
-      let storedName = '';
-      let storedEmail = '';
-      let storedInitials = '';
-
-      try {
-        storedName = window.localStorage.getItem('adSlidesUserName') || '';
-        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
-        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
-      } catch (error) {
-        console.warn('Unable to access stored session info', error);
-      }
-
-      if (!storedEmail) {
-        redirectToLogin();
         return;
       }
 
+      const profile = account.profile || {};
+
+      const computeInitials = (value, fallbackEmail) => {
+        const text = (value || '').trim();
+        if (!text && fallbackEmail) {
+          return fallbackEmail.slice(0, 2).toUpperCase();
+        }
+        const parts = text.split(/\s+/).filter(Boolean);
+        if (!parts.length) {
+          return fallbackEmail ? fallbackEmail.slice(0, 2).toUpperCase() : 'AD';
+        }
+        return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+      };
+
+      const displayName = profile.displayName || profile.formattedName?.replace(/-/g, ' ') || 'User';
+      const initials = profile.initials || computeInitials(displayName, profile.displayEmail);
+
       const avatar = document.querySelector('.sidebar-avatar');
       if (avatar) {
-        const initials = storedInitials || computeInitials(storedName) || computeInitials(storedEmail) || 'AD';
-        avatar.textContent = initials;
+        avatar.textContent = initials || 'AD';
       }
 
       const sidebarNameEl = document.querySelector('[data-sidebar-username]');
       if (sidebarNameEl) {
-        const resolvedSidebarName = storedName || (storedEmail.split('@')[0] || '').replace(/[\.\_\-]+/g, ' ');
-        sidebarNameEl.textContent = resolvedSidebarName ? resolvedSidebarName : 'Your Name';
+        sidebarNameEl.textContent = displayName;
       }
     })();
   </script>

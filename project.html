@@ -91,8 +91,8 @@
         <div class="top-brand">
           <img src="./pic/aramco-digital.png" alt="Aramco Digital" class="brand-logo" />
           <div class="brand-meta">
-            <span class="brand-title">Projects</span>
-            <span class="brand-subtitle">Every deck you’ve created and saved in one place</span>
+            <span class="brand-title">PROJECTS</span>
+            <span class="brand-subtitle">EXECUTIVE PRESENTATION WORKSPACE</span>
           </div>
         </div>
         <div class="home-top-actions">
@@ -120,25 +120,10 @@
       <section class="home-hero">
         <div class="hero-card hero-single">
           <div class="hero-copy">
-            <span class="hero-eyebrow">Saved deck overview</span>
-            <h1 class="greeting">Your saved presentations</h1>
-            <p class="panel-subtitle">Browse, reopen, or share any deck you’ve built across teams.</p>
+            <span class="hero-eyebrow">Workspace overview</span>
+            <h1 class="greeting">PROJECTS</h1>
             <div class="hero-actions">
-              <a class="btn-primary new-highlight" href="./index.html?open=latest-draft">Resume latest deck</a>
-            </div>
-          </div>
-          <div class="hero-metrics">
-            <div class="metric">
-              <span class="metric-value">12</span>
-              <span class="metric-label">Total decks</span>
-            </div>
-            <div class="metric">
-              <span class="metric-value">5</span>
-              <span class="metric-label">Updated this week</span>
-            </div>
-            <div class="metric">
-              <span class="metric-value">3</span>
-              <span class="metric-label">Shared with execs</span>
+              <button id="btn-create-project" class="btn-primary new-highlight" type="button">Create project</button>
             </div>
           </div>
         </div>
@@ -148,10 +133,9 @@
         <div class="panel project-status-panel">
           <div class="panel-head">
             <div>
-              <h2>My saved presentations</h2>
-              <p class="panel-subtitle">Quick access to decks you created</p>
+              <h2>Projects</h2>
             </div>
-            <a class="panel-link" href="./index.html">Open Slides editor</a>
+            <a class="panel-link" href="./index.html">Create project</a>
           </div>
           <div class="recent-table" id="my-decks">
             <a class="recent-row" href="./index.html?open=neptune-migration" data-title="Neptune Migration">
@@ -198,22 +182,6 @@
             <a class="panel-link" href="./notification.html">See collaboration updates</a>
           </div>
           <div class="recent-table" id="shared-decks">
-            <a class="recent-row" href="./index.html?open=sales-enablement" data-title="Sales Enablement Kickoff">
-              <div class="recent-primary">
-                <span class="recent-name">Sales Enablement Kickoff</span>
-                <span class="recent-meta">Shared Nov 9, 2025</span>
-              </div>
-              <span class="recent-owner">Nora Al-Qahtani</span>
-              <span class="recent-status">Marketing Ops</span>
-            </a>
-            <a class="recent-row" href="./index.html?open=esg-update" data-title="ESG Council Update">
-              <div class="recent-primary">
-                <span class="recent-name">ESG Council Update</span>
-                <span class="recent-meta">Shared Nov 7, 2025</span>
-              </div>
-              <span class="recent-owner">Hassan Al-Sayed</span>
-              <span class="recent-status">Strategy Office</span>
-            </a>
             <a class="recent-row" href="./index.html?open=innovation-summit" data-title="Innovation Summit Preview">
               <div class="recent-primary">
                 <span class="recent-name">Innovation Summit Preview</span>
@@ -225,51 +193,134 @@
           </div>
         </div>
       </section>
+
+      <div id="project-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="project-modal-title">
+        <div class="modal-backdrop" data-project-modal-close></div>
+        <div class="modal-dialog modal-large">
+          <h3 id="project-modal-title">Create project</h3>
+          <form id="project-modal-form">
+            <label class="form-item">
+              <span>Project name</span>
+              <input id="project-name-input" type="text" placeholder="Enter project name" />
+            </label>
+            <label class="form-item">
+              <span>Description</span>
+              <textarea id="project-description-input" rows="4" placeholder="Describe the project"></textarea>
+            </label>
+            <div class="modal-actions">
+              <button type="button" class="btn" data-project-modal-close>Cancel</button>
+              <button type="submit" class="btn-primary">Save draft</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </main>
   </div>
 
+  <script src="./storage.js"></script>
   <script src="./notifications.js"></script>
   <script>
     (function () {
-      const computeInitials = (value) => {
-        if (!value) return '';
-        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
-        if (parts.length) {
-          return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
-        }
-        return value.slice(0, 2).toUpperCase();
-      };
+      const storage = window.AccountStorage;
+      const account = storage?.getCurrentAccount();
 
-      let storedName = '';
-      let storedEmail = '';
-      let storedInitials = '';
-
-      try {
-        storedName = window.localStorage.getItem('adSlidesUserName') || '';
-        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
-        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
-      } catch (error) {
-        console.warn('Unable to access stored session info', error);
-      }
-
-      if (!storedEmail) {
+      if (!account) {
         const loginUrl = new URL('./login.html', window.location.href);
         loginUrl.searchParams.set('redirect', 'project.html');
         window.location.replace(loginUrl.toString());
         return;
       }
 
+      const profile = account.profile || {};
+      const computeInitials = (value, fallbackEmail) => {
+        const text = (value || '').trim();
+        if (!text && fallbackEmail) {
+          return fallbackEmail.slice(0, 2).toUpperCase();
+        }
+        const parts = text.split(/\s+/).filter(Boolean);
+        if (!parts.length) {
+          return fallbackEmail ? fallbackEmail.slice(0, 2).toUpperCase() : 'AD';
+        }
+        return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+      };
+
+      const displayName = profile.displayName || profile.formattedName?.replace(/-/g, ' ') || 'User';
+      const initials = profile.initials || computeInitials(displayName, profile.displayEmail);
+
       const avatar = document.querySelector('.sidebar-avatar');
       if (avatar) {
-        const initials = storedInitials || computeInitials(storedName) || computeInitials(storedEmail) || 'AD';
-        avatar.textContent = initials;
+        avatar.textContent = initials || 'AD';
       }
 
       const sidebarNameEl = document.querySelector('[data-sidebar-username]');
       if (sidebarNameEl) {
-        const resolvedSidebarName = storedName || (storedEmail.split('@')[0] || '').replace(/[\.\_\-]+/g, ' ');
-        sidebarNameEl.textContent = resolvedSidebarName ? resolvedSidebarName : 'Your Name';
+        sidebarNameEl.textContent = displayName;
       }
+
+      const clearSessionArtifacts = () => {
+        if (!storage) return;
+        const currentEmail = storage.getCurrentAccountEmail?.();
+        if (currentEmail) {
+          storage.updateAccount(currentEmail, (acc) => {
+            acc.preferences = acc.preferences || {};
+            acc.preferences.rememberLogin = false;
+          });
+        }
+        storage.clearCurrentAccount?.();
+        storage.clearLegacyProfileKeys?.();
+        try { sessionStorage.clear(); } catch (_) {}
+        try {
+          document.cookie.split(';').forEach(cookie => {
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.slice(0, eqPos) : cookie;
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          });
+        } catch (_) {}
+      };
+
+      const logoutLink = document.querySelector('.home-sidebar .logout-link');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          const confirmed = window.confirm('Are you sure you want to log out?');
+          if (!confirmed) return;
+          clearSessionArtifacts();
+          window.location.href = './login.html';
+        });
+      }
+
+      const projectModal = document.getElementById('project-modal');
+      const projectModalForm = document.getElementById('project-modal-form');
+      const projectNameInput = document.getElementById('project-name-input');
+      const createProjectBtn = document.getElementById('btn-create-project');
+
+      const closeProjectModal = () => {
+        projectModal?.classList.add('hidden');
+      };
+
+      const openProjectModal = () => {
+        if (!projectModal) return;
+        projectModal.classList.remove('hidden');
+        setTimeout(() => projectNameInput?.focus(), 60);
+      };
+
+      createProjectBtn?.addEventListener('click', openProjectModal);
+
+      projectModal?.querySelectorAll('[data-project-modal-close]').forEach((el) => {
+        el.addEventListener('click', closeProjectModal);
+      });
+
+      projectModalForm?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        closeProjectModal();
+        window.alert('Project draft saved (demo only).');
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && projectModal && !projectModal.classList.contains('hidden')) {
+          closeProjectModal();
+        }
+      });
 
       const setupSidebarNewMenu = () => {
         const entry = document.querySelector('.home-sidebar .new-entry');

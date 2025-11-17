@@ -46,7 +46,7 @@
             <p class="error" id="password-error" aria-live="polite"></p>
           </div>
           <label class="remember-option">
-            <input type="checkbox" id="remember" name="remember" />
+            <input type="checkbox" id="remember" name="remember" checked />
             <span>Remember Me</span>
           </label>
           <button type="submit" class="login-button">Log in</button>
@@ -56,16 +56,46 @@
     </section>
   </div>
 
+  <script src="./storage.js"></script>
   <script>
   (function() {
+    const storage = window.AccountStorage;
     const form = document.getElementById('login-form');
     const email = document.getElementById('email');
     const password = document.getElementById('password');
     const toggle = document.getElementById('toggle-password');
+    const remember = document.getElementById('remember');
     const emailError = document.getElementById('email-error');
     const passwordError = document.getElementById('password-error');
     const formMessage = document.getElementById('form-message');
     const params = new URLSearchParams(window.location.search);
+
+    const resolveRedirect = (target) => {
+      if (!target) return './home.html';
+      if (/^https?:\/\//i.test(target)) {
+        return target;
+      }
+      let sanitized = target.trim();
+      if (sanitized.startsWith('/')) {
+        sanitized = sanitized.replace(/^\/+/g, '');
+      }
+      if (!sanitized.startsWith('./') && !sanitized.startsWith('../')) {
+        sanitized = './' + sanitized;
+      }
+      return sanitized || './home.html';
+    };
+
+    if (storage) {
+      const existing = storage.getCurrentAccount();
+      if (existing) {
+        if (existing.preferences && existing.preferences.rememberLogin === false) {
+          storage.clearCurrentAccount();
+        } else {
+          window.location.replace(resolveRedirect(params.get('redirect')));
+          return;
+        }
+      }
+    }
 
     function clearErrors() {
       emailError.textContent = '';
@@ -114,50 +144,45 @@
         formMessage.textContent = 'Logged in successfully (demo).';
         formMessage.className = 'form-message success';
 
-        var emailValue = email.value.trim();
-        var displayNameRaw = emailValue.split('@')[0] || '';
-        var displayNameParts = displayNameRaw.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
-        var displayName = displayNameParts.length
-          ? displayNameParts.map(function (part) {
-              return part.charAt(0).toUpperCase() + part.slice(1);
-            }).join(' ')
+        const emailValue = email.value.trim();
+        const localPart = emailValue.split('@')[0] || '';
+        const nameSegments = localPart.replace(/[\._-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+        const displayName = nameSegments.length
+          ? nameSegments.map(part => part.charAt(0).toUpperCase() + part.slice(1)).join(' ')
           : 'User';
-
-        var formattedName = displayNameParts.length
-          ? displayNameParts.map(function (part) {
-              return part.charAt(0).toUpperCase() + part.slice(1);
-            }).join('-')
+        const formattedName = nameSegments.length
+          ? nameSegments.map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('-')
           : displayName.replace(/\s+/g, '-') || 'User';
-
-        var initials = displayNameParts.length
-          ? displayNameParts.map(function (part) { return part.charAt(0).toUpperCase(); }).join('').slice(0, 2)
+        const initials = nameSegments.length
+          ? nameSegments.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2)
           : (emailValue ? emailValue.slice(0, 2).toUpperCase() : 'AD');
 
-        try {
-          window.localStorage.setItem('adSlidesUserName', displayName);
-          window.localStorage.setItem('adSlidesUserFormattedName', formattedName);
-          window.localStorage.setItem('adSlidesUserEmail', emailValue);
-          window.localStorage.setItem('adSlidesUserInitials', initials);
-          window.localStorage.setItem('adSlidesUserFirstInitial', formattedName.charAt(0).toUpperCase());
-        } catch (error) {
-          console.warn('Unable to persist user session info', error);
+        if (storage) {
+          storage.ensureAccount(emailValue, {
+            displayName,
+            formattedName,
+            displayEmail: emailValue,
+            initials,
+            firstInitial: initials.charAt(0) || displayName.charAt(0).toUpperCase()
+          });
+
+          storage.updateAccount(emailValue, (account) => {
+            account.profile.displayName = displayName;
+            account.profile.formattedName = formattedName;
+            account.profile.displayEmail = emailValue;
+            account.profile.email = account.profile.email || emailValue.toLowerCase();
+            account.profile.initials = initials;
+            account.profile.firstInitial = initials.charAt(0) || displayName.charAt(0).toUpperCase();
+            account.preferences = account.preferences || {};
+            account.preferences.rememberLogin = remember ? remember.checked : true;
+          });
+
+          storage.setCurrentAccount(emailValue);
+          storage.clearLegacyProfileKeys();
         }
 
-        var redirectParam = params.get('redirect') || '';
-        var targetUrl = './home.html?name=' + encodeURIComponent(displayName);
-        if (redirectParam) {
-          if (/^https?:\/\//i.test(redirectParam)) {
-            targetUrl = redirectParam;
-          } else {
-            var sanitized = redirectParam.replace(/^\//, '');
-            if (!sanitized.startsWith('./') && !sanitized.startsWith('../')) {
-              sanitized = './' + sanitized;
-            }
-            targetUrl = sanitized || './home.html';
-          }
-        }
-
-        window.location.href = targetUrl;
+        const redirectTarget = resolveRedirect(params.get('redirect'));
+        window.location.href = redirectTarget;
       }, 600);
     });
   })();

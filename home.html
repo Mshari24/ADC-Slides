@@ -142,10 +142,9 @@
       <section class="home-hero">
         <div class="hero-card hero-single">
           <div class="hero-copy">
-            <span class="hero-eyebrow">Active project</span>
             <h1 id="greeting" class="greeting">Neptune Migration</h1>
             <div class="hero-actions">
-              <a class="btn-primary new-highlight" href="./index.html?open=neptune-migration">Open deck</a>
+              <a class="btn-primary new-highlight" href="./index.html">Create</a>
             </div>
           </div>
         </div>
@@ -155,8 +154,7 @@
         <div class="panel create-panel" id="section-create">
           <div class="panel-head">
             <div>
-              <h2>Quick create</h2>
-              <p class="panel-subtitle">Start from Aramco-branded building blocks</p>
+              <h2>Create</h2>
             </div>
           </div>
           <div class="create-grid">
@@ -189,7 +187,6 @@
           <div class="panel-head">
             <div>
               <h2>Recent work</h2>
-              <p class="panel-subtitle">Continue where your teams paused</p>
             </div>
             <a class="panel-link" href="./project.html">View all activity</a>
           </div>
@@ -228,194 +225,197 @@
             </a>
           </div>
         </div>
+
+        <div class="panel shared-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Shared with you</h2>
+              <p class="panel-subtitle">Collaborative decks from your teams</p>
+            </div>
+            <a class="panel-link" href="./project.html">Open projects</a>
+          </div>
+          <div class="recent-table" id="shared-decks">
+            <a class="recent-row" href="./index.html?open=sales-enablement" data-title="Sales Enablement Kickoff">
+              <div class="recent-primary">
+                <span class="recent-name">Sales Enablement Kickoff</span>
+                <span class="recent-meta">Shared • Nov 9, 2025</span>
+              </div>
+              <span class="recent-owner">Nora Al-Qahtani</span>
+              <span class="recent-status">Marketing Ops</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=esg-update" data-title="ESG Council Update">
+              <div class="recent-primary">
+                <span class="recent-name">ESG Council Update</span>
+                <span class="recent-meta">Shared • Nov 7, 2025</span>
+              </div>
+              <span class="recent-owner">Hassan Al-Sayed</span>
+              <span class="recent-status">Strategy Office</span>
+            </a>
+            <a class="recent-row" href="./index.html?open=innovation-summit" data-title="Innovation Summit Preview">
+              <div class="recent-primary">
+                <span class="recent-name">Innovation Summit Preview</span>
+                <span class="recent-meta">Shared • Nov 5, 2025</span>
+              </div>
+              <span class="recent-owner">Layla Haddad</span>
+              <span class="recent-status">Innovation Lab</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="panel favorite-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Favorites</h2>
+              <p class="panel-subtitle">Pinned decks ready to open</p>
+            </div>
+          </div>
+          <div class="favorite-grid" id="favorite-list">
+            <a class="favorite-card" href="./index.html?open=executive-brief" data-title="Executive Brief">
+              <span class="favorite-icon">★</span>
+              <div class="favorite-details">
+                <span class="favorite-name">Executive Brief</span>
+                <span class="favorite-meta">Updated • Oct 28, 2025</span>
+              </div>
+              <span class="favorite-owner">Leadership Office</span>
+            </a>
+            <a class="favorite-card" href="./index.html?open=q4-outlook" data-title="Q4 Outlook">
+              <span class="favorite-icon">★</span>
+              <div class="favorite-details">
+                <span class="favorite-name">Q4 Outlook</span>
+                <span class="favorite-meta">Updated • Nov 5, 2025</span>
+              </div>
+              <span class="favorite-owner">Strategy Team</span>
+            </a>
+            <a class="favorite-card" href="./index.html?open=esg-digest" data-title="ESG Digest">
+              <span class="favorite-icon">★</span>
+              <div class="favorite-details">
+                <span class="favorite-name">ESG Digest</span>
+                <span class="favorite-meta">Updated • Oct 14, 2025</span>
+              </div>
+              <span class="favorite-owner">Sustainability Council</span>
+            </a>
+          </div>
+        </div>
       </section>
     </main>
   </div>
 
+  <script src="./storage.js"></script>
   <script src="./notifications.js"></script>
   <script>
     (function () {
-      const params = new URLSearchParams(location.search);
-      const nameParam = params.get('name') || '';
-      let storedName = '';
-      let storedEmail = '';
-      let storedInitials = '';
+      const storage = window.AccountStorage;
+      const params = new URLSearchParams(window.location.search);
+      const account = storage?.getCurrentAccount();
 
-      const computeInitials = (value) => {
-        if (!value) return '';
-        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
-        if (parts.length) {
-          return parts.map((part) => part.charAt(0).toUpperCase()).join('').slice(0, 2);
+      if (!account) {
+        window.location.href = './login.html?redirect=home.html';
+        return;
+      }
+
+      const profile = account.profile || {};
+      const nameParam = (params.get('name') || '').trim();
+
+      const computeInitials = (value, fallbackEmail) => {
+        const text = (value || '').trim();
+        if (!text && fallbackEmail) {
+          return fallbackEmail.slice(0, 2).toUpperCase();
         }
-        return value.slice(0, 2).toUpperCase();
+        const segments = text.split(/\s+/).filter(Boolean);
+        if (!segments.length) {
+          return fallbackEmail ? fallbackEmail.slice(0, 2).toUpperCase() : 'AD';
+        }
+        return segments.map(segment => segment.charAt(0).toUpperCase()).join('').slice(0, 2);
       };
 
-      try {
-        storedName = window.localStorage.getItem('adSlidesUserName') || '';
-        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
-        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
-      } catch (error) {
-        console.warn('Unable to access stored user profile', error);
-      }
-
-      const now = new Date();
-      const hour = now.getHours();
-      const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
-      let name = (nameParam.trim()) || storedName.trim();
-      if (!name) {
-        const fallback = storedEmail.split('@')[0] || '';
-        name = fallback ? fallback.charAt(0).toUpperCase() + fallback.slice(1) : '';
-      }
-
       if (nameParam) {
-        try {
-          window.localStorage.setItem('adSlidesUserName', name);
-        } catch (error) {
-          console.warn('Unable to persist user name', error);
-        }
+        storage.updateCurrentAccount((acc) => {
+          const initials = computeInitials(nameParam, acc.profile.displayEmail);
+          acc.profile.displayName = nameParam;
+          acc.profile.formattedName = nameParam.replace(/\s+/g, '-');
+          acc.profile.initials = initials;
+          acc.profile.firstInitial = initials.charAt(0) || 'A';
+        });
       }
 
-      const greeting = document.getElementById('greeting');
-      greeting.textContent = `Good ${part}${name ? ', ' + name + '!' : '!'}`;
+      const refreshedAccount = storage.getCurrentAccount();
+      const refreshedProfile = refreshedAccount?.profile || {};
+      const displayName = refreshedProfile.displayName || refreshedProfile.formattedName?.replace(/-/g, ' ') || 'User';
+      const initials = refreshedProfile.initials || computeInitials(displayName, refreshedProfile.displayEmail);
 
-      const sidebarNameEl = document.querySelector('[data-sidebar-username]');
-      if (sidebarNameEl) {
-        const resolvedSidebarName = name || (storedEmail.split('@')[0] || '').replace(/[\.\_\-]+/g, ' ');
-        sidebarNameEl.textContent = resolvedSidebarName ? resolvedSidebarName : 'Your Name';
+      const greetingEl = document.getElementById('greeting');
+      if (greetingEl) {
+        const now = new Date();
+        const hour = now.getHours();
+        const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
+        greetingEl.textContent = `Good ${part}, ${displayName}!`;
       }
 
       const avatar = document.querySelector('.sidebar-avatar');
       if (avatar) {
-        let initials = storedInitials;
-        if (nameParam || !initials) {
-          initials = computeInitials(name) || computeInitials(storedEmail) || 'AD';
-          try {
-            window.localStorage.setItem('adSlidesUserInitials', initials);
-          } catch (error) {
-            console.warn('Unable to persist avatar initials', error);
-          }
-        }
         avatar.textContent = initials || 'AD';
       }
 
-      const setupSidebarNewMenu = () => {
-        const entry = document.querySelector('.home-sidebar .new-entry');
-        if (!entry) return;
-        const menu = entry.querySelector('[data-new-menu]');
-        if (!menu) return;
+      const sidebarNameEl = document.querySelector('[data-sidebar-username]');
+      if (sidebarNameEl) {
+        sidebarNameEl.textContent = displayName;
+      }
 
-        const menuItems = Array.from(menu.querySelectorAll('[data-new-href]'));
-        const defaultHref = entry.dataset.defaultHref || menuItems[0]?.dataset.newHref || './index.html';
-        let isOpen = false;
-
-        const handleDocumentClick = (event) => {
-          if (!entry.contains(event.target)) {
-            setOpen(false);
-          }
-        };
-
-        const setOpen = (state) => {
-          if (isOpen === state) return;
-          isOpen = state;
-          entry.dataset.open = state ? 'true' : 'false';
-          entry.setAttribute('aria-expanded', state ? 'true' : 'false');
-          menu.classList.toggle('tw-opacity-0', !state);
-          menu.classList.toggle('tw-opacity-100', state);
-          menu.classList.toggle('tw-pointer-events-none', !state);
-          menu.classList.toggle('tw-pointer-events-auto', state);
-
-          if (state) {
-            document.addEventListener('click', handleDocumentClick);
-          } else {
-            document.removeEventListener('click', handleDocumentClick);
-          }
-        };
-
-        const toggleMenu = () => setOpen(!isOpen);
-
-        entry.addEventListener('click', (event) => {
-          const actionTarget = event.target.closest('[data-new-href]');
-          if (actionTarget) {
-            return;
-          }
-          event.preventDefault();
-          setOpen(true);
-        });
-
-        entry.addEventListener('mouseenter', () => setOpen(true));
-
-        entry.addEventListener('mouseleave', () => {
-          if (isOpen) {
-            setOpen(false);
-          }
-        });
-
-        entry.addEventListener('keydown', (event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            toggleMenu();
-          } else if (event.key === 'Escape' && isOpen) {
-            event.preventDefault();
-            setOpen(false);
-            entry.blur();
-          } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isOpen) {
-            event.preventDefault();
-            setOpen(true);
-            (menuItems[0] || entry).focus();
-          }
-        });
-
-        menu.addEventListener('click', (event) => {
-          event.stopPropagation();
-        });
-
-        menu.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape' && isOpen) {
-            event.preventDefault();
-            setOpen(false);
-            entry.focus();
-          }
-        });
-
-        entry.addEventListener('focusout', (event) => {
-          if (!entry.contains(event.relatedTarget)) {
-            setOpen(false);
-          }
-        });
-
-        menu.addEventListener('focusout', (event) => {
-          if (!menu.contains(event.relatedTarget)) {
-            setOpen(false);
-          }
-        });
-
-        menuItems.forEach((button) => {
-          button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            const target = button.dataset.newHref || defaultHref;
-            setOpen(false);
-            if (target) {
-              window.location.href = target;
-            }
+      const clearSessionArtifacts = () => {
+        if (!storage) return;
+        const currentEmail = storage.getCurrentAccountEmail?.();
+        if (currentEmail) {
+          storage.updateAccount(currentEmail, (acc) => {
+            acc.preferences = acc.preferences || {};
+            acc.preferences.rememberLogin = false;
           });
-        });
+        }
+        storage.clearCurrentAccount?.();
+        storage.clearLegacyProfileKeys?.();
+        try { sessionStorage.clear(); } catch (_) {}
+        try {
+          document.cookie.split(';').forEach(cookie => {
+            const eqPos = cookie.indexOf('=');
+            const name = eqPos > -1 ? cookie.slice(0, eqPos) : cookie;
+            document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          });
+        } catch (_) {}
       };
 
-      setupSidebarNewMenu();
+      const logoutLink = document.querySelector('.home-sidebar .logout-link');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          const confirmed = window.confirm('Are you sure you want to log out?');
+          if (!confirmed) return;
+          clearSessionArtifacts();
+          window.location.href = './login.html';
+        });
+      }
+
+      window.ADCNotifications?.refresh?.();
 
       const input = document.getElementById('home-search');
       const searchResults = document.getElementById('search-results');
       const searchFiles = document.getElementById('search-files');
       const searchPeople = document.getElementById('search-people');
+      const favoriteList = document.getElementById('favorite-list');
       const recentList = document.getElementById('recent-list');
+      const sharedList = document.getElementById('shared-decks');
       const teamList = document.getElementById('projects-list');
 
       const searchData = {
         files: [
+          { title: 'Executive Brief', type: 'Presentation', date: 'Oct 28, 2025', link: './index.html?open=executive-brief' },
+          { title: 'Q4 Outlook', type: 'Presentation', date: 'Nov 5, 2025', link: './index.html?open=q4-outlook' },
+          { title: 'ESG Digest', type: 'Presentation', date: 'Oct 14, 2025', link: './index.html?open=esg-digest' },
           { title: 'Q3 Report', type: 'Presentation', date: 'Sep 18, 2025', link: './index.html?open=q3-report' },
           { title: 'Team All-Hands', type: 'Presentation', date: 'Oct 2, 2025', link: './index.html?open=all-hands' },
           { title: 'Product Roadmap', type: 'Presentation', date: 'Oct 31, 2025', link: './index.html?open=roadmap' },
-          { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' }
+          { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' },
+          { title: 'Sales Enablement Kickoff', type: 'Presentation', date: 'Nov 9, 2025', link: './index.html?open=sales-enablement' },
+          { title: 'ESG Council Update', type: 'Presentation', date: 'Nov 7, 2025', link: './index.html?open=esg-update' },
+          { title: 'Innovation Summit Preview', type: 'Presentation', date: 'Nov 5, 2025', link: './index.html?open=innovation-summit' }
         ],
         people: [
           { name: 'Q3 Marketing Team', type: 'Chat', members: 12, link: './chat.html' },
@@ -425,7 +425,7 @@
         ]
       };
 
-      const searchCollections = [recentList, teamList];
+      const searchCollections = [favoriteList, recentList, sharedList, teamList];
 
       function renderSearchResults(query) {
         const q = (query || '').trim().toLowerCase();
@@ -562,7 +562,110 @@
         e.target.value = '';
       });
 
-      window.ADCNotifications?.refresh?.();
+      const setupSidebarNewMenu = () => {
+        const entry = document.querySelector('.home-sidebar .new-entry');
+        if (!entry) return;
+        const menu = entry.querySelector('[data-new-menu]');
+        if (!menu) return;
+
+        const menuItems = Array.from(menu.querySelectorAll('[data-new-href]'));
+        const defaultHref = entry.dataset.defaultHref || menuItems[0]?.dataset.newHref || './index.html';
+        let isOpen = false;
+
+        const handleDocumentClick = (event) => {
+          if (!entry.contains(event.target)) {
+            setOpen(false);
+          }
+        };
+
+        const setOpen = (state) => {
+          if (isOpen === state) return;
+          isOpen = state;
+          entry.dataset.open = state ? 'true' : 'false';
+          entry.setAttribute('aria-expanded', state ? 'true' : 'false');
+          menu.classList.toggle('tw-opacity-0', !state);
+          menu.classList.toggle('tw-opacity-100', state);
+          menu.classList.toggle('tw-pointer-events-none', !state);
+          menu.classList.toggle('tw-pointer-events-auto', state);
+
+          if (state) {
+            document.addEventListener('click', handleDocumentClick);
+          } else {
+            document.removeEventListener('click', handleDocumentClick);
+          }
+        };
+
+        const toggleMenu = () => setOpen(!isOpen);
+
+        entry.addEventListener('click', (event) => {
+          const actionTarget = event.target.closest('[data-new-href]');
+          if (actionTarget) {
+            return;
+          }
+          event.preventDefault();
+          setOpen(true);
+        });
+
+        entry.addEventListener('mouseenter', () => setOpen(true));
+
+        entry.addEventListener('mouseleave', () => {
+          if (isOpen) {
+            setOpen(false);
+          }
+        });
+
+        entry.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            toggleMenu();
+          } else if (event.key === 'Escape' && isOpen) {
+            event.preventDefault();
+            setOpen(false);
+            entry.blur();
+          } else if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && !isOpen) {
+            event.preventDefault();
+            setOpen(true);
+            (menuItems[0] || entry).focus();
+          }
+        });
+
+        menu.addEventListener('click', (event) => {
+          event.stopPropagation();
+        });
+
+        menu.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && isOpen) {
+            event.preventDefault();
+            setOpen(false);
+            entry.focus();
+          }
+        });
+
+        entry.addEventListener('focusout', (event) => {
+          if (!entry.contains(event.relatedTarget)) {
+            setOpen(false);
+          }
+        });
+
+        menu.addEventListener('focusout', (event) => {
+          if (!menu.contains(event.relatedTarget)) {
+            setOpen(false);
+          }
+        });
+
+        menuItems.forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const target = button.dataset.newHref || defaultHref;
+            setOpen(false);
+            if (target) {
+              window.location.href = target;
+            }
+          });
+        });
+      };
+
+      setupSidebarNewMenu();
     })();
   </script>
 </body>

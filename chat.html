@@ -117,46 +117,43 @@
     </main>
   </div>
 
+  <script src="./storage.js"></script>
   <script>
     (function () {
-      let storedName = '';
-      let storedEmail = '';
-      let storedInitials = '';
+      const storage = window.AccountStorage;
+      const account = storage?.getCurrentAccount();
 
-      const computeInitials = (value) => {
-        if (!value) return '';
-        const parts = value.replace(/[\.\_\-]+/g, ' ').trim().split(/\s+/).filter(Boolean);
-        if (parts.length) {
-          return parts.map(part => part.charAt(0).toUpperCase()).join('').slice(0, 2);
-        }
-        return value.slice(0, 2).toUpperCase();
-      };
-
-      try {
-        storedName = window.localStorage.getItem('adSlidesUserName') || '';
-        storedEmail = window.localStorage.getItem('adSlidesUserEmail') || '';
-        storedInitials = window.localStorage.getItem('adSlidesUserInitials') || '';
-      } catch (error) {
-        console.warn('Unable to access stored user profile', error);
-      }
-
-      if (!storedEmail) {
+      if (!account) {
         const loginUrl = new URL('./login.html', window.location.href);
         loginUrl.searchParams.set('redirect', 'chat.html');
         window.location.replace(loginUrl.toString());
         return;
       }
 
+      const profile = account.profile || {};
+      const computeInitials = (value, fallbackEmail) => {
+        const text = (value || '').trim();
+        if (!text && fallbackEmail) {
+          return fallbackEmail.slice(0, 2).toUpperCase();
+        }
+        const segments = text.split(/\s+/).filter(Boolean);
+        if (!segments.length) {
+          return fallbackEmail ? fallbackEmail.slice(0, 2).toUpperCase() : 'AD';
+        }
+        return segments.map(segment => segment.charAt(0).toUpperCase()).join('').slice(0, 2);
+      };
+
+      const displayName = profile.displayName || profile.formattedName?.replace(/-/g, ' ') || 'User';
+      const initials = profile.initials || computeInitials(displayName, profile.displayEmail);
+
       const avatar = document.querySelector('.sidebar-avatar');
       if (avatar) {
-        const initials = storedInitials || computeInitials(storedName) || computeInitials(storedEmail) || 'AD';
-        avatar.textContent = initials;
+        avatar.textContent = initials || 'AD';
       }
 
       const sidebarNameEl = document.querySelector('[data-sidebar-username]');
       if (sidebarNameEl) {
-        const resolvedSidebarName = storedName || (storedEmail.split('@')[0] || '').replace(/[\.\_\-]+/g, ' ');
-        sidebarNameEl.textContent = resolvedSidebarName ? resolvedSidebarName : 'Your Name';
+        sidebarNameEl.textContent = displayName;
       }
 
       const notifButton = document.getElementById('btn-top-notifications');
