@@ -204,23 +204,56 @@
       }
     }
 
-    if (fillColor) {
-      el.fillColor = fillColor;
-      selected.style.backgroundColor = fillColor;
-    }
-    if (strokeColor) {
-      el.strokeColor = strokeColor;
-      selected.style.borderColor = strokeColor;
-    }
-    if (strokeWidth !== undefined) {
-      el.strokeWidth = parseInt(strokeWidth);
-      selected.style.borderWidth = strokeWidth + 'px';
-    }
-    if (strokeDash) {
-      el.strokeDash = strokeDash;
-      if (strokeDash === 'dashed') selected.style.borderStyle = 'dashed';
-      else if (strokeDash === 'dotted') selected.style.borderStyle = 'dotted';
-      else selected.style.borderStyle = 'solid';
+    if (el.type === 'line') {
+      // Update line properties
+      if (strokeColor) {
+        el.strokeColor = strokeColor;
+        // Update SVG line/path stroke color
+        const svg = selected.querySelector('svg');
+        if (svg) {
+          const path = svg.querySelector('line, path');
+          if (path) path.setAttribute('stroke', strokeColor);
+          // Update control points stroke color
+          const controlPoints = svg.querySelectorAll('.line-control-point');
+          controlPoints.forEach(circle => {
+            circle.setAttribute('stroke', strokeColor);
+          });
+        }
+      }
+      if (strokeWidth !== undefined) {
+        el.strokeWidth = parseInt(strokeWidth);
+        // Update SVG line/path stroke width
+        const svg = selected.querySelector('svg');
+        if (svg) {
+          const path = svg.querySelector('line, path');
+          if (path) path.setAttribute('stroke-width', strokeWidth);
+        }
+      }
+      // Lines don't support stroke dash in the current implementation
+      // but we can save it for future use
+      if (strokeDash) {
+        el.strokeDash = strokeDash;
+      }
+    } else {
+      // Update shape/text properties
+      if (fillColor) {
+        el.fillColor = fillColor;
+        selected.style.backgroundColor = fillColor;
+      }
+      if (strokeColor) {
+        el.strokeColor = strokeColor;
+        selected.style.borderColor = strokeColor;
+      }
+      if (strokeWidth !== undefined) {
+        el.strokeWidth = parseInt(strokeWidth);
+        selected.style.borderWidth = strokeWidth + 'px';
+      }
+      if (strokeDash) {
+        el.strokeDash = strokeDash;
+        if (strokeDash === 'dashed') selected.style.borderStyle = 'dashed';
+        else if (strokeDash === 'dotted') selected.style.borderStyle = 'dotted';
+        else selected.style.borderStyle = 'solid';
+      }
     }
 
     saveState();
@@ -304,6 +337,51 @@
           img.style.height = ((el.height || 200) * 0.12) + 'px';
           img.style.objectFit = 'cover';
           inner.appendChild(img);
+        } else if (el.type === 'line') {
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', '153.6');
+          svg.setAttribute('height', '86.4');
+          svg.style.position = 'absolute';
+          svg.style.left = '0';
+          svg.style.top = '0';
+          svg.style.pointerEvents = 'none';
+          
+          let x1 = (el.x1 || 200) * 0.12;
+          let y1 = (el.y1 || 200) * 0.12;
+          let x2 = (el.x2 || 400) * 0.12;
+          let y2 = (el.y2 || 200) * 0.12;
+          let midX = el.midX !== null && el.midX !== undefined ? el.midX * 0.12 : null;
+          let midY = el.midY !== null && el.midY !== undefined ? el.midY * 0.12 : null;
+          const strokeColor = el.strokeColor || '#000000';
+          const strokeWidth = (el.strokeWidth || 2) * 0.12;
+          
+          let path;
+          if (el.lineType === 'straight') {
+            path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            path.setAttribute('x1', x1);
+            path.setAttribute('y1', y1);
+            path.setAttribute('x2', x2);
+            path.setAttribute('y2', y2);
+          } else if (el.lineType === 'wavy') {
+            path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const controlY = midY !== null && midY !== undefined ? midY : ((y1 + y2) / 2 - 3.6);
+            path.setAttribute('d', `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${controlY}, ${(x1 + x2) / 2} ${(y1 + y2) / 2} T ${x2} ${y2}`);
+          } else if (el.lineType === 'semicircular') {
+            path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const controlX = midX !== null && midX !== undefined ? midX : (x1 + x2) / 2;
+            const controlY = midY !== null && midY !== undefined ? midY : (y1 - 6);
+            path.setAttribute('d', `M ${x1} ${y1} Q ${controlX} ${controlY}, ${x2} ${y2}`);
+          }
+          
+          if (path) {
+            path.setAttribute('stroke', strokeColor);
+            path.setAttribute('stroke-width', strokeWidth);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(path);
+          }
+          
+          inner.appendChild(svg);
         }
       });
 
@@ -678,6 +756,346 @@
         });
 
         stageEl.appendChild(node);
+      } else if (el.type === 'line') {
+        const container = document.createElement('div');
+        container.className = 'el line';
+        container.dataset.id = el.id;
+        container.style.position = 'absolute';
+        container.style.left = '0';
+        container.style.top = '0';
+        container.style.pointerEvents = 'none';
+        
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '1280');
+        svg.setAttribute('height', '720');
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.pointerEvents = 'all';
+        
+        let x1 = el.x1 || 200;
+        let y1 = el.y1 || 200;
+        let x2 = el.x2 || 400;
+        let y2 = el.y2 || 200;
+        let midX = el.midX;
+        let midY = el.midY;
+        const strokeColor = el.strokeColor || '#000000';
+        const strokeWidth = el.strokeWidth || 2;
+        
+        const updateLinePath = () => {
+          // Remove old path
+          const oldPath = svg.querySelector('line, path');
+          if (oldPath) svg.removeChild(oldPath);
+          
+          let path;
+          if (el.lineType === 'straight') {
+            path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            path.setAttribute('x1', x1);
+            path.setAttribute('y1', y1);
+            path.setAttribute('x2', x2);
+            path.setAttribute('y2', y2);
+          } else if (el.lineType === 'wavy') {
+            path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const controlY = midY !== null && midY !== undefined ? midY : ((y1 + y2) / 2 - 30);
+            path.setAttribute('d', `M ${x1} ${y1} Q ${(x1 + x2) / 2} ${controlY}, ${(x1 + x2) / 2} ${(y1 + y2) / 2} T ${x2} ${y2}`);
+          } else if (el.lineType === 'semicircular') {
+            path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const controlX = midX !== null && midX !== undefined ? midX : (x1 + x2) / 2;
+            const controlY = midY !== null && midY !== undefined ? midY : (y1 - 50);
+            path.setAttribute('d', `M ${x1} ${y1} Q ${controlX} ${controlY}, ${x2} ${y2}`);
+          }
+          
+          path.setAttribute('stroke', strokeColor);
+          path.setAttribute('stroke-width', strokeWidth);
+          path.setAttribute('fill', 'none');
+          path.setAttribute('stroke-linecap', 'round');
+          svg.insertBefore(path, svg.firstChild);
+          
+          // Update element data
+          el.x1 = x1;
+          el.y1 = y1;
+          el.x2 = x2;
+          el.y2 = y2;
+          if (midX !== null && midX !== undefined) el.midX = midX;
+          if (midY !== null && midY !== undefined) el.midY = midY;
+        };
+        
+        updateLinePath();
+        
+        // Add control points with drag functionality
+        // Note: updateSelectionBox will be defined later, we'll reference it via closure
+        let updateSelectionBoxRef = null;
+        
+        const addControlPoint = (x, y, pointType) => {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', x);
+          circle.setAttribute('cy', y);
+          circle.setAttribute('r', '6');
+          circle.setAttribute('fill', 'white');
+          circle.setAttribute('stroke', strokeColor);
+          circle.setAttribute('stroke-width', '2.5');
+          circle.classList.add('line-control-point');
+          circle.dataset.pointType = pointType;
+          circle.style.cursor = 'grab';
+          circle.style.pointerEvents = 'all';
+          
+          let isDragging = false;
+          
+          const handleMouseDown = (e) => {
+            if (e.button !== 0 || el.locked) return;
+            e.stopPropagation();
+            isDragging = true;
+            const stageRect = stageEl.getBoundingClientRect();
+            const origX = parseFloat(circle.getAttribute('cx'));
+            const origY = parseFloat(circle.getAttribute('cy'));
+            const startMouseX = e.clientX - stageRect.left;
+            const startMouseY = e.clientY - stageRect.top;
+            circle.style.cursor = 'grabbing';
+            
+            const handleMouseMove = (e) => {
+              if (!isDragging) return;
+              const currentMouseX = e.clientX - stageRect.left;
+              const currentMouseY = e.clientY - stageRect.top;
+              const dx = currentMouseX - startMouseX;
+              const dy = currentMouseY - startMouseY;
+              const newX = Math.max(0, Math.min(1280, origX + dx));
+              const newY = Math.max(0, Math.min(720, origY + dy));
+              
+              circle.setAttribute('cx', newX);
+              circle.setAttribute('cy', newY);
+              
+              if (pointType === 'start') {
+                x1 = newX;
+                y1 = newY;
+              } else if (pointType === 'end') {
+                x2 = newX;
+                y2 = newY;
+              } else if (pointType === 'mid') {
+                midX = newX;
+                midY = newY;
+              }
+              
+              updateLinePath();
+              
+              // Update selection box if line is selected
+              if (updateSelectionBoxRef && container.classList.contains('selected')) {
+                updateSelectionBoxRef();
+              }
+            };
+            
+            const handleMouseUp = () => {
+              if (isDragging) {
+                isDragging = false;
+                circle.style.cursor = 'grab';
+                saveState();
+                renderSidebar();
+              }
+              window.removeEventListener('mousemove', handleMouseMove);
+              window.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+          };
+          
+          circle.addEventListener('mousedown', handleMouseDown);
+          svg.appendChild(circle);
+        };
+        
+        addControlPoint(x1, y1, 'start');
+        addControlPoint(x2, y2, 'end');
+        if (midX !== null && midX !== undefined && midY !== null && midY !== undefined) {
+          addControlPoint(midX, midY, 'mid');
+        }
+        
+        container.appendChild(svg);
+        container.style.cursor = 'pointer';
+        container.classList.toggle('locked', !!el.locked);
+        
+        // Create selection box overlay
+        const selectionBox = document.createElement('div');
+        selectionBox.className = 'line-selection-box';
+        selectionBox.style.position = 'absolute';
+        selectionBox.style.pointerEvents = 'none';
+        selectionBox.style.display = 'none';
+        selectionBox.style.border = '1px solid rgba(0, 170, 231, 0.3)';
+        selectionBox.style.borderRadius = '4px';
+        selectionBox.style.backgroundColor = 'rgba(0, 170, 231, 0.02)';
+        selectionBox.style.boxSizing = 'border-box';
+        
+        // Create center move handle
+        const centerHandle = document.createElement('div');
+        centerHandle.className = 'line-center-handle';
+        centerHandle.style.position = 'absolute';
+        centerHandle.style.width = '12px';
+        centerHandle.style.height = '12px';
+        centerHandle.style.borderRadius = '50%';
+        centerHandle.style.backgroundColor = 'rgba(0, 170, 231, 0.8)';
+        centerHandle.style.border = '2px solid white';
+        centerHandle.style.cursor = 'grab';
+        centerHandle.style.boxShadow = '0 2px 4px rgba(0, 43, 73, 0.2)';
+        centerHandle.style.transform = 'translate(-50%, -50%)';
+        centerHandle.style.pointerEvents = 'all';
+        selectionBox.appendChild(centerHandle);
+        container.appendChild(selectionBox);
+        
+        // Function to update selection box position and size
+        const updateSelectionBox = () => {
+          if (!container.classList.contains('selected')) {
+            selectionBox.style.display = 'none';
+            return;
+          }
+          
+          // Calculate bounding box from all control points
+          const points = [
+            { x: x1, y: y1 },
+            { x: x2, y: y2 }
+          ];
+          if (midX !== null && midX !== undefined && midY !== null && midY !== undefined) {
+            points.push({ x: midX, y: midY });
+          }
+          
+          const minX = Math.min(...points.map(p => p.x));
+          const maxX = Math.max(...points.map(p => p.x));
+          const minY = Math.min(...points.map(p => p.y));
+          const maxY = Math.max(...points.map(p => p.y));
+          
+          // Add padding around the line
+          const padding = 10;
+          const boxX = Math.max(0, minX - padding);
+          const boxY = Math.max(0, minY - padding);
+          const boxWidth = Math.min(1280 - boxX, maxX - minX + padding * 2);
+          const boxHeight = Math.min(720 - boxY, maxY - minY + padding * 2);
+          
+          selectionBox.style.left = boxX + 'px';
+          selectionBox.style.top = boxY + 'px';
+          selectionBox.style.width = boxWidth + 'px';
+          selectionBox.style.height = boxHeight + 'px';
+          selectionBox.style.display = 'block';
+          
+          // Position center handle
+          const centerX = (minX + maxX) / 2;
+          const centerY = (minY + maxY) / 2;
+          centerHandle.style.left = (centerX - boxX) + 'px';
+          centerHandle.style.top = (centerY - boxY) + 'px';
+        };
+        
+        // Center handle drag functionality
+        let isDraggingLine = false;
+        centerHandle.addEventListener('mousedown', (e) => {
+          if (e.button !== 0 || el.locked) return;
+          e.stopPropagation();
+          isDraggingLine = true;
+          const stageRect = stageEl.getBoundingClientRect();
+          const startMouseX = e.clientX - stageRect.left;
+          const startMouseY = e.clientY - stageRect.top;
+          
+          // Store original positions
+          const origX1 = x1;
+          const origY1 = y1;
+          const origX2 = x2;
+          const origY2 = y2;
+          const origMidX = midX;
+          const origMidY = midY;
+          
+          centerHandle.style.cursor = 'grabbing';
+          
+          const handleMouseMove = (e) => {
+            if (!isDraggingLine) return;
+            const currentMouseX = e.clientX - stageRect.left;
+            const currentMouseY = e.clientY - stageRect.top;
+            const dx = currentMouseX - startMouseX;
+            const dy = currentMouseY - startMouseY;
+            
+            // Calculate new positions
+            const newX1 = Math.max(0, Math.min(1280, origX1 + dx));
+            const newY1 = Math.max(0, Math.min(720, origY1 + dy));
+            const newX2 = Math.max(0, Math.min(1280, origX2 + dx));
+            const newY2 = Math.max(0, Math.min(720, origY2 + dy));
+            
+            x1 = newX1;
+            y1 = newY1;
+            x2 = newX2;
+            y2 = newY2;
+            
+            if (midX !== null && midX !== undefined && midY !== null && midY !== undefined) {
+              const newMidX = Math.max(0, Math.min(1280, origMidX + dx));
+              const newMidY = Math.max(0, Math.min(720, origMidY + dy));
+              midX = newMidX;
+              midY = newMidY;
+            }
+            
+            // Update line path
+            updateLinePath();
+            
+            // Update control points
+            const controlPoints = svg.querySelectorAll('.line-control-point');
+            controlPoints.forEach(circle => {
+              const pointType = circle.dataset.pointType;
+              let currentX, currentY;
+              if (pointType === 'start') {
+                currentX = x1;
+                currentY = y1;
+              } else if (pointType === 'end') {
+                currentX = x2;
+                currentY = y2;
+              } else if (pointType === 'mid') {
+                currentX = midX;
+                currentY = midY;
+              }
+              circle.setAttribute('cx', currentX);
+              circle.setAttribute('cy', currentY);
+            });
+            
+            // Update selection box
+            updateSelectionBox();
+          };
+          
+          const handleMouseUp = () => {
+            if (isDraggingLine) {
+              isDraggingLine = false;
+              centerHandle.style.cursor = 'grab';
+              saveState();
+              renderSidebar();
+            }
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+          };
+          
+          window.addEventListener('mousemove', handleMouseMove);
+          window.addEventListener('mouseup', handleMouseUp);
+        });
+        
+        container.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return;
+          if (e.target.classList.contains('line-control-point')) {
+            return; // Let control point handle it
+          }
+          if (e.target.classList.contains('line-center-handle')) {
+            return; // Let center handle handle it
+          }
+          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          container.classList.add('selected');
+          updateSelectionBox();
+          updateToolbarFromSelection();
+          showContextToolbar(container);
+          hideTextControlBar();
+          e.stopPropagation();
+        });
+        
+        // Store reference to updateSelectionBox for use in addControlPoint
+        updateSelectionBoxRef = updateSelectionBox;
+        
+        // Update selection box when line path changes
+        const originalUpdateLinePath = updateLinePath;
+        updateLinePath = () => {
+          originalUpdateLinePath();
+          if (container.classList.contains('selected')) {
+            updateSelectionBox();
+          }
+        };
+        
+        stageEl.appendChild(container);
       }
     });
   }
@@ -703,10 +1121,19 @@
     const strokeColor = document.getElementById('stroke-color');
     const strokeWidth = document.getElementById('stroke-width');
     const strokeDash = document.getElementById('stroke-dash');
-    if (fillColor) fillColor.value = el.fillColor || '#ffffff';
-    if (strokeColor) strokeColor.value = el.strokeColor || '#000000';
-    if (strokeWidth) strokeWidth.value = String(el.strokeWidth || 1);
-    if (strokeDash) strokeDash.value = el.strokeDash || 'solid';
+    
+    if (el.type === 'line') {
+      // Lines only have stroke properties, no fill
+      if (fillColor) fillColor.value = '#ffffff'; // Default, not used for lines
+      if (strokeColor) strokeColor.value = el.strokeColor || '#000000';
+      if (strokeWidth) strokeWidth.value = String(el.strokeWidth || 2);
+      if (strokeDash) strokeDash.value = el.strokeDash || 'solid';
+    } else {
+      if (fillColor) fillColor.value = el.fillColor || '#ffffff';
+      if (strokeColor) strokeColor.value = el.strokeColor || '#000000';
+      if (strokeWidth) strokeWidth.value = String(el.strokeWidth || 1);
+      if (strokeDash) strokeDash.value = el.strokeDash || 'solid';
+    }
   }
 
   function renderAll() {
@@ -806,6 +1233,61 @@
     });
     saveState();
     renderAll();
+  }
+
+  function insertLine(lineType) {
+    console.log('insertLine called with type:', lineType);
+    const slide = state.slides[state.currentSlideIndex];
+    if (!slide) {
+      console.error('No slide found');
+      return;
+    }
+    
+    const baseX = 200;
+    const baseY = 200;
+    const length = 200;
+    
+    let x1 = baseX;
+    let y1 = baseY;
+    let x2 = baseX + length;
+    let y2 = baseY;
+    let midX = baseX + length / 2;
+    let midY = baseY;
+    
+    if (lineType === 'straight') {
+      // Diagonal straight line
+      y2 = baseY - 100;
+    } else if (lineType === 'wavy') {
+      // Wavy line (S-curve)
+      y1 = baseY - 20;
+      y2 = baseY - 20;
+      midY = baseY - 50;
+    } else if (lineType === 'semicircular') {
+      // Semi-circular line
+      y1 = baseY + 50;
+      y2 = baseY + 50;
+      midY = baseY - 50;
+    }
+    
+    const newLine = {
+      id: uid(),
+      type: 'line',
+      lineType: lineType,
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2,
+      midX: lineType === 'semicircular' ? midX : null,
+      midY: lineType === 'semicircular' ? midY : null,
+      strokeColor: '#000000',
+      strokeWidth: 2
+    };
+    
+    console.log('Adding line to slide:', newLine);
+    slide.elements.push(newLine);
+    saveState();
+    renderAll();
+    console.log('Line added, total elements:', slide.elements.length);
   }
 
   function applyShapeAppearance(node, shape) {
@@ -1160,10 +1642,13 @@
   const toolOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.text-option-btn[data-tool]') : [];
   const toolsMainView = toolsPanel ? toolsPanel.querySelector('.tools-view-main') : null;
   const toolsShapesView = toolsPanel ? toolsPanel.querySelector('.tools-view-shapes') : null;
+  const toolsLinesView = toolsPanel ? toolsPanel.querySelector('.tools-view-lines') : null;
   const toolsTablesView = toolsPanel ? toolsPanel.querySelector('.tools-view-tables') : null;
   const toolsShapesBackBtn = document.getElementById('tools-shapes-back');
+  const toolsLinesBackBtn = document.getElementById('tools-lines-back');
   const toolsTablesBackBtn = document.getElementById('tools-tables-back');
   const shapeOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.shape-option-btn') : [];
+  const lineOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.line-option-btn') : [];
   const tableOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.table-option-btn') : [];
   let editingElementId = null;
   let editingNode = null;
@@ -1179,6 +1664,7 @@
   function showToolsMainView() {
     if (!toolsPanel) return;
     toolsPanel.classList.remove('shapes-active');
+    toolsPanel.classList.remove('lines-active');
     toolsPanel.classList.remove('tables-active');
     if (!toolsPanel.classList.contains('hidden')) {
       requestAnimationFrame(() => positionToolsPanel());
@@ -1188,6 +1674,15 @@
   function showShapesView() {
     if (!toolsPanel) return;
     toolsPanel.classList.add('shapes-active');
+    toolsPanel.classList.remove('lines-active');
+    toolsPanel.classList.remove('tables-active');
+    requestAnimationFrame(() => positionToolsPanel());
+  }
+
+  function showLinesView() {
+    if (!toolsPanel) return;
+    toolsPanel.classList.add('lines-active');
+    toolsPanel.classList.remove('shapes-active');
     toolsPanel.classList.remove('tables-active');
     requestAnimationFrame(() => positionToolsPanel());
   }
@@ -1196,6 +1691,7 @@
     if (!toolsPanel) return;
     toolsPanel.classList.add('tables-active');
     toolsPanel.classList.remove('shapes-active');
+    toolsPanel.classList.remove('lines-active');
     requestAnimationFrame(() => positionToolsPanel());
   }
 
@@ -1234,8 +1730,8 @@
         showShapesView();
         return;
       case 'line':
-        notifyComingSoon('Line tool is coming soon.');
-        break;
+        showLinesView();
+        return;
       case 'sticky':
         notifyComingSoon('Sticky notes are coming soon.');
         break;
@@ -1441,7 +1937,36 @@
       }
     });
 
+    // Use event delegation to handle clicks on all option buttons
+    // This must handle line, shape, and table buttons before stopping propagation
     toolsPanel.addEventListener('click', (e) => {
+      // Check if click is on a line option button or its children (SVG, etc.)
+      const lineBtn = e.target.closest('.line-option-btn');
+      if (lineBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const lineType = lineBtn.dataset.lineType || 'straight';
+        console.log('Inserting line type:', lineType); // Debug log
+        insertLine(lineType);
+        hideToolsPanel();
+        return;
+      }
+      
+      // Check if click is on a shape option button
+      const shapeBtn = e.target.closest('.shape-option-btn');
+      if (shapeBtn) {
+        // Let the existing shape handler deal with it, but don't stop propagation here
+        return;
+      }
+      
+      // Check if click is on a table option button
+      const tableBtn = e.target.closest('.table-option-btn');
+      if (tableBtn) {
+        // Let the existing table handler deal with it, but don't stop propagation here
+        return;
+      }
+      
+      // For other clicks, stop propagation
       e.stopPropagation();
     });
   }
@@ -1464,6 +1989,24 @@
   });
 
   toolsShapesBackBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showToolsMainView();
+  });
+  
+  // Direct listeners as backup (in case event delegation doesn't work)
+  lineOptionButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const lineType = btn.dataset.lineType || 'straight';
+      console.log('Direct listener - Inserting line type:', lineType); // Debug log
+      insertLine(lineType);
+      hideToolsPanel();
+    });
+  });
+
+  toolsLinesBackBtn?.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
     showToolsMainView();
@@ -1605,8 +2148,22 @@
     const slide = state.slides[state.currentSlideIndex];
     const newEl = JSON.parse(JSON.stringify(clipboardElement));
     newEl.id = uid();
-    newEl.x = (newEl.x || 0) + 20;
-    newEl.y = (newEl.y || 0) + 20;
+    if (newEl.type === 'line') {
+      // Offset line coordinates
+      newEl.x1 = (newEl.x1 || 200) + 20;
+      newEl.y1 = (newEl.y1 || 200) + 20;
+      newEl.x2 = (newEl.x2 || 400) + 20;
+      newEl.y2 = (newEl.y2 || 200) + 20;
+      if (newEl.midX !== null && newEl.midX !== undefined) {
+        newEl.midX = newEl.midX + 20;
+      }
+      if (newEl.midY !== null && newEl.midY !== undefined) {
+        newEl.midY = newEl.midY + 20;
+      }
+    } else {
+      newEl.x = (newEl.x || 0) + 20;
+      newEl.y = (newEl.y || 0) + 20;
+    }
     slide.elements.push(newEl);
     saveState();
     renderAll();
@@ -1628,8 +2185,22 @@
       case 'duplicate': {
         const newEl = JSON.parse(JSON.stringify(el));
         newEl.id = uid();
-        newEl.x = (newEl.x || 0) + 20;
-        newEl.y = (newEl.y || 0) + 20;
+        if (el.type === 'line') {
+          // Offset line coordinates
+          newEl.x1 = (newEl.x1 || 200) + 20;
+          newEl.y1 = (newEl.y1 || 200) + 20;
+          newEl.x2 = (newEl.x2 || 400) + 20;
+          newEl.y2 = (newEl.y2 || 200) + 20;
+          if (newEl.midX !== null && newEl.midX !== undefined) {
+            newEl.midX = newEl.midX + 20;
+          }
+          if (newEl.midY !== null && newEl.midY !== undefined) {
+            newEl.midY = newEl.midY + 20;
+          }
+        } else {
+          newEl.x = (newEl.x || 0) + 20;
+          newEl.y = (newEl.y || 0) + 20;
+        }
         slide.elements.push(newEl);
         saveState();
         renderAll();
@@ -1656,9 +2227,33 @@
       case 'align': {
         const stageWidth = 1280;
         const stageHeight = 720;
-        const bounds = selected.getBoundingClientRect();
-        el.x = (stageWidth - bounds.width) / 2;
-        el.y = (stageHeight - bounds.height) / 2;
+        if (el.type === 'line') {
+          // Center line based on its bounding box
+          const minX = Math.min(el.x1 || 200, el.x2 || 400);
+          const maxX = Math.max(el.x1 || 200, el.x2 || 400);
+          const minY = Math.min(el.y1 || 200, el.y2 || 200);
+          const maxY = Math.max(el.y1 || 200, el.y2 || 200);
+          const lineWidth = maxX - minX;
+          const lineHeight = maxY - minY;
+          const centerX = minX + lineWidth / 2;
+          const centerY = minY + lineHeight / 2;
+          const offsetX = (stageWidth / 2) - centerX;
+          const offsetY = (stageHeight / 2) - centerY;
+          el.x1 = (el.x1 || 200) + offsetX;
+          el.y1 = (el.y1 || 200) + offsetY;
+          el.x2 = (el.x2 || 400) + offsetX;
+          el.y2 = (el.y2 || 200) + offsetY;
+          if (el.midX !== null && el.midX !== undefined) {
+            el.midX = el.midX + offsetX;
+          }
+          if (el.midY !== null && el.midY !== undefined) {
+            el.midY = el.midY + offsetY;
+          }
+        } else {
+          const bounds = selected.getBoundingClientRect();
+          el.x = (stageWidth - bounds.width) / 2;
+          el.y = (stageHeight - bounds.height) / 2;
+        }
         saveState();
         renderAll();
         reselectElement(elId);
@@ -1667,16 +2262,52 @@
       case 'to-page': {
         const stageWidth = 1280;
         const stageHeight = 720;
-        const bounds = selected.getBoundingClientRect();
-        const distToLeft = el.x;
-        const distToRight = stageWidth - (el.x + bounds.width);
-        const distToTop = el.y;
-        const distToBottom = stageHeight - (el.y + bounds.height);
-        const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
-        if (minDist === distToLeft) el.x = 0;
-        else if (minDist === distToRight) el.x = stageWidth - bounds.width;
-        else if (minDist === distToTop) el.y = 0;
-        else if (minDist === distToBottom) el.y = stageHeight - bounds.height;
+        if (el.type === 'line') {
+          // Move line to nearest edge based on bounding box
+          const minX = Math.min(el.x1 || 200, el.x2 || 400);
+          const maxX = Math.max(el.x1 || 200, el.x2 || 400);
+          const minY = Math.min(el.y1 || 200, el.y2 || 200);
+          const maxY = Math.max(el.y1 || 200, el.y2 || 200);
+          const lineWidth = maxX - minX;
+          const lineHeight = maxY - minY;
+          const distToLeft = minX;
+          const distToRight = stageWidth - maxX;
+          const distToTop = minY;
+          const distToBottom = stageHeight - maxY;
+          const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+          let offsetX = 0;
+          let offsetY = 0;
+          if (minDist === distToLeft) {
+            offsetX = -minX;
+          } else if (minDist === distToRight) {
+            offsetX = stageWidth - maxX;
+          } else if (minDist === distToTop) {
+            offsetY = -minY;
+          } else if (minDist === distToBottom) {
+            offsetY = stageHeight - maxY;
+          }
+          el.x1 = (el.x1 || 200) + offsetX;
+          el.y1 = (el.y1 || 200) + offsetY;
+          el.x2 = (el.x2 || 400) + offsetX;
+          el.y2 = (el.y2 || 200) + offsetY;
+          if (el.midX !== null && el.midX !== undefined) {
+            el.midX = el.midX + offsetX;
+          }
+          if (el.midY !== null && el.midY !== undefined) {
+            el.midY = el.midY + offsetY;
+          }
+        } else {
+          const bounds = selected.getBoundingClientRect();
+          const distToLeft = el.x;
+          const distToRight = stageWidth - (el.x + bounds.width);
+          const distToTop = el.y;
+          const distToBottom = stageHeight - (el.y + bounds.height);
+          const minDist = Math.min(distToLeft, distToRight, distToTop, distToBottom);
+          if (minDist === distToLeft) el.x = 0;
+          else if (minDist === distToRight) el.x = stageWidth - bounds.width;
+          else if (minDist === distToTop) el.y = 0;
+          else if (minDist === distToBottom) el.y = stageHeight - bounds.height;
+        }
         saveState();
         renderAll();
         reselectElement(elId);
@@ -1724,7 +2355,14 @@
   // Click on stage to deselect
   stageEl.addEventListener('click', (e) => {
     if (!e.target.closest('.el')) {
-      document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+      document.querySelectorAll('.el').forEach(el => {
+        el.classList.remove('selected');
+        // Hide selection boxes for lines
+        const selectionBox = el.querySelector('.line-selection-box');
+        if (selectionBox) {
+          selectionBox.style.display = 'none';
+        }
+      });
       hideContextToolbar();
       exitTextEditing();
     }

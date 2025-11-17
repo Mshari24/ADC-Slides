@@ -4571,6 +4571,14 @@ body {
   display: flex;
 }
 
+.tools-panel.lines-active .panel-view-options {
+  display: none;
+}
+
+.tools-panel.lines-active .tools-view-lines {
+  display: flex;
+}
+
 .tools-panel.tables-active .panel-view-options {
   display: none;
 }
@@ -4583,6 +4591,18 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.tools-lines-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.line-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .panel-header-text {
@@ -4718,6 +4738,94 @@ body {
   height: 18px;
   transform: rotate(45deg);
   border-radius: 4px;
+}
+
+.line-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line-option-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.line-option-btn:hover {
+  border-color: #a5b4fc;
+  box-shadow: 0 10px 18px rgba(79, 70, 229, 0.15);
+}
+
+.line-preview {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4338ca;
+  pointer-events: none;
+}
+
+.line-preview svg {
+  width: 100%;
+  height: 100%;
+  max-width: 200px;
+}
+
+.el.line {
+  z-index: 10;
+}
+
+.el.line .line-control-point {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  cursor: grab;
+}
+
+.el.line.selected .line-control-point {
+  opacity: 1;
+  cursor: grab;
+}
+
+.el.line.selected .line-control-point:hover {
+  transform: scale(1.3);
+  opacity: 1;
+}
+
+.el.line:not(.selected) .line-control-point {
+  opacity: 0.4;
+}
+
+.el.line .line-control-point:active {
+  cursor: grabbing;
+}
+
+.line-selection-box {
+  z-index: 11;
+  pointer-events: none;
+}
+
+.line-center-handle {
+  z-index: 12;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.line-center-handle:hover {
+  transform: translate(-50%, -50%) scale(1.15);
+  box-shadow: 0 3px 6px rgba(0, 43, 73, 0.3);
+}
+
+.line-center-handle:active {
+  cursor: grabbing !important;
 }
 
 .tools-table-header {
