@@ -235,8 +235,28 @@
           s.style.height = ((el.height || 100) * 0.12) + 'px';
           s.style.backgroundColor = el.fillColor || '#fff';
           s.style.border = `1px solid ${el.strokeColor || '#000'}`;
-          if (el.shape === 'circle') s.style.borderRadius = '50%';
+          applyShapeAppearance(s, el.shape);
           inner.appendChild(s);
+        } else if (el.type === 'table') {
+          const tablePreview = document.createElement('div');
+          tablePreview.style.position = 'absolute';
+          tablePreview.style.left = (el.x * 0.12) + 'px';
+          tablePreview.style.top = (el.y * 0.12) + 'px';
+          tablePreview.style.width = ((el.width || 300) * 0.12) + 'px';
+          tablePreview.style.height = ((el.height || 200) * 0.12) + 'px';
+          tablePreview.style.display = 'grid';
+          const rows = el.rows || 3;
+          const cols = el.cols || 3;
+          tablePreview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+          tablePreview.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+          tablePreview.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+          for (let r = 0; r < rows * cols; r++) {
+            const cell = document.createElement('div');
+            cell.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+            cell.style.background = el.backgroundColor || '#ffffff';
+            tablePreview.appendChild(cell);
+          }
+          inner.appendChild(tablePreview);
         } else if (el.type === 'image' && el.src) {
           const img = document.createElement('img');
           img.src = el.src;
@@ -569,7 +589,7 @@
         node.style.height = (el.height || 100) + 'px';
         node.style.backgroundColor = el.fillColor || '#fff';
         node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || '#000'}`;
-        if (el.shape === 'circle') node.style.borderRadius = '50%';
+        applyShapeAppearance(node, el.shape);
         node.classList.toggle('locked', !!el.locked);
         node.style.cursor = el.locked ? 'default' : 'pointer';
         
@@ -583,6 +603,43 @@
           e.stopPropagation();
         });
         
+        stageEl.appendChild(node);
+      } else if (el.type === 'table') {
+        const rows = Math.max(1, el.rows || 3);
+        const cols = Math.max(1, el.cols || 3);
+        const node = document.createElement('div');
+        node.className = 'el table';
+        node.dataset.id = el.id;
+        node.style.left = el.x + 'px';
+        node.style.top = el.y + 'px';
+        node.style.width = (el.width || cols * 90) + 'px';
+        node.style.height = (el.height || rows * 56) + 'px';
+        node.style.display = 'grid';
+        node.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        node.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        node.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+        node.style.background = el.backgroundColor || '#ffffff';
+        node.classList.toggle('locked', !!el.locked);
+        node.style.cursor = el.locked ? 'default' : 'pointer';
+
+        for (let r = 0; r < rows * cols; r++) {
+          const cell = document.createElement('div');
+          cell.className = 'table-cell';
+          cell.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+          cell.style.background = el.backgroundColor || '#ffffff';
+          node.appendChild(cell);
+        }
+
+        node.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return;
+          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          node.classList.add('selected');
+          updateToolbarFromSelection();
+          showContextToolbar(node);
+          hideTextControlBar();
+          e.stopPropagation();
+        });
+
         stageEl.appendChild(node);
       }
     });
@@ -690,6 +747,49 @@
     });
     saveState();
     renderAll();
+  }
+
+  function insertTable(rows = 3, cols = 3) {
+    const slide = state.slides[state.currentSlideIndex];
+    const cellWidth = 90;
+    const cellHeight = 56;
+    slide.elements.push({
+      id: uid(),
+      type: 'table',
+      rows,
+      cols,
+      x: 200,
+      y: 200,
+      width: cols * cellWidth,
+      height: rows * cellHeight,
+      cellWidth,
+      cellHeight,
+      borderColor: '#1f2937',
+      backgroundColor: '#ffffff'
+    });
+    saveState();
+    renderAll();
+  }
+
+  function applyShapeAppearance(node, shape) {
+    if (!node) return;
+    node.style.borderRadius = '12px';
+    node.style.clipPath = '';
+    switch (shape) {
+      case 'circle':
+        node.style.borderRadius = '50%';
+        break;
+      case 'triangle':
+        node.style.borderRadius = '0';
+        node.style.clipPath = 'polygon(50% 0, 0 100%, 100% 100%)';
+        break;
+      case 'diamond':
+        node.style.borderRadius = '0';
+        node.style.clipPath = 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)';
+        break;
+      default:
+        break;
+    }
   }
 
   // Expose to window for toolbar access
@@ -1018,6 +1118,16 @@
   const textNumberedBtn = document.getElementById('text-numbered');
   const textLineSpacingBtn = document.getElementById('text-line-spacing');
   const textMoreBtn = document.getElementById('text-more');
+  const toolsSidebarItem = document.querySelector('.sidebar-item[title="Tools"]');
+  const toolsPanel = document.getElementById('tools-panel');
+  const toolOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.tool-option-btn') : [];
+  const toolsMainView = toolsPanel ? toolsPanel.querySelector('.tools-view-main') : null;
+  const toolsShapesView = toolsPanel ? toolsPanel.querySelector('.tools-view-shapes') : null;
+  const toolsTablesView = toolsPanel ? toolsPanel.querySelector('.tools-view-tables') : null;
+  const toolsShapesBackBtn = document.getElementById('tools-shapes-back');
+  const toolsTablesBackBtn = document.getElementById('tools-tables-back');
+  const shapeOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.shape-option-btn') : [];
+  const tableOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.table-option-btn') : [];
   let editingElementId = null;
   let editingNode = null;
 
@@ -1029,6 +1139,80 @@
   const searchState = { active: false };
   function lockInteractivity() {}
 
+  function showToolsMainView() {
+    if (!toolsPanel) return;
+    toolsPanel.classList.remove('shapes-active');
+    toolsPanel.classList.remove('tables-active');
+    if (!toolsPanel.classList.contains('hidden')) {
+      requestAnimationFrame(() => positionToolsPanel());
+    }
+  }
+
+  function showShapesView() {
+    if (!toolsPanel) return;
+    toolsPanel.classList.add('shapes-active');
+    toolsPanel.classList.remove('tables-active');
+    requestAnimationFrame(() => positionToolsPanel());
+  }
+
+  function showTablesView() {
+    if (!toolsPanel) return;
+    toolsPanel.classList.add('tables-active');
+    toolsPanel.classList.remove('shapes-active');
+    requestAnimationFrame(() => positionToolsPanel());
+  }
+
+  function hideToolsPanel() {
+    if (!toolsPanel) return;
+    showToolsMainView();
+    toolsPanel.classList.add('hidden');
+  }
+
+  function positionToolsPanel() {
+    if (!toolsPanel || !toolsSidebarItem || typeof window === 'undefined') return;
+    const sidebarRect = toolsSidebarItem.getBoundingClientRect();
+    const panelRect = toolsPanel.getBoundingClientRect();
+    const panelWidth = panelRect.width || toolsPanel.offsetWidth || 320;
+    const panelHeight = panelRect.height || toolsPanel.offsetHeight || 280;
+    const left = Math.min(window.innerWidth - panelWidth - 16, sidebarRect.right + 16);
+    const top = Math.max(16, (window.innerHeight - panelHeight) / 2);
+    toolsPanel.style.left = `${Math.max(16, left)}px`;
+    toolsPanel.style.top = `${top}px`;
+  }
+
+  function notifyComingSoon(message) {
+    if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+      window.alert(message);
+    } else {
+      console.info(message);
+    }
+  }
+
+  function handleToolAction(tool) {
+    switch (tool) {
+      case 'draw':
+        notifyComingSoon('Drawing tool is coming soon.');
+        break;
+      case 'shapes':
+        showShapesView();
+        return;
+      case 'line':
+        notifyComingSoon('Line tool is coming soon.');
+        break;
+      case 'sticky':
+        notifyComingSoon('Sticky notes are coming soon.');
+        break;
+      case 'textbox':
+        insertText();
+        break;
+      case 'table':
+        showTablesView();
+        return;
+      default:
+        break;
+    }
+    hideToolsPanel();
+  }
 
   function showTextOptionsView() {
     if (!textOptionsPanel) return;
@@ -1042,7 +1226,7 @@
     textOptionsPanel.classList.add('page-number-active');
     textOptionsView?.classList.add('hidden');
     pageNumberView?.classList.remove('hidden');
-    positionPanel();
+    positionTextPanel();
   }
 
   function hideTextPanel() {
@@ -1182,7 +1366,7 @@
     }
   }
 
-  function positionPanel() {
+  function positionTextPanel() {
     if (!textSidebarItem || !textOptionsPanel) return;
     const rect = textSidebarItem.getBoundingClientRect();
     textOptionsPanel.style.top = `${rect.top}px`;
@@ -1193,7 +1377,8 @@
     textSidebarItem.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      positionPanel();
+      hideToolsPanel();
+      positionTextPanel();
       const isHidden = textOptionsPanel.classList.contains('hidden');
       if (isHidden) {
         textOptionsPanel.classList.remove('hidden');
@@ -1203,6 +1388,67 @@
       }
     });
   }
+
+  if (toolsSidebarItem && toolsPanel) {
+    toolsSidebarItem.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hideTextPanel();
+      const isHidden = toolsPanel.classList.contains('hidden');
+      if (isHidden) {
+        showToolsMainView();
+        toolsPanel.classList.remove('hidden');
+        positionToolsPanel();
+      } else {
+        toolsPanel.classList.add('hidden');
+      }
+    });
+
+    toolsPanel.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
+  }
+
+  toolOptionButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tool = btn.dataset.tool;
+      if (tool) {
+        handleToolAction(tool);
+      }
+    });
+  });
+
+  shapeOptionButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const shape = btn.dataset.shape || 'rectangle';
+      insertShape(shape);
+      hideToolsPanel();
+    });
+  });
+
+  toolsShapesBackBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showToolsMainView();
+  });
+
+  tableOptionButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rows = parseInt(btn.dataset.rows || '3', 10);
+      const cols = parseInt(btn.dataset.cols || '3', 10);
+      insertTable(
+        Number.isNaN(rows) ? 3 : rows,
+        Number.isNaN(cols) ? 3 : cols
+      );
+      hideToolsPanel();
+    });
+  });
+
+  toolsTablesBackBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showToolsMainView();
+  });
 
   if (pageNumberBackBtn) {
     pageNumberBackBtn.addEventListener('click', (e) => {
@@ -1220,14 +1466,23 @@
 
   // Close panel when clicking outside
   document.addEventListener('click', (e) => {
-    if (textOptionsPanel && !textOptionsPanel.contains(e.target) && !textSidebarItem.contains(e.target)) {
+    const clickedTextTrigger = textSidebarItem ? textSidebarItem.contains(e.target) : false;
+    if (textOptionsPanel && !textOptionsPanel.contains(e.target) && !clickedTextTrigger) {
       hideTextPanel();
+    }
+    const clickedToolsTrigger = toolsSidebarItem ? toolsSidebarItem.contains(e.target) : false;
+    if (toolsPanel && !toolsPanel.contains(e.target) && !clickedToolsTrigger) {
+      hideToolsPanel();
     }
   });
 
   window.addEventListener('resize', () => {
-    if (!textOptionsPanel || textOptionsPanel.classList.contains('hidden')) return;
-    positionPanel();
+    if (textOptionsPanel && !textOptionsPanel.classList.contains('hidden')) {
+      positionTextPanel();
+    }
+    if (toolsPanel && !toolsPanel.classList.contains('hidden')) {
+      positionToolsPanel();
+    }
   });
 
   // Handle text option button clicks
