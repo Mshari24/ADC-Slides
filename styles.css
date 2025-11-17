@@ -4563,7 +4563,7 @@ body {
   display: flex;
 }
 
-.tools-panel.shapes-active .tools-view-main {
+.tools-panel.shapes-active .panel-view-options {
   display: none;
 }
 
@@ -4571,7 +4571,7 @@ body {
   display: flex;
 }
 
-.tools-panel.tables-active .tools-view-main {
+.tools-panel.tables-active .panel-view-options {
   display: none;
 }
 

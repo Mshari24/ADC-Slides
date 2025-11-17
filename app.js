@@ -1120,7 +1120,7 @@
   const textMoreBtn = document.getElementById('text-more');
   const toolsSidebarItem = document.querySelector('.sidebar-item[title="Tools"]');
   const toolsPanel = document.getElementById('tools-panel');
-  const toolOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.tool-option-btn') : [];
+  const toolOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.text-option-btn[data-tool]') : [];
   const toolsMainView = toolsPanel ? toolsPanel.querySelector('.tools-view-main') : null;
   const toolsShapesView = toolsPanel ? toolsPanel.querySelector('.tools-view-shapes') : null;
   const toolsTablesView = toolsPanel ? toolsPanel.querySelector('.tools-view-tables') : null;
