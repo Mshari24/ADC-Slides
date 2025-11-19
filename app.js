@@ -106,6 +106,15 @@
     slides: [defaultSlide()],
   };
 
+  // Drawing mode state
+  let isDrawingMode = false;
+  let isEraserMode = false;
+  let currentDrawing = null;
+  let currentPath = null;
+  let drawingPoints = [];
+  let currentDrawColor = '#000000';
+  let currentDrawWidth = 3;
+
   const persisted = loadPersistedState();
   if (persisted) {
     Object.assign(state, persisted);
@@ -337,6 +346,41 @@
           img.style.height = ((el.height || 200) * 0.12) + 'px';
           img.style.objectFit = 'cover';
           inner.appendChild(img);
+        } else if (el.type === 'sticky') {
+          const stickyPreview = document.createElement('div');
+          stickyPreview.style.position = 'absolute';
+          stickyPreview.style.left = (el.x * 0.12) + 'px';
+          stickyPreview.style.top = (el.y * 0.12) + 'px';
+          stickyPreview.style.width = ((el.width || 200) * 0.12) + 'px';
+          stickyPreview.style.height = ((el.height || 200) * 0.12) + 'px';
+          stickyPreview.style.backgroundColor = el.color || '#fef08a';
+          stickyPreview.style.borderRadius = '2px';
+          stickyPreview.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          inner.appendChild(stickyPreview);
+        } else if (el.type === 'pdf' && el.src) {
+          const pdfPreview = document.createElement('div');
+          pdfPreview.style.position = 'absolute';
+          pdfPreview.style.left = (el.x * 0.12) + 'px';
+          pdfPreview.style.top = (el.y * 0.12) + 'px';
+          pdfPreview.style.width = ((el.width || 200) * 0.12) + 'px';
+          pdfPreview.style.height = ((el.height || 250) * 0.12) + 'px';
+          pdfPreview.style.backgroundColor = '#f3f4f6';
+          pdfPreview.style.border = '1px solid #d1d5db';
+          pdfPreview.style.borderRadius = '2px';
+          pdfPreview.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          inner.appendChild(pdfPreview);
+        } else if (el.type === 'chart') {
+          const chartPreview = document.createElement('div');
+          chartPreview.style.position = 'absolute';
+          chartPreview.style.left = (el.x * 0.12) + 'px';
+          chartPreview.style.top = (el.y * 0.12) + 'px';
+          chartPreview.style.width = ((el.width || 400) * 0.12) + 'px';
+          chartPreview.style.height = ((el.height || 300) * 0.12) + 'px';
+          chartPreview.style.backgroundColor = '#ffffff';
+          chartPreview.style.border = '1px solid #e5e7eb';
+          chartPreview.style.borderRadius = '2px';
+          chartPreview.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          inner.appendChild(chartPreview);
         } else if (el.type === 'line') {
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.setAttribute('width', '153.6');
@@ -493,7 +537,15 @@
   }
 
   function renderStage() {
-    stageEl.innerHTML = '';
+    // Don't clear if we're in the middle of drawing (preserve temp SVG)
+    if (!isDrawingMode || !currentDrawing) {
+      stageEl.innerHTML = '';
+    } else {
+      // Only remove non-temp elements
+      const tempSvg = stageEl.querySelector('.drawing-temp');
+      const elementsToRemove = stageEl.querySelectorAll('.el:not(.drawing-temp)');
+      elementsToRemove.forEach(el => el.remove());
+    }
     const slide = state.slides[state.currentSlideIndex];
     if (!slide) return;
     
@@ -693,6 +745,599 @@
           document.body.style.cursor = 'nwse-resize';
         });
 
+        stageEl.appendChild(node);
+      } else if (el.type === 'sticky') {
+        const node = document.createElement('div');
+        node.className = 'el sticky';
+        node.dataset.id = el.id;
+        node.style.left = el.x + 'px';
+        node.style.top = el.y + 'px';
+        node.style.width = (el.width || 200) + 'px';
+        node.style.height = (el.height || 200) + 'px';
+        node.style.backgroundColor = el.color || '#fef08a';
+        node.style.borderRadius = '4px';
+        node.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+        node.style.position = 'absolute';
+        node.style.display = 'flex';
+        node.style.flexDirection = 'column';
+        node.style.padding = '12px';
+        node.style.boxSizing = 'border-box';
+        node.style.cursor = 'move';
+        
+        // Text content area
+        const textArea = document.createElement('div');
+        textArea.className = 'sticky-text';
+        textArea.contentEditable = el.locked ? 'false' : 'true';
+        textArea.spellcheck = false;
+        textArea.style.flex = '1';
+        textArea.style.minHeight = '120px';
+        textArea.style.fontSize = (el.fontSize || 16) + 'px';
+        textArea.style.fontFamily = el.fontFamily || 'Inter, system-ui, sans-serif';
+        textArea.style.color = '#1f2937';
+        textArea.style.outline = 'none';
+        textArea.style.border = 'none';
+        textArea.style.background = 'transparent';
+        textArea.style.resize = 'none';
+        textArea.style.overflow = 'auto';
+        textArea.textContent = el.text || 'Add Text';
+        if (el.content) {
+          textArea.innerHTML = el.content;
+        }
+        
+        // Username area (permanently at bottom)
+        const usernameArea = document.createElement('div');
+        usernameArea.className = 'sticky-username';
+        usernameArea.style.marginTop = 'auto';
+        usernameArea.style.paddingTop = '8px';
+        usernameArea.style.borderTop = '1px solid rgba(0, 0, 0, 0.1)';
+        usernameArea.style.fontSize = '12px';
+        usernameArea.style.color = 'rgba(0, 0, 0, 0.6)';
+        usernameArea.style.fontFamily = el.fontFamily || 'Inter, system-ui, sans-serif';
+        usernameArea.textContent = el.username || getUsername();
+        usernameArea.style.userSelect = 'none';
+        usernameArea.style.pointerEvents = 'none';
+        
+        node.appendChild(textArea);
+        node.appendChild(usernameArea);
+        
+        // Text editing
+        textArea.addEventListener('input', () => {
+          el.text = textArea.innerText || '';
+          el.content = textArea.innerHTML;
+          saveState();
+        });
+        
+        textArea.addEventListener('blur', () => {
+          if (!textArea.innerText.trim() || textArea.innerText.trim() === 'Add Text') {
+            textArea.textContent = 'Add Text';
+            el.text = 'Add Text';
+            el.content = '';
+          } else {
+            el.text = textArea.innerText || '';
+            el.content = textArea.innerHTML;
+          }
+          saveState();
+        });
+        
+        // Handle paste events to clean up formatting
+        textArea.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+          document.execCommand('insertText', false, text);
+        });
+        
+        // Drag functionality
+        let dragging = false;
+        let startX = 0, startY = 0, origX = 0, origY = 0;
+        let dragStartTime = 0;
+        let dragStartPos = { x: 0, y: 0 };
+        
+        function startDrag(e) {
+          if (e.button !== 0) return;
+          if (el.locked) {
+            document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+            node.classList.add('selected');
+            updateToolbarFromSelection();
+            showContextToolbar(node);
+            e.preventDefault();
+            return;
+          }
+          dragStartTime = Date.now();
+          dragStartPos = { x: e.clientX, y: e.clientY };
+          dragging = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          origX = el.x;
+          origY = el.y;
+          document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+          node.classList.add('selected');
+          updateToolbarFromSelection();
+          showContextToolbar(node);
+          node.classList.add('dragging');
+          e.preventDefault();
+        }
+        
+        node.addEventListener('mousedown', (e) => {
+          // If clicking on text area, allow text editing
+          if (e.target === textArea || textArea.contains(e.target)) {
+            // Focus text area for editing
+            setTimeout(() => {
+              textArea.focus();
+            }, 0);
+            return;
+          }
+          // Otherwise, start dragging
+          startDrag(e);
+        });
+        
+        // Double-click to focus text area
+        node.addEventListener('dblclick', (e) => {
+          if (e.target !== usernameArea && !usernameArea.contains(e.target)) {
+            textArea.focus();
+            e.stopPropagation();
+          }
+        });
+        
+        const handleMouseMove = (e) => {
+          if (dragStartTime === 0) return;
+          const moveDistance = Math.abs(e.clientX - dragStartPos.x) + Math.abs(e.clientY - dragStartPos.y);
+          if (moveDistance > 5 && !dragging) {
+            dragging = true;
+            node.style.cursor = 'move';
+            node.style.userSelect = 'none';
+          }
+          if (dragging) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            el.x = Math.max(0, Math.min(1280 - (el.width || 200), origX + dx));
+            el.y = Math.max(0, Math.min(720 - (el.height || 200), origY + dy));
+            node.style.left = el.x + 'px';
+            node.style.top = el.y + 'px';
+            persistState();
+          }
+        };
+        
+        const handleMouseUp = () => {
+          if (dragging) {
+            dragging = false;
+            node.classList.remove('dragging');
+            saveState();
+          }
+          dragStartTime = 0;
+          document.body.style.cursor = '';
+          node.style.cursor = 'move';
+          node.style.userSelect = '';
+        };
+        
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        
+        stageEl.appendChild(node);
+      } else if (el.type === 'image' && el.src) {
+        const node = document.createElement('div');
+        node.className = 'el image';
+        node.dataset.id = el.id;
+        node.style.left = el.x + 'px';
+        node.style.top = el.y + 'px';
+        node.style.width = (el.width || 300) + 'px';
+        node.style.height = (el.height || 200) + 'px';
+        node.style.position = 'absolute';
+        node.style.cursor = el.locked ? 'default' : 'move';
+        
+        const img = document.createElement('img');
+        img.src = el.src;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.style.display = 'block';
+        img.draggable = false;
+        node.appendChild(img);
+        
+        // Drag functionality
+        let dragging = false;
+        let startX = 0, startY = 0, origX = 0, origY = 0;
+        
+        function startDrag(e) {
+          if (e.button !== 0 || el.locked) return;
+          dragging = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          origX = el.x;
+          origY = el.y;
+          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          node.classList.add('selected');
+          updateToolbarFromSelection();
+          showContextToolbar(node);
+          hideTextControlBar();
+          e.preventDefault();
+        }
+        
+        node.addEventListener('mousedown', startDrag);
+        
+        const handleMouseMove = (e) => {
+          if (!dragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
+            dragging = true;
+            node.style.cursor = 'grabbing';
+            document.body.style.cursor = 'grabbing';
+          }
+          if (dragging) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            el.x = Math.max(0, Math.min(1280 - (el.width || 300), origX + dx));
+            el.y = Math.max(0, Math.min(720 - (el.height || 200), origY + dy));
+            node.style.left = el.x + 'px';
+            node.style.top = el.y + 'px';
+            persistState();
+          }
+        };
+        
+        const handleMouseUp = () => {
+          if (dragging) {
+            dragging = false;
+            saveState();
+          }
+          node.style.cursor = 'move';
+          document.body.style.cursor = '';
+        };
+        
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        
+        stageEl.appendChild(node);
+      } else if (el.type === 'pdf' && el.src) {
+        const node = document.createElement('div');
+        node.className = 'el pdf';
+        node.dataset.id = el.id;
+        node.style.left = el.x + 'px';
+        node.style.top = el.y + 'px';
+        node.style.width = (el.width || 200) + 'px';
+        node.style.height = (el.height || 250) + 'px';
+        node.style.position = 'absolute';
+        node.style.backgroundColor = '#f3f4f6';
+        node.style.border = '2px solid #d1d5db';
+        node.style.borderRadius = '8px';
+        node.style.display = 'flex';
+        node.style.flexDirection = 'column';
+        node.style.alignItems = 'center';
+        node.style.justifyContent = 'center';
+        node.style.padding = '16px';
+        node.style.cursor = el.locked ? 'default' : 'move';
+        node.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        
+        // PDF icon
+        const pdfIcon = document.createElement('div');
+        pdfIcon.innerHTML = `
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        `;
+        pdfIcon.style.marginBottom = '8px';
+        
+        // PDF filename
+        const fileName = document.createElement('div');
+        fileName.textContent = el.fileName || 'document.pdf';
+        fileName.style.fontSize = '12px';
+        fileName.style.color = '#6b7280';
+        fileName.style.textAlign = 'center';
+        fileName.style.wordBreak = 'break-word';
+        fileName.style.maxWidth = '100%';
+        
+        node.appendChild(pdfIcon);
+        node.appendChild(fileName);
+        
+        // Click to open PDF
+        node.addEventListener('dblclick', () => {
+          if (el.src) {
+            window.open(el.src, '_blank');
+          }
+        });
+        
+        // Drag functionality
+        let dragging = false;
+        let startX = 0, startY = 0, origX = 0, origY = 0;
+        
+        function startDrag(e) {
+          if (e.button !== 0 || el.locked) return;
+          dragging = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          origX = el.x;
+          origY = el.y;
+          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          node.classList.add('selected');
+          updateToolbarFromSelection();
+          showContextToolbar(node);
+          hideTextControlBar();
+          e.preventDefault();
+        }
+        
+        node.addEventListener('mousedown', startDrag);
+        
+        const handleMouseMove = (e) => {
+          if (!dragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
+            dragging = true;
+            node.style.cursor = 'grabbing';
+            document.body.style.cursor = 'grabbing';
+          }
+          if (dragging) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            el.x = Math.max(0, Math.min(1280 - (el.width || 200), origX + dx));
+            el.y = Math.max(0, Math.min(720 - (el.height || 250), origY + dy));
+            node.style.left = el.x + 'px';
+            node.style.top = el.y + 'px';
+            persistState();
+          }
+        };
+        
+        const handleMouseUp = () => {
+          if (dragging) {
+            dragging = false;
+            saveState();
+          }
+          node.style.cursor = 'move';
+          document.body.style.cursor = '';
+        };
+        
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        
+        stageEl.appendChild(node);
+      } else if (el.type === 'chart') {
+        const node = document.createElement('div');
+        node.className = 'el chart';
+        node.dataset.id = el.id;
+        node.style.left = el.x + 'px';
+        node.style.top = el.y + 'px';
+        node.style.width = (el.width || 400) + 'px';
+        node.style.height = (el.height || 300) + 'px';
+        node.style.position = 'absolute';
+        node.style.backgroundColor = '#ffffff';
+        node.style.border = '1px solid #e5e7eb';
+        node.style.borderRadius = '8px';
+        node.style.padding = '16px';
+        node.style.boxSizing = 'border-box';
+        node.style.cursor = el.locked ? 'default' : 'move';
+        node.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        
+        // Create SVG for chart
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('viewBox', `0 0 ${el.width || 400} ${el.height || 300}`);
+        svg.style.display = 'block';
+        
+        const data = el.data || [];
+        const colors = el.colors || ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4'];
+        const chartType = el.chartType || 'bar';
+        const width = el.width || 400;
+        const height = el.height || 300;
+        const padding = 40;
+        const chartWidth = width - padding * 2;
+        const chartHeight = height - padding * 2;
+        
+        // Render chart based on type
+        if (chartType === 'bar') {
+          const maxValue = Math.max(...data.map(d => d.value), 1);
+          const barWidth = chartWidth / data.length * 0.6;
+          const spacing = chartWidth / data.length;
+          
+          data.forEach((item, i) => {
+            const barHeight = (item.value / maxValue) * chartHeight;
+            const x = padding + i * spacing + spacing * 0.2;
+            const y = padding + chartHeight - barHeight;
+            
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', x);
+            rect.setAttribute('y', y);
+            rect.setAttribute('width', barWidth);
+            rect.setAttribute('height', barHeight);
+            rect.setAttribute('fill', colors[i % colors.length]);
+            rect.setAttribute('rx', '2');
+            svg.appendChild(rect);
+            
+            if (el.showLabels) {
+              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              text.setAttribute('x', x + barWidth / 2);
+              text.setAttribute('y', padding + chartHeight + 15);
+              text.setAttribute('text-anchor', 'middle');
+              text.setAttribute('font-size', '12');
+              text.setAttribute('fill', '#374151');
+              text.textContent = item.label;
+              svg.appendChild(text);
+            }
+          });
+        } else if (chartType === 'column') {
+          const maxValue = Math.max(...data.map(d => d.value), 1);
+          const columnWidth = chartWidth / data.length * 0.6;
+          const spacing = chartWidth / data.length;
+          
+          data.forEach((item, i) => {
+            const columnHeight = (item.value / maxValue) * chartHeight;
+            const x = padding + i * spacing + spacing * 0.2;
+            const y = padding + chartHeight - columnHeight;
+            
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', x);
+            rect.setAttribute('y', y);
+            rect.setAttribute('width', columnWidth);
+            rect.setAttribute('height', columnHeight);
+            rect.setAttribute('fill', colors[i % colors.length]);
+            rect.setAttribute('rx', '2');
+            svg.appendChild(rect);
+            
+            if (el.showLabels) {
+              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              text.setAttribute('x', x + columnWidth / 2);
+              text.setAttribute('y', padding + chartHeight + 15);
+              text.setAttribute('text-anchor', 'middle');
+              text.setAttribute('font-size', '12');
+              text.setAttribute('fill', '#374151');
+              text.textContent = item.label;
+              svg.appendChild(text);
+            }
+          });
+        } else if (chartType === 'pie' || chartType === 'doughnut') {
+          const centerX = width / 2;
+          const centerY = height / 2;
+          const radius = Math.min(chartWidth, chartHeight) / 2 - 10;
+          const innerRadius = chartType === 'doughnut' ? radius * 0.5 : 0;
+          const total = data.reduce((sum, d) => sum + d.value, 0);
+          
+          let currentAngle = -Math.PI / 2;
+          data.forEach((item, i) => {
+            const sliceAngle = (item.value / total) * 2 * Math.PI;
+            const color = item.color || colors[i % colors.length];
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const x1 = centerX + Math.cos(currentAngle) * radius;
+            const y1 = centerY + Math.sin(currentAngle) * radius;
+            const x2 = centerX + Math.cos(currentAngle + sliceAngle) * radius;
+            const y2 = centerY + Math.sin(currentAngle + sliceAngle) * radius;
+            const x3 = centerX + Math.cos(currentAngle + sliceAngle) * innerRadius;
+            const y3 = centerY + Math.sin(currentAngle + sliceAngle) * innerRadius;
+            const x4 = centerX + Math.cos(currentAngle) * innerRadius;
+            const y4 = centerY + Math.sin(currentAngle) * innerRadius;
+            
+            const largeArc = sliceAngle > Math.PI ? 1 : 0;
+            const d = `M ${centerX} ${centerY} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${x3} ${y3} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x4} ${y4} Z`;
+            path.setAttribute('d', d);
+            path.setAttribute('fill', color);
+            path.setAttribute('stroke', '#fff');
+            path.setAttribute('stroke-width', '2');
+            svg.appendChild(path);
+            
+            currentAngle += sliceAngle;
+          });
+          
+          if (el.showLegend) {
+            data.forEach((item, i) => {
+              const color = item.color || colors[i % colors.length];
+              const legendY = padding + i * 20;
+              
+              const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+              rect.setAttribute('x', padding);
+              rect.setAttribute('y', legendY - 8);
+              rect.setAttribute('width', '12');
+              rect.setAttribute('height', '12');
+              rect.setAttribute('fill', color);
+              svg.appendChild(rect);
+              
+              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              text.setAttribute('x', padding + 18);
+              text.setAttribute('y', legendY);
+              text.setAttribute('font-size', '12');
+              text.setAttribute('fill', '#374151');
+              text.textContent = `${item.label}: ${item.value}`;
+              svg.appendChild(text);
+            });
+          }
+        } else if (chartType === 'line' || chartType === 'area') {
+          const maxValue = Math.max(...data.map(d => d.value), 1);
+          const pointSpacing = chartWidth / (data.length - 1 || 1);
+          const points = data.map((item, i) => ({
+            x: padding + i * pointSpacing,
+            y: padding + chartHeight - (item.value / maxValue) * chartHeight
+          }));
+          
+          if (chartType === 'area') {
+            const areaPath = `M ${points[0].x} ${padding + chartHeight} ${points.map(p => `L ${p.x} ${p.y}`).join(' ')} L ${points[points.length - 1].x} ${padding + chartHeight} Z`;
+            const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            area.setAttribute('d', areaPath);
+            area.setAttribute('fill', colors[0]);
+            area.setAttribute('opacity', '0.3');
+            svg.appendChild(area);
+          }
+          
+          const linePath = `M ${points.map(p => `${p.x},${p.y}`).join(' L ')}`;
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          line.setAttribute('d', linePath);
+          line.setAttribute('fill', 'none');
+          line.setAttribute('stroke', colors[0]);
+          line.setAttribute('stroke-width', '3');
+          line.setAttribute('stroke-linecap', 'round');
+          line.setAttribute('stroke-linejoin', 'round');
+          svg.appendChild(line);
+          
+          points.forEach((point, i) => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x);
+            circle.setAttribute('cy', point.y);
+            circle.setAttribute('r', '4');
+            circle.setAttribute('fill', colors[0]);
+            circle.setAttribute('stroke', '#fff');
+            circle.setAttribute('stroke-width', '2');
+            svg.appendChild(circle);
+            
+            if (el.showLabels && i % Math.ceil(data.length / 6) === 0) {
+              const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+              text.setAttribute('x', point.x);
+              text.setAttribute('y', padding + chartHeight + 15);
+              text.setAttribute('text-anchor', 'middle');
+              text.setAttribute('font-size', '10');
+              text.setAttribute('fill', '#374151');
+              text.textContent = data[i].label;
+              svg.appendChild(text);
+            }
+          });
+        }
+        
+        node.appendChild(svg);
+        
+        // Drag functionality
+        let dragging = false;
+        let startX = 0, startY = 0, origX = 0, origY = 0;
+        
+        function startDrag(e) {
+          if (e.button !== 0 || el.locked) return;
+          dragging = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          origX = el.x;
+          origY = el.y;
+          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          node.classList.add('selected');
+          updateToolbarFromSelection();
+          showContextToolbar(node);
+          hideTextControlBar();
+          e.preventDefault();
+        }
+        
+        node.addEventListener('mousedown', startDrag);
+        
+        const handleMouseMove = (e) => {
+          if (!dragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
+            dragging = true;
+            node.style.cursor = 'grabbing';
+            document.body.style.cursor = 'grabbing';
+          }
+          if (dragging) {
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            el.x = Math.max(0, Math.min(1280 - (el.width || 400), origX + dx));
+            el.y = Math.max(0, Math.min(720 - (el.height || 300), origY + dy));
+            node.style.left = el.x + 'px';
+            node.style.top = el.y + 'px';
+            persistState();
+          }
+        };
+        
+        const handleMouseUp = () => {
+          if (dragging) {
+            dragging = false;
+            saveState();
+          }
+          node.style.cursor = 'move';
+          document.body.style.cursor = '';
+        };
+        
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        
         stageEl.appendChild(node);
       } else if (el.type === 'shape') {
         const node = document.createElement('div');
@@ -1096,6 +1741,60 @@
         };
         
         stageEl.appendChild(container);
+      } else if (el.type === 'drawing') {
+        // Render drawing element
+        const container = document.createElement('div');
+        container.className = 'el drawing';
+        container.dataset.id = el.id;
+        container.style.position = 'absolute';
+        container.style.left = '0';
+        container.style.top = '0';
+        container.style.pointerEvents = 'all';
+        container.style.cursor = 'pointer';
+        
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', '1280');
+        svg.setAttribute('height', '720');
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.pointerEvents = 'all';
+        
+        // Render all paths in the drawing
+        if (el.paths && Array.isArray(el.paths)) {
+          el.paths.forEach(pathData => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('stroke', el.strokeColor || '#000000');
+            path.setAttribute('stroke-width', el.strokeWidth || 3);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(path);
+          });
+        }
+        
+        container.appendChild(svg);
+        container.classList.toggle('locked', !!el.locked);
+        
+        // Make drawing selectable
+        container.addEventListener('mousedown', (e) => {
+          if (e.button !== 0 || el.locked) return;
+          if (isDrawingMode) {
+            // Exit drawing mode when clicking on an element
+            cancelDrawing();
+            deactivateDrawingMode();
+            return;
+          }
+          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          container.classList.add('selected');
+          updateToolbarFromSelection();
+          showContextToolbar(container);
+          hideTextControlBar();
+          e.stopPropagation();
+        });
+        
+        stageEl.appendChild(container);
       }
     });
   }
@@ -1178,6 +1877,57 @@
     renderAll();
   }
 
+  function copySlide() {
+    const src = state.slides[state.currentSlideIndex];
+    const copy = JSON.parse(JSON.stringify(src));
+    copy.id = uid();
+    // Store in clipboard (could use localStorage or a global variable)
+    if (typeof window !== 'undefined') {
+      window.slideClipboard = copy;
+    }
+    // Show feedback
+    setStatus('Slide copied to clipboard');
+  }
+
+  function pasteSlide() {
+    if (typeof window !== 'undefined' && window.slideClipboard) {
+      const copy = JSON.parse(JSON.stringify(window.slideClipboard));
+      copy.id = uid();
+      state.slides.splice(state.currentSlideIndex + 1, 0, copy);
+      state.currentSlideIndex += 1;
+      saveState();
+      renderAll();
+      setStatus('Slide pasted');
+    }
+  }
+
+  // Slide zoom state
+  let slideZoomLevel = 1.0;
+  const minZoom = 0.25;
+  const maxZoom = 2.0;
+  const zoomStep = 0.1;
+
+  function updateSlideZoom(level) {
+    slideZoomLevel = Math.max(minZoom, Math.min(maxZoom, level));
+    const stageContainer = document.querySelector('.stage-container');
+    if (stageContainer) {
+      stageContainer.style.transform = `scale(${slideZoomLevel})`;
+      stageContainer.style.transformOrigin = 'center center';
+    }
+    const zoomValueDisplay = document.getElementById('slide-zoom-value');
+    if (zoomValueDisplay) {
+      zoomValueDisplay.textContent = `${Math.round(slideZoomLevel * 100)}%`;
+    }
+  }
+
+  function zoomSlideIn() {
+    updateSlideZoom(slideZoomLevel + zoomStep);
+  }
+
+  function zoomSlideOut() {
+    updateSlideZoom(slideZoomLevel - zoomStep);
+  }
+
   function insertText() {
     const slide = state.slides[state.currentSlideIndex];
     slide.elements.push({
@@ -1211,6 +1961,238 @@
     });
     saveState();
     renderAll();
+  }
+
+  function getUsername() {
+    if (typeof AccountStorage !== 'undefined' && AccountStorage) {
+      const account = AccountStorage.getCurrentAccount();
+      if (account && account.profile) {
+        return account.profile.displayName || account.profile.formattedName?.replace(/-/g, ' ') || 'User';
+      }
+    }
+    return 'User';
+  }
+
+  function insertStickyNote(color = '#fef08a') {
+    const slide = state.slides[state.currentSlideIndex];
+    const username = getUsername();
+    const newSticky = {
+      id: uid(),
+      type: 'sticky',
+      x: 200,
+      y: 200,
+      width: 200,
+      height: 200,
+      color: color,
+      text: 'Add Text',
+      username: username,
+      fontSize: 16,
+      fontFamily: 'Inter, system-ui, sans-serif',
+    };
+    slide.elements.push(newSticky);
+    saveState();
+    renderAll();
+    
+    // Select and focus the newly created sticky note
+    setTimeout(() => {
+      const stickyElement = stageEl.querySelector(`.el.sticky[data-id="${newSticky.id}"]`);
+      if (stickyElement) {
+        // Select the sticky note
+        document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+        stickyElement.classList.add('selected');
+        updateToolbarFromSelection();
+        showContextToolbar(stickyElement);
+        
+        // Focus the text area for immediate editing
+        const textArea = stickyElement.querySelector('.sticky-text');
+        if (textArea) {
+          textArea.focus();
+          // Select all text so user can start typing immediately
+          if (textArea.innerText === 'Add Text') {
+            const range = document.createRange();
+            range.selectNodeContents(textArea);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+        }
+      }
+    }, 50);
+    
+    hideStickyNotesPanel();
+  }
+
+  function insertImage(src, fileName, fileType) {
+    const slide = state.slides[state.currentSlideIndex];
+    const newImage = {
+      id: uid(),
+      type: 'image',
+      x: 200,
+      y: 200,
+      width: 300,
+      height: 200,
+      src: src,
+      fileName: fileName || 'image',
+      fileType: fileType || 'image'
+    };
+    slide.elements.push(newImage);
+    saveState();
+    renderAll();
+    
+    // Select the newly created image
+    setTimeout(() => {
+      const imageElement = stageEl.querySelector(`.el.image[data-id="${newImage.id}"]`);
+      if (imageElement) {
+        document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+        imageElement.classList.add('selected');
+        updateToolbarFromSelection();
+        showContextToolbar(imageElement);
+      }
+    }, 50);
+  }
+
+  function insertPDF(src, fileName) {
+    const slide = state.slides[state.currentSlideIndex];
+    const newPDF = {
+      id: uid(),
+      type: 'pdf',
+      x: 200,
+      y: 200,
+      width: 200,
+      height: 250,
+      src: src,
+      fileName: fileName || 'document.pdf'
+    };
+    slide.elements.push(newPDF);
+    saveState();
+    renderAll();
+    
+    // Select the newly created PDF
+    setTimeout(() => {
+      const pdfElement = stageEl.querySelector(`.el.pdf[data-id="${newPDF.id}"]`);
+      if (pdfElement) {
+        document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+        pdfElement.classList.add('selected');
+        updateToolbarFromSelection();
+        showContextToolbar(pdfElement);
+      }
+    }, 50);
+  }
+
+  function handleFileUpload(files) {
+    if (!files || files.length === 0) return;
+    
+    Array.from(files).forEach(file => {
+      const fileType = file.type;
+      const fileName = file.name;
+      
+      // Check if it's an image
+      if (fileType.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          insertImage(e.target.result, fileName, 'image');
+        };
+        reader.onerror = () => {
+          alert('Error reading image file. Please try again.');
+        };
+        reader.readAsDataURL(file);
+      }
+      // Check if it's a PDF
+      else if (fileType === 'application/pdf') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          insertPDF(e.target.result, fileName);
+        };
+        reader.onerror = () => {
+          alert('Error reading PDF file. Please try again.');
+        };
+        reader.readAsDataURL(file);
+      }
+      else {
+        alert(`File type "${fileType}" is not supported. Please upload an image or PDF.`);
+      }
+    });
+  }
+
+  function openFileUpload() {
+    // Create a file input element
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/*,.pdf';
+    fileInput.multiple = true;
+    fileInput.style.display = 'none';
+    
+    fileInput.addEventListener('change', (e) => {
+      handleFileUpload(e.target.files);
+      // Remove the input after use
+      document.body.removeChild(fileInput);
+    });
+    
+    // Add to body and trigger click
+    document.body.appendChild(fileInput);
+    fileInput.click();
+  }
+
+  function insertChart(chartType = 'bar') {
+    const slide = state.slides[state.currentSlideIndex];
+    
+    // Default data for different chart types
+    let defaultData = [];
+    if (chartType === 'bar' || chartType === 'column') {
+      defaultData = [
+        { label: 'Q1', value: 30 },
+        { label: 'Q2', value: 45 },
+        { label: 'Q3', value: 25 },
+        { label: 'Q4', value: 50 }
+      ];
+    } else if (chartType === 'pie' || chartType === 'doughnut') {
+      defaultData = [
+        { label: 'A', value: 30, color: '#3b82f6' },
+        { label: 'B', value: 25, color: '#ef4444' },
+        { label: 'C', value: 20, color: '#10b981' },
+        { label: 'D', value: 25, color: '#f59e0b' }
+      ];
+    } else if (chartType === 'line' || chartType === 'area') {
+      defaultData = [
+        { label: 'Jan', value: 20 },
+        { label: 'Feb', value: 35 },
+        { label: 'Mar', value: 25 },
+        { label: 'Apr', value: 40 },
+        { label: 'May', value: 30 },
+        { label: 'Jun', value: 45 }
+      ];
+    }
+    
+    const newChart = {
+      id: uid(),
+      type: 'chart',
+      chartType: chartType,
+      x: 200,
+      y: 150,
+      width: 400,
+      height: 300,
+      data: defaultData,
+      colors: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4'],
+      showLegend: true,
+      showLabels: true
+    };
+    
+    slide.elements.push(newChart);
+    saveState();
+    renderAll();
+    
+    // Select the newly created chart
+    setTimeout(() => {
+      const chartElement = stageEl.querySelector(`.el.chart[data-id="${newChart.id}"]`);
+      if (chartElement) {
+        document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
+        chartElement.classList.add('selected');
+        updateToolbarFromSelection();
+        showContextToolbar(chartElement);
+      }
+    }, 50);
+    
+    hideChartsPanel();
   }
 
   function insertTable(rows = 3, cols = 3) {
@@ -1288,6 +2270,9 @@
     saveState();
     renderAll();
     console.log('Line added, total elements:', slide.elements.length);
+    
+    // Select the newly created line so it's visible
+    reselectElement(newLine.id);
   }
 
   function applyShapeAppearance(node, shape) {
@@ -1380,6 +2365,14 @@
 
   // Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
+    // Exit drawing mode with Escape
+    if (e.key === 'Escape' && isDrawingMode) {
+      e.preventDefault();
+      cancelDrawing();
+      deactivateDrawingMode();
+      return;
+    }
+    
     // Undo/Redo
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
       e.preventDefault();
@@ -1644,9 +2637,12 @@
   const toolsShapesView = toolsPanel ? toolsPanel.querySelector('.tools-view-shapes') : null;
   const toolsLinesView = toolsPanel ? toolsPanel.querySelector('.tools-view-lines') : null;
   const toolsTablesView = toolsPanel ? toolsPanel.querySelector('.tools-view-tables') : null;
+  const toolsDrawView = toolsPanel ? toolsPanel.querySelector('.tools-view-draw') : null;
   const toolsShapesBackBtn = document.getElementById('tools-shapes-back');
   const toolsLinesBackBtn = document.getElementById('tools-lines-back');
   const toolsTablesBackBtn = document.getElementById('tools-tables-back');
+  const toolsDrawBackBtn = document.getElementById('tools-draw-back');
+  const drawOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.draw-option-btn') : [];
   const shapeOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.shape-option-btn') : [];
   const lineOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.line-option-btn') : [];
   const tableOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.table-option-btn') : [];
@@ -1666,6 +2662,7 @@
     toolsPanel.classList.remove('shapes-active');
     toolsPanel.classList.remove('lines-active');
     toolsPanel.classList.remove('tables-active');
+    toolsPanel.classList.remove('draw-active');
     if (!toolsPanel.classList.contains('hidden')) {
       requestAnimationFrame(() => positionToolsPanel());
     }
@@ -1676,6 +2673,7 @@
     toolsPanel.classList.add('shapes-active');
     toolsPanel.classList.remove('lines-active');
     toolsPanel.classList.remove('tables-active');
+    toolsPanel.classList.remove('draw-active');
     requestAnimationFrame(() => positionToolsPanel());
   }
 
@@ -1684,6 +2682,7 @@
     toolsPanel.classList.add('lines-active');
     toolsPanel.classList.remove('shapes-active');
     toolsPanel.classList.remove('tables-active');
+    toolsPanel.classList.remove('draw-active');
     requestAnimationFrame(() => positionToolsPanel());
   }
 
@@ -1692,7 +2691,69 @@
     toolsPanel.classList.add('tables-active');
     toolsPanel.classList.remove('shapes-active');
     toolsPanel.classList.remove('lines-active');
+    toolsPanel.classList.remove('draw-active');
     requestAnimationFrame(() => positionToolsPanel());
+  }
+
+  function showDrawView() {
+    if (!toolsPanel) return;
+    toolsPanel.classList.add('draw-active');
+    toolsPanel.classList.remove('shapes-active');
+    toolsPanel.classList.remove('lines-active');
+    toolsPanel.classList.remove('tables-active');
+    requestAnimationFrame(() => positionToolsPanel());
+  }
+
+  function positionStickyNotesPanel() {
+    const stickyNotesPanel = document.getElementById('sticky-notes-panel');
+    const toolsSidebarItem = document.querySelector('.sidebar-item[title="Tools"]');
+    
+    if (!stickyNotesPanel || !toolsSidebarItem) return;
+    
+    const sidebarRect = toolsSidebarItem.getBoundingClientRect();
+    stickyNotesPanel.style.top = `${sidebarRect.top}px`;
+    stickyNotesPanel.style.left = `${sidebarRect.right + 12}px`;
+  }
+
+  function showStickyNotesView() {
+    const stickyNotesPanel = document.getElementById('sticky-notes-panel');
+    if (stickyNotesPanel) {
+      stickyNotesPanel.classList.remove('hidden');
+      positionStickyNotesPanel();
+    }
+  }
+
+  function hideStickyNotesPanel() {
+    const stickyNotesPanel = document.getElementById('sticky-notes-panel');
+    if (stickyNotesPanel) {
+      stickyNotesPanel.classList.add('hidden');
+    }
+  }
+
+  function positionChartsPanel() {
+    const chartsPanel = document.getElementById('charts-panel');
+    const chartsSidebarItem = document.querySelector('.sidebar-item[title="Charts"]');
+    
+    if (!chartsPanel || !chartsSidebarItem) return;
+    
+    const sidebarRect = chartsSidebarItem.getBoundingClientRect();
+    chartsPanel.style.top = `${sidebarRect.top}px`;
+    chartsPanel.style.left = `${sidebarRect.right + 12}px`;
+  }
+
+  function showChartsView() {
+    const chartsPanel = document.getElementById('charts-panel');
+    if (chartsPanel) {
+      chartsPanel.classList.remove('hidden');
+      positionChartsPanel();
+    }
+  }
+
+  function hideChartsPanel() {
+    const chartsPanel = document.getElementById('charts-panel');
+    if (chartsPanel) {
+      chartsPanel.classList.add('hidden');
+    }
   }
 
   function hideToolsPanel() {
@@ -1724,8 +2785,9 @@
   function handleToolAction(tool) {
     switch (tool) {
       case 'draw':
-        notifyComingSoon('Drawing tool is coming soon.');
-        break;
+        activateCanvaDrawingMode();
+        hideToolsPanel();
+        return;
       case 'shapes':
         showShapesView();
         return;
@@ -1733,8 +2795,9 @@
         showLinesView();
         return;
       case 'sticky':
-        notifyComingSoon('Sticky notes are coming soon.');
-        break;
+        showStickyNotesView();
+        hideToolsPanel();
+        return;
       case 'textbox':
         insertText();
         break;
@@ -1745,6 +2808,274 @@
         break;
     }
     hideToolsPanel();
+  }
+
+  function positionDrawingToolbar() {
+    const drawingToolbar = document.getElementById('drawing-toolbar');
+    const toolsSidebarItem = document.querySelector('.sidebar-item[title="Tools"]');
+    
+    if (!drawingToolbar || !toolsSidebarItem) return;
+    
+    const sidebarRect = toolsSidebarItem.getBoundingClientRect();
+    drawingToolbar.style.top = `${sidebarRect.top}px`;
+    drawingToolbar.style.left = `${sidebarRect.right + 12}px`;
+  }
+
+  function activateCanvaDrawingMode() {
+    const drawingToolbar = document.getElementById('drawing-toolbar');
+    const drawingColorPanel = document.getElementById('drawing-color-panel');
+    
+    // Show drawing toolbar and color panel
+    if (drawingToolbar) {
+      drawingToolbar.classList.remove('hidden');
+      positionDrawingToolbar();
+    }
+    if (drawingColorPanel) {
+      drawingColorPanel.classList.remove('hidden');
+    }
+    
+    // Activate pen tool by default
+    activateDrawingTool('pen');
+    
+    // Update color palette circle with current color
+    const colorPaletteBtn = document.getElementById('color-picker-btn');
+    if (colorPaletteBtn) {
+      const circle = colorPaletteBtn.querySelector('.color-palette-circle');
+      if (circle) {
+        circle.style.background = currentDrawColor;
+      }
+    }
+  }
+
+  function deactivateCanvaDrawingMode() {
+    const drawingToolbar = document.getElementById('drawing-toolbar');
+    const drawingColorPanel = document.getElementById('drawing-color-panel');
+    
+    // Hide drawing toolbar and color panel
+    if (drawingToolbar) {
+      drawingToolbar.classList.add('hidden');
+    }
+    if (drawingColorPanel) {
+      drawingColorPanel.classList.add('hidden');
+    }
+    
+    deactivateDrawingMode();
+  }
+
+  function activateDrawingTool(tool) {
+    // Update active tool button
+    const toolButtons = document.querySelectorAll('.drawing-tool-btn');
+    toolButtons.forEach(btn => {
+      if (btn.dataset.drawTool === tool) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+    
+    // Set drawing mode based on tool
+    if (tool === 'select') {
+      isDrawingMode = false;
+      isEraserMode = false;
+      if (stageEl) {
+        stageEl.style.cursor = 'default';
+      }
+    } else if (tool === 'eraser') {
+      isDrawingMode = true;
+      isEraserMode = true;
+      if (stageEl) {
+        stageEl.style.cursor = 'grab';
+      }
+    } else if (tool === 'pen' || tool === 'highlighter' || tool === 'arrow') {
+      isDrawingMode = true;
+      isEraserMode = false;
+      if (stageEl) {
+        stageEl.style.cursor = 'crosshair';
+      }
+      // Set stroke width based on tool
+      if (tool === 'highlighter') {
+        currentDrawWidth = 20; // Thicker for highlighter
+      } else if (tool === 'arrow') {
+        currentDrawWidth = 3;
+        // Arrow will be handled differently - we'll draw arrows instead of freehand
+      } else {
+        currentDrawWidth = 3; // Default pen width
+      }
+    }
+  }
+
+  function activateDrawingMode() {
+    isDrawingMode = true;
+    if (stageEl) {
+      stageEl.style.cursor = 'crosshair';
+      stageEl.style.userSelect = 'none';
+    }
+    // Visual feedback that drawing mode is active
+    if (stageEl) {
+      stageEl.setAttribute('data-drawing-mode', 'true');
+    }
+  }
+
+  function deactivateDrawingMode() {
+    isDrawingMode = false;
+    isEraserMode = false;
+    if (stageEl) {
+      stageEl.style.cursor = '';
+      stageEl.style.userSelect = '';
+      stageEl.removeAttribute('data-drawing-mode');
+    }
+    // Finalize current drawing if any
+    if (currentDrawing && drawingPoints.length > 0) {
+      finalizeDrawing();
+    }
+  }
+
+  function startDrawing(e) {
+    if (!isDrawingMode) return;
+    
+    const rect = stageEl.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Create new drawing element
+    const slide = state.slides[state.currentSlideIndex];
+    // Check which tool is active
+    const activeTool = document.querySelector('.drawing-tool-btn.active')?.dataset.drawTool || 'pen';
+    
+    let strokeColor = currentDrawColor;
+    // For highlighter, make color semi-transparent
+    if (activeTool === 'highlighter') {
+      // Convert hex to rgba with opacity
+      const r = parseInt(currentDrawColor.slice(1, 3), 16);
+      const g = parseInt(currentDrawColor.slice(3, 5), 16);
+      const b = parseInt(currentDrawColor.slice(5, 7), 16);
+      strokeColor = `rgba(${r}, ${g}, ${b}, 0.4)`;
+    }
+    
+    currentDrawing = {
+      id: uid(),
+      type: 'drawing',
+      paths: [],
+      strokeColor: strokeColor,
+      strokeWidth: currentDrawWidth,
+      tool: activeTool
+    };
+    
+    drawingPoints = [{ x, y }];
+    
+    // Create temporary SVG path for visual feedback
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '1280');
+    svg.setAttribute('height', '720');
+    svg.style.position = 'absolute';
+    svg.style.left = '0';
+    svg.style.top = '0';
+    svg.style.pointerEvents = 'none';
+    svg.style.zIndex = '1000';
+    svg.className = 'drawing-temp';
+    
+    currentPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    currentPath.setAttribute('stroke', currentDrawing.strokeColor);
+    currentPath.setAttribute('stroke-width', currentDrawing.strokeWidth);
+    currentPath.setAttribute('fill', 'none');
+    currentPath.setAttribute('stroke-linecap', 'round');
+    currentPath.setAttribute('stroke-linejoin', 'round');
+    currentPath.setAttribute('d', `M ${x} ${y}`);
+    
+    svg.appendChild(currentPath);
+    stageEl.appendChild(svg);
+    
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function continueDrawing(e) {
+    if (!isDrawingMode || !currentPath || drawingPoints.length === 0) return;
+    
+    const rect = stageEl.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    drawingPoints.push({ x, y });
+    
+    // Update path
+    let pathData = `M ${drawingPoints[0].x} ${drawingPoints[0].y}`;
+    for (let i = 1; i < drawingPoints.length; i++) {
+      pathData += ` L ${drawingPoints[i].x} ${drawingPoints[i].y}`;
+    }
+    currentPath.setAttribute('d', pathData);
+    
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function finalizeDrawing() {
+    if (!currentDrawing) {
+      // Clean up if no drawing object
+      const tempSvg = stageEl.querySelector('.drawing-temp');
+      if (tempSvg) {
+        stageEl.removeChild(tempSvg);
+      }
+      currentDrawing = null;
+      currentPath = null;
+      drawingPoints = [];
+      return;
+    }
+    
+    // If we have at least one point, save the drawing
+    if (drawingPoints.length > 0) {
+      // Save path data - handle single point case by creating a small line
+      let pathData;
+      if (drawingPoints.length === 1) {
+        // Single point - create a tiny dot/line so it's visible
+        const p = drawingPoints[0];
+        pathData = `M ${p.x} ${p.y} L ${p.x + 0.1} ${p.y + 0.1}`;
+      } else {
+        pathData = `M ${drawingPoints[0].x} ${drawingPoints[0].y}`;
+        for (let i = 1; i < drawingPoints.length; i++) {
+          pathData += ` L ${drawingPoints[i].x} ${drawingPoints[i].y}`;
+        }
+      }
+      currentDrawing.paths.push(pathData);
+      
+      // Add to slide BEFORE removing temp SVG to ensure it persists
+      const slide = state.slides[state.currentSlideIndex];
+      if (slide) {
+        slide.elements.push(currentDrawing);
+        // Save state immediately
+        saveState();
+        
+        // Remove temporary SVG after saving
+        const tempSvg = stageEl.querySelector('.drawing-temp');
+        if (tempSvg) {
+          stageEl.removeChild(tempSvg);
+        }
+        
+        // Re-render to show the permanent drawing
+        renderAll();
+      }
+    } else {
+      // No points, just clean up
+      const tempSvg = stageEl.querySelector('.drawing-temp');
+      if (tempSvg) {
+        stageEl.removeChild(tempSvg);
+      }
+    }
+    
+    // Reset
+    currentDrawing = null;
+    currentPath = null;
+    drawingPoints = [];
+  }
+
+  function cancelDrawing() {
+    const tempSvg = stageEl.querySelector('.drawing-temp');
+    if (tempSvg) {
+      stageEl.removeChild(tempSvg);
+    }
+    currentDrawing = null;
+    currentPath = null;
+    drawingPoints = [];
   }
 
   function showTextOptionsView() {
@@ -1945,10 +3276,14 @@
       if (lineBtn) {
         e.preventDefault();
         e.stopPropagation();
+        // Remove active class from all line option buttons
+        lineOptionButtons.forEach(btn => btn.classList.remove('active'));
+        // Add active class to clicked button
+        lineBtn.classList.add('active');
         const lineType = lineBtn.dataset.lineType || 'straight';
         console.log('Inserting line type:', lineType); // Debug log
         insertLine(lineType);
-        hideToolsPanel();
+        // Keep panel open so user can see the line appear on the canvas
         return;
       }
       
@@ -1999,10 +3334,14 @@
     btn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // Remove active class from all line option buttons
+      lineOptionButtons.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
       const lineType = btn.dataset.lineType || 'straight';
       console.log('Direct listener - Inserting line type:', lineType); // Debug log
       insertLine(lineType);
-      hideToolsPanel();
+      // Keep panel open so user can see the line appear on the canvas
     });
   });
 
@@ -2010,6 +3349,48 @@
     e.preventDefault();
     e.stopPropagation();
     showToolsMainView();
+  });
+
+  toolsDrawBackBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    showToolsMainView();
+  });
+
+  // Handle draw option button clicks
+  drawOptionButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Remove active class from all draw option buttons
+      drawOptionButtons.forEach(b => b.classList.remove('active'));
+      // Add active class to clicked button
+      btn.classList.add('active');
+      
+      const drawColor = btn.dataset.drawColor;
+      const drawWidth = btn.dataset.drawWidth;
+      const drawMode = btn.dataset.drawMode;
+      
+      if (drawMode === 'eraser') {
+        isEraserMode = true;
+        isDrawingMode = true;
+        if (stageEl) {
+          stageEl.style.cursor = 'grab';
+        }
+      } else {
+        isEraserMode = false;
+        if (drawColor) {
+          currentDrawColor = drawColor;
+        }
+        if (drawWidth) {
+          currentDrawWidth = parseInt(drawWidth, 10);
+        }
+        activateDrawingMode();
+      }
+      
+      // Keep panel open
+    });
   });
 
   tableOptionButtons.forEach(btn => {
@@ -2054,6 +3435,14 @@
     if (toolsPanel && !toolsPanel.contains(e.target) && !clickedToolsTrigger) {
       hideToolsPanel();
     }
+    const drawingToolbar = document.getElementById('drawing-toolbar');
+    const drawingColorPanel = document.getElementById('drawing-color-panel');
+    const clickedDrawingTrigger = toolsSidebarItem ? toolsSidebarItem.contains(e.target) : false;
+    if (drawingToolbar && !drawingToolbar.classList.contains('hidden') && 
+        !drawingToolbar.contains(e.target) && !clickedDrawingTrigger &&
+        !(drawingColorPanel && drawingColorPanel.contains(e.target))) {
+      deactivateCanvaDrawingMode();
+    }
   });
 
   window.addEventListener('resize', () => {
@@ -2062,6 +3451,10 @@
     }
     if (toolsPanel && !toolsPanel.classList.contains('hidden')) {
       positionToolsPanel();
+    }
+    const drawingToolbar = document.getElementById('drawing-toolbar');
+    if (drawingToolbar && !drawingToolbar.classList.contains('hidden')) {
+      positionDrawingToolbar();
     }
   });
 
@@ -2352,8 +3745,64 @@
     }
   }
 
-  // Click on stage to deselect
+  // Drawing mode mouse events
+  let isMouseDown = false;
+  
+  stageEl.addEventListener('mousedown', (e) => {
+    if (isDrawingMode) {
+      // Handle eraser mode
+      if (isEraserMode) {
+        const clickedElement = e.target.closest('.el.drawing');
+        if (clickedElement) {
+          const elId = clickedElement.dataset.id;
+          const slide = state.slides[state.currentSlideIndex];
+          const index = slide.elements.findIndex(el => el.id === elId);
+          if (index >= 0) {
+            slide.elements.splice(index, 1);
+            saveState();
+            renderAll();
+          }
+        }
+        return;
+      }
+      
+      // Don't start drawing if clicking on an existing element
+      if (e.target.closest('.el') && !e.target.closest('.drawing-temp')) {
+        cancelDrawing();
+        deactivateDrawingMode();
+        return;
+      }
+      isMouseDown = true;
+      startDrawing(e);
+    }
+  });
+  
+  stageEl.addEventListener('mousemove', (e) => {
+    if (isDrawingMode && isMouseDown) {
+      continueDrawing(e);
+    }
+  });
+  
+  stageEl.addEventListener('mouseup', (e) => {
+    if (isDrawingMode && isMouseDown) {
+      isMouseDown = false;
+      finalizeDrawing();
+    }
+  });
+  
+  stageEl.addEventListener('mouseleave', (e) => {
+    if (isDrawingMode && isMouseDown) {
+      isMouseDown = false;
+      finalizeDrawing();
+    }
+  });
+
+  // Click on stage to deselect (but not in drawing mode)
   stageEl.addEventListener('click', (e) => {
+    if (isDrawingMode) {
+      // Don't deselect in drawing mode
+      return;
+    }
     if (!e.target.closest('.el')) {
       document.querySelectorAll('.el').forEach(el => {
         el.classList.remove('selected');
@@ -3109,7 +4558,292 @@
     // Image support can be added later
   }
   
-  
+  // Drawing interface event handlers
+  const drawingToolbar = document.getElementById('drawing-toolbar');
+  const drawingToolbarClose = document.getElementById('drawing-toolbar-close');
+  const drawingColorPanel = document.getElementById('drawing-color-panel');
+  const drawingToolButtons = document.querySelectorAll('.drawing-tool-btn');
+  const colorSwatches = document.querySelectorAll('.color-swatch[data-color]');
+  const addColorBtn = document.querySelector('.color-swatch.add-color');
+  const colorPaletteBtn = document.getElementById('color-picker-btn');
+  const colorPickerModal = document.getElementById('color-picker-modal');
+  const colorPickerClose = document.getElementById('color-picker-close');
+  const fullColorPicker = document.getElementById('full-color-picker');
+  const colorHexInput = document.getElementById('color-hex-input');
+  const colorPreviewBox = document.getElementById('color-preview-box');
+  const colorPickerApply = document.getElementById('color-picker-apply');
+
+  // Close drawing toolbar
+  drawingToolbarClose?.addEventListener('click', () => {
+    deactivateCanvaDrawingMode();
+  });
+
+  // Tool selection
+  drawingToolButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tool = btn.dataset.drawTool;
+      if (tool) {
+        activateDrawingTool(tool);
+      }
+    });
+  });
+
+  // Color selection
+  colorSwatches.forEach(swatch => {
+    swatch.addEventListener('click', () => {
+      const color = swatch.dataset.color;
+      if (color) {
+        // Remove active from all swatches
+        colorSwatches.forEach(s => s.classList.remove('active'));
+        // Add active to clicked swatch
+        swatch.classList.add('active');
+        // Update current draw color
+        currentDrawColor = color;
+        // Update color palette circle
+        if (colorPaletteBtn) {
+          const circle = colorPaletteBtn.querySelector('.color-palette-circle');
+          if (circle) {
+            circle.style.background = color;
+          }
+        }
+      }
+    });
+  });
+
+  // Add color button
+  addColorBtn?.addEventListener('click', () => {
+    if (colorPickerModal) {
+      colorPickerModal.classList.remove('hidden');
+      // Set current color in picker
+      if (fullColorPicker) {
+        fullColorPicker.value = currentDrawColor;
+      }
+      if (colorHexInput) {
+        colorHexInput.value = currentDrawColor;
+      }
+      if (colorPreviewBox) {
+        colorPreviewBox.style.background = currentDrawColor;
+      }
+    }
+  });
+
+  // Color palette button
+  colorPaletteBtn?.addEventListener('click', () => {
+    if (colorPickerModal) {
+      colorPickerModal.classList.remove('hidden');
+      // Set current color in picker
+      if (fullColorPicker) {
+        fullColorPicker.value = currentDrawColor;
+      }
+      if (colorHexInput) {
+        colorHexInput.value = currentDrawColor;
+      }
+      if (colorPreviewBox) {
+        colorPreviewBox.style.background = currentDrawColor;
+      }
+    }
+  });
+
+  // Close color picker modal
+  colorPickerClose?.addEventListener('click', () => {
+    if (colorPickerModal) {
+      colorPickerModal.classList.add('hidden');
+    }
+  });
+
+  // Update color preview when picker changes
+  fullColorPicker?.addEventListener('input', (e) => {
+    const color = e.target.value;
+    if (colorHexInput) {
+      colorHexInput.value = color;
+    }
+    if (colorPreviewBox) {
+      colorPreviewBox.style.background = color;
+    }
+  });
+
+  // Update color from hex input
+  colorHexInput?.addEventListener('input', (e) => {
+    const color = e.target.value;
+    if (/^#[0-9A-F]{6}$/i.test(color)) {
+      if (fullColorPicker) {
+        fullColorPicker.value = color;
+      }
+      if (colorPreviewBox) {
+        colorPreviewBox.style.background = color;
+      }
+    }
+  });
+
+  // Apply color from picker
+  colorPickerApply?.addEventListener('click', () => {
+    const color = fullColorPicker?.value || currentDrawColor;
+    currentDrawColor = color;
+    
+    // Update active swatch if color matches
+    colorSwatches.forEach(swatch => {
+      if (swatch.dataset.color === color) {
+        colorSwatches.forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+      }
+    });
+    
+    // Update color palette circle
+    if (colorPaletteBtn) {
+      const circle = colorPaletteBtn.querySelector('.color-palette-circle');
+      if (circle) {
+        circle.style.background = color;
+      }
+    }
+    
+    // Close modal
+    if (colorPickerModal) {
+      colorPickerModal.classList.add('hidden');
+    }
+  });
+
+  // Close modal when clicking outside
+  colorPickerModal?.addEventListener('click', (e) => {
+    if (e.target === colorPickerModal) {
+      colorPickerModal.classList.add('hidden');
+    }
+  });
+
+  // Sticky notes event handlers
+  const stickyNotesPanel = document.getElementById('sticky-notes-panel');
+  const stickyNotesClose = document.getElementById('sticky-notes-close');
+  const stickyColorButtons = document.querySelectorAll('.sticky-color-btn');
+
+  // Close sticky notes panel
+  stickyNotesClose?.addEventListener('click', () => {
+    hideStickyNotesPanel();
+  });
+
+  // Sticky color selection
+  stickyColorButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const color = btn.dataset.color;
+      if (color) {
+        insertStickyNote(color);
+      }
+    });
+  });
+
+  // Close sticky notes panel when clicking outside
+  document.addEventListener('click', (e) => {
+    if (stickyNotesPanel && !stickyNotesPanel.classList.contains('hidden')) {
+      const clickedStickyTrigger = toolsSidebarItem ? toolsSidebarItem.contains(e.target) : false;
+      if (!stickyNotesPanel.contains(e.target) && !clickedStickyTrigger) {
+        hideStickyNotesPanel();
+      }
+    }
+  });
+
+  // Reposition sticky notes panel on resize
+  window.addEventListener('resize', () => {
+    if (stickyNotesPanel && !stickyNotesPanel.classList.contains('hidden')) {
+      positionStickyNotesPanel();
+    }
+  });
+
+  // Upload button event listener
+  const uploadSidebarItem = document.querySelector('.sidebar-item[title="Upload"]');
+  uploadSidebarItem?.addEventListener('click', () => {
+    openFileUpload();
+  });
+
+  // Charts event handlers
+  const chartsPanel = document.getElementById('charts-panel');
+  const chartsClose = document.getElementById('charts-close');
+  const chartOptionButtons = document.querySelectorAll('.chart-option-btn');
+  const chartsSidebarItem = document.querySelector('.sidebar-item[title="Charts"]');
+
+  // Close charts panel
+  chartsClose?.addEventListener('click', () => {
+    hideChartsPanel();
+  });
+
+  // Chart type selection
+  chartOptionButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const chartType = btn.dataset.chartType;
+      if (chartType) {
+        insertChart(chartType);
+      }
+    });
+  });
+
+  // Charts sidebar item click
+  chartsSidebarItem?.addEventListener('click', () => {
+    showChartsView();
+  });
+
+  // Close charts panel when clicking outside
+  document.addEventListener('click', (e) => {
+    if (chartsPanel && !chartsPanel.classList.contains('hidden')) {
+      const clickedChartsTrigger = chartsSidebarItem ? chartsSidebarItem.contains(e.target) : false;
+      if (!chartsPanel.contains(e.target) && !clickedChartsTrigger) {
+        hideChartsPanel();
+      }
+    }
+  });
+
+  // Reposition charts panel on resize
+  window.addEventListener('resize', () => {
+    if (chartsPanel && !chartsPanel.classList.contains('hidden')) {
+      positionChartsPanel();
+    }
+  });
+
+  // Slide controls event handlers
+  const slideControlAdd = document.getElementById('slide-control-add');
+  const slideControlDuplicate = document.getElementById('slide-control-duplicate');
+  const slideControlDelete = document.getElementById('slide-control-delete');
+  const slideControlCopy = document.getElementById('slide-control-copy');
+  const slideZoomIn = document.getElementById('slide-zoom-in');
+  const slideZoomOut = document.getElementById('slide-zoom-out');
+
+  // Add blank slide
+  slideControlAdd?.addEventListener('click', () => {
+    addSlide();
+    saveState();
+  });
+
+  // Duplicate slide
+  slideControlDuplicate?.addEventListener('click', () => {
+    dupSlide();
+    saveState();
+  });
+
+  // Delete slide
+  slideControlDelete?.addEventListener('click', () => {
+    if (state.slides.length <= 1) {
+      alert('Cannot delete the last slide.');
+      return;
+    }
+    if (confirm('Are you sure you want to delete this slide?')) {
+      deleteSlide();
+      saveState();
+    }
+  });
+
+  // Copy slide
+  slideControlCopy?.addEventListener('click', () => {
+    copySlide();
+  });
+
+  // Zoom controls
+  slideZoomIn?.addEventListener('click', () => {
+    zoomSlideIn();
+  });
+
+  slideZoomOut?.addEventListener('click', () => {
+    zoomSlideOut();
+  });
+
+  // Initialize zoom display
+  updateSlideZoom(slideZoomLevel);
+
   // Initial render and state save
   renderAll();
   saveState();
