@@ -2573,6 +2573,543 @@
   window.searchPrev = searchPrev;
   window.clearTextSearch = clearTextSearch;
 
+  // ============================================================================
+  // AI Presentation Generator Integration
+  // ============================================================================
+  
+  /**
+   * Get current presentation state for AI improvement
+   */
+  window.getCurrentPresentationState = function() {
+    return JSON.parse(JSON.stringify(state));
+  };
+
+  /**
+   * Create a presentation from AI-generated slide data (new JSON format)
+   * @param {Array} slidesData - Array of slide objects with title, body, layout, design, notes
+   */
+  window.createAIPresentation = function(slidesData) {
+    if (!slidesData || !Array.isArray(slidesData) || slidesData.length === 0) {
+      console.error('Invalid slides data provided');
+      return false;
+    }
+
+    try {
+      // Clear existing slides and start fresh
+      state.slides = [];
+      state.currentSlideIndex = 0;
+      state.title = slidesData[0]?.title || 'AI Generated Presentation';
+
+      // Create slides from data
+      slidesData.forEach((slideData, index) => {
+        const slide = defaultSlide();
+        const layout = slideData.layout || 'content';
+        const design = slideData.design || {};
+        const colors = design.colors || {};
+        const fonts = design.fonts || {};
+        
+        // Default theme values (fallback only - functions read from slideData.design)
+        const primaryColor = colors.primary || '#003e6a';
+        const secondaryColor = colors.secondary || '#00aae7';
+        const textColor = colors.text || '#1e293b';
+        const textLightColor = colors.textLight || '#475569';
+        const backgroundColor = colors.background || '#ffffff';
+        const fontFamily = fonts.family || 'Inter, system-ui, sans-serif';
+        const titleSize = fonts.titleSize || 42;
+        const bodySize = fonts.bodySize || 22;
+        
+        // Store notes if provided
+        if (slideData.notes) {
+          slide.notes = slideData.notes;
+        }
+        
+        // Apply layout
+        if (layout === 'title') {
+          createTitleSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize);
+        } else if (layout === 'two-column') {
+          createTwoColumnSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+        } else if (layout === 'image-text') {
+          createImageTextSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+        } else if (layout === 'key-points') {
+          createKeyPointsSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+        } else if (layout === 'summary') {
+          createSummarySlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+        } else {
+          // Default content layout
+          createContentSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+        }
+        
+        state.slides.push(slide);
+      });
+
+      // Ensure at least one slide exists
+      if (state.slides.length === 0) {
+        state.slides.push(defaultSlide());
+      }
+
+      // Update title in UI
+      if (deckTitleEl) {
+        deckTitleEl.textContent = state.title;
+      }
+
+      // Save state and render
+      saveState();
+      renderAll();
+      
+      // Navigate to first slide
+      state.currentSlideIndex = 0;
+      renderAll();
+      
+      return true;
+    } catch (error) {
+      console.error('Error creating AI presentation:', error);
+      return false;
+    }
+  };
+
+  // Helper functions for different layouts
+  function createTitleSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize) {
+    // Extract design data EXCLUSIVELY from slideData.design object
+    const design = slideData.design || {};
+    const colors = design.colors || {};
+    const fonts = design.fonts || {};
+    
+    // Read colors exclusively from design object
+    const primaryColorValue = colors.primary || '#003e6a';
+    const secondaryColorValue = colors.secondary || '#00aae7';
+    const accentColorValue = colors.accent || '#006c35';
+    const backgroundColorValue = colors.background || '#ffffff';
+    const textColorValue = colors.text || '#1e293b';
+    const textLightValue = colors.textLight || '#475569';
+    
+    // Read fonts exclusively from design object
+    const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
+    const titleSizeValue = fonts.titleSize || 48;
+    const bodySizeValue = fonts.bodySize || 24;
+    const titleAlignValue = fonts.titleAlign || 'center';
+    const bodyAlignValue = fonts.bodyAlign || 'left';
+    const fontWeightValue = fonts.fontWeight || 'bold';
+    
+    // Apply background color
+    slide.background = backgroundColorValue;
+    
+    const titleY = 250;
+    const subtitleY = 350;
+    
+    // Adjust title X position based on alignment
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
+    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : 100);
+    
+    // Main title
+    slide.elements.push({
+      id: uid(),
+      type: 'text',
+      x: titleX,
+      y: titleY,
+      text: slideData.title || 'Title',
+      content: slideData.title || 'Title',
+      fontSize: titleSizeValue,
+      color: primaryColorValue,
+      fontFamily: fontFamilyValue,
+      fontWeight: fontWeightValue,
+      fontStyle: 'normal',
+      textAlign: titleAlignValue,
+      underline: false,
+      lineHeight: 1.2,
+      listType: null,
+      rotation: 0,
+      scale: 1
+    });
+    
+    // Subtitle/body if provided
+    if (slideData.body) {
+      const bodyLines = slideData.body.split('\n').filter(l => l.trim());
+      bodyLines.forEach((line, idx) => {
+        slide.elements.push({
+          id: uid(),
+          type: 'text',
+          x: bodyX,
+          y: subtitleY + (idx * 50),
+          text: line.trim(),
+          content: line.trim(),
+          fontSize: bodySizeValue,
+          color: textColorValue,
+          fontFamily: fontFamilyValue,
+          fontWeight: 'normal',
+          fontStyle: 'normal',
+          textAlign: bodyAlignValue,
+          underline: false,
+          lineHeight: 1.4,
+          listType: null,
+          rotation: 0,
+          scale: 1
+        });
+      });
+    }
+  }
+
+  function createContentSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
+    // Extract design data EXCLUSIVELY from slideData.design object
+    const design = slideData.design || {};
+    const colors = design.colors || {};
+    const fonts = design.fonts || {};
+    
+    // Read colors exclusively from design object
+    const primaryColorValue = colors.primary || '#003e6a';
+    const secondaryColorValue = colors.secondary || '#00aae7';
+    const accentColorValue = colors.accent || '#006c35';
+    const backgroundColorValue = colors.background || '#ffffff';
+    const textColorValue = colors.text || '#1e293b';
+    const textLightValue = colors.textLight || '#475569';
+    
+    // Read fonts exclusively from design object
+    const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
+    const titleSizeValue = fonts.titleSize || 48;
+    const bodySizeValue = fonts.bodySize || 24;
+    const titleAlignValue = fonts.titleAlign || 'left';
+    const bodyAlignValue = fonts.bodyAlign || 'left';
+    const fontWeightValue = fonts.fontWeight || 'bold';
+    
+    // Apply background color
+    slide.background = backgroundColorValue;
+    
+    const startY = 100;
+    const titleY = startY;
+    const contentStartY = startY + 90;
+    const maxWidth = 1080; // Leave margins
+    const lineHeight = 32; // Tighter spacing for paragraphs
+    
+    // Adjust positioning based on alignment
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
+    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : 100);
+    
+    // Slide title
+    slide.elements.push({
+      id: uid(),
+      type: 'text',
+      x: titleX,
+      y: titleY,
+      text: slideData.title || 'Slide',
+      content: slideData.title || 'Slide',
+      fontSize: titleSizeValue,
+      color: primaryColorValue,
+      fontFamily: fontFamilyValue,
+      fontWeight: fontWeightValue,
+      fontStyle: 'normal',
+      textAlign: titleAlignValue,
+      underline: false,
+      lineHeight: 1.2,
+      listType: null,
+      rotation: 0,
+      scale: 1
+    });
+    
+    // Body content - handle as paragraphs, not line-by-line
+    if (slideData.body) {
+      // Split into paragraphs (by double newlines or long sentences)
+      const paragraphs = slideData.body.split(/\n\n+/).filter(p => p.trim());
+      if (paragraphs.length === 0) {
+        paragraphs.push(slideData.body);
+      }
+      
+      let currentY = contentStartY;
+      
+      paragraphs.forEach((paragraph, paraIdx) => {
+        // Clean paragraph text
+        const cleanPara = paragraph.trim().replace(/\n/g, ' ');
+        
+        // Split long paragraphs into manageable chunks (max ~600 chars per element)
+        const maxChars = 600;
+        if (cleanPara.length > maxChars) {
+          const sentences = cleanPara.match(/[^.!?]+[.!?]+/g) || [cleanPara];
+          let currentChunk = '';
+          
+          sentences.forEach((sentence, sentIdx) => {
+            if ((currentChunk + sentence).length > maxChars && currentChunk) {
+              // Create element for current chunk
+              slide.elements.push({
+                id: uid(),
+                type: 'text',
+                x: bodyX,
+                y: currentY,
+                text: currentChunk.trim(),
+                content: currentChunk.trim(),
+                fontSize: bodySizeValue,
+                color: textColorValue,
+                fontFamily: fontFamilyValue,
+                fontWeight: 'normal',
+                fontStyle: 'normal',
+                textAlign: bodyAlignValue,
+                underline: false,
+                lineHeight: 1.6,
+                listType: null,
+                rotation: 0,
+                scale: 1
+              });
+              
+              currentY += Math.ceil(currentChunk.length / 80) * (lineHeight * 1.6); // Estimate height
+              currentChunk = sentence + ' ';
+            } else {
+              currentChunk += sentence + ' ';
+            }
+          });
+          
+          // Add remaining chunk
+          if (currentChunk.trim()) {
+            slide.elements.push({
+              id: uid(),
+              type: 'text',
+              x: bodyX,
+              y: currentY,
+              text: currentChunk.trim(),
+              content: currentChunk.trim(),
+              fontSize: bodySizeValue,
+              color: textColorValue,
+              fontFamily: fontFamilyValue,
+              fontWeight: 'normal',
+              fontStyle: 'normal',
+              textAlign: bodyAlignValue,
+              underline: false,
+              lineHeight: 1.6,
+              listType: null,
+              rotation: 0,
+              scale: 1
+            });
+            
+            currentY += Math.ceil(currentChunk.length / 80) * (lineHeight * 1.6);
+          }
+        } else {
+          // Single paragraph element
+          slide.elements.push({
+            id: uid(),
+            type: 'text',
+            x: bodyX,
+            y: currentY,
+            text: cleanPara,
+            content: cleanPara,
+            fontSize: bodySizeValue,
+            color: textColorValue,
+            fontFamily: fontFamilyValue,
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            textAlign: bodyAlignValue,
+            underline: false,
+            lineHeight: 1.6,
+            listType: null,
+            rotation: 0,
+            scale: 1
+          });
+          
+          // Estimate height: ~80 chars per line, lineHeight * 1.6
+          currentY += Math.ceil(cleanPara.length / 80) * (lineHeight * 1.6);
+        }
+        
+        // Add spacing between paragraphs
+        if (paraIdx < paragraphs.length - 1) {
+          currentY += 20;
+        }
+      });
+    }
+  }
+
+  function createTwoColumnSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
+    // Extract design data EXCLUSIVELY from slideData.design object
+    const design = slideData.design || {};
+    const colors = design.colors || {};
+    const fonts = design.fonts || {};
+    
+    // Read colors exclusively from design object
+    const primaryColorValue = colors.primary || '#003e6a';
+    const secondaryColorValue = colors.secondary || '#00aae7';
+    const accentColorValue = colors.accent || '#006c35';
+    const backgroundColorValue = colors.background || '#ffffff';
+    const textColorValue = colors.text || '#1e293b';
+    const textLightValue = colors.textLight || '#475569';
+    
+    // Read fonts exclusively from design object
+    const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
+    const titleSizeValue = fonts.titleSize || 48;
+    const bodySizeValue = fonts.bodySize || 24;
+    const titleAlignValue = fonts.titleAlign || 'center';
+    const bodyAlignValue = fonts.bodyAlign || 'left';
+    const fontWeightValue = fonts.fontWeight || 'bold';
+    
+    // Apply background color
+    slide.background = backgroundColorValue;
+    
+    const startY = 120;
+    const titleY = startY;
+    const contentStartY = startY + 100;
+    const columnWidth = 500;
+    const columnGap = 80;
+    const leftX = 100;
+    const rightX = leftX + columnWidth + columnGap;
+    const lineHeight = 32;
+    
+    // Adjust title X position based on alignment
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
+    
+    // Title - use primaryColor for headings
+    slide.elements.push({
+      id: uid(),
+      type: 'text',
+      x: titleX,
+      y: titleY,
+      text: slideData.title || 'Slide',
+      content: slideData.title || 'Slide',
+      fontSize: titleSizeValue,
+      color: primaryColorValue,
+      fontFamily: fontFamilyValue,
+      fontWeight: fontWeightValue,
+      fontStyle: 'normal',
+      textAlign: titleAlignValue,
+      underline: false,
+      lineHeight: 1.2,
+      listType: null,
+      rotation: 0,
+      scale: 1
+    });
+    
+    // Split body into two columns
+    if (slideData.body) {
+      const bodyLines = slideData.body.split('\n').filter(l => l.trim());
+      const midPoint = Math.ceil(bodyLines.length / 2);
+      const leftColumn = bodyLines.slice(0, midPoint);
+      const rightColumn = bodyLines.slice(midPoint);
+      
+      [leftColumn, rightColumn].forEach((column, colIdx) => {
+        const xPos = colIdx === 0 ? leftX : rightX;
+        column.forEach((line, idx) => {
+          const isBullet = line.trim().startsWith('•');
+          slide.elements.push({
+            id: uid(),
+            type: 'text',
+            x: isBullet ? xPos + 40 : xPos,
+            y: contentStartY + (idx * lineHeight),
+            text: line.trim(),
+            content: line.trim(),
+            fontSize: bodySizeValue - 2,
+            color: textColorValue,
+            fontFamily: fontFamilyValue,
+            fontWeight: 'normal',
+            fontStyle: 'normal',
+            textAlign: bodyAlignValue,
+            underline: false,
+            lineHeight: 1.4,
+            listType: isBullet ? 'bullet' : null,
+            rotation: 0,
+            scale: 1
+          });
+        });
+      });
+    }
+  }
+
+  function createKeyPointsSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
+    // Extract design data EXCLUSIVELY from slideData.design object
+    const design = slideData.design || {};
+    const colors = design.colors || {};
+    const fonts = design.fonts || {};
+    
+    // Read colors exclusively from design object
+    const primaryColorValue = colors.primary || '#003e6a';
+    const secondaryColorValue = colors.secondary || '#00aae7';
+    const accentColorValue = colors.accent || '#006c35';
+    const backgroundColorValue = colors.background || '#ffffff';
+    const textColorValue = colors.text || '#1e293b';
+    const textLightValue = colors.textLight || '#475569';
+    
+    // Read fonts exclusively from design object
+    const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
+    const titleSizeValue = fonts.titleSize || 48;
+    const bodySizeValue = fonts.bodySize || 24;
+    const titleAlignValue = fonts.titleAlign || 'center';
+    const bodyAlignValue = fonts.bodyAlign || 'left';
+    const fontWeightValue = fonts.fontWeight || 'bold';
+    
+    // Apply background color
+    slide.background = backgroundColorValue;
+    
+    const startY = 150;
+    const titleY = startY;
+    const contentStartY = startY + 90;
+    const lineHeight = 50;
+    
+    // Adjust title X position based on alignment
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
+    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : 100);
+    
+    // Title - use titleSize for the title
+    slide.elements.push({
+      id: uid(),
+      type: 'text',
+      x: titleX,
+      y: titleY,
+      text: slideData.title || 'Key Points',
+      content: slideData.title || 'Key Points',
+      fontSize: titleSizeValue,
+      color: primaryColorValue,
+      fontFamily: fontFamilyValue,
+      fontWeight: fontWeightValue,
+      fontStyle: 'normal',
+      textAlign: titleAlignValue,
+      underline: false,
+      lineHeight: 1.2,
+      listType: null,
+      rotation: 0,
+      scale: 1
+    });
+    
+    // Key points (centered, larger) - use bodySize + 4 for each bullet
+    if (slideData.body) {
+      const bodyLines = slideData.body.split('\n').filter(l => l.trim());
+      bodyLines.forEach((line, idx) => {
+        const cleanLine = line.replace(/^[•\-\d+\.\)]\s*/, '');
+        slide.elements.push({
+          id: uid(),
+          type: 'text',
+          x: bodyX,
+          y: contentStartY + (idx * lineHeight),
+          text: cleanLine,
+          content: cleanLine,
+          fontSize: bodySizeValue + 4,
+          color: textColorValue,
+          fontFamily: fontFamilyValue,
+          fontWeight: '600',
+          fontStyle: 'normal',
+          textAlign: bodyAlignValue,
+          underline: false,
+          lineHeight: 1.4,
+          listType: null,
+          rotation: 0,
+          scale: 1
+        });
+      });
+    }
+  }
+
+  function createSummarySlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
+    // Summary slides behave like content slides but with the same design settings
+    createContentSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+  }
+
+  function createImageTextSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
+    // Extract design data EXCLUSIVELY from slideData.design object
+    const design = slideData.design || {};
+    const colors = design.colors || {};
+    
+    // Read background color exclusively from design object
+    const backgroundColorValue = colors.background || '#ffffff';
+    
+    // Apply background color
+    slide.background = backgroundColorValue;
+    
+    // Apply title and body styles just like content slides (will read from slideData.design)
+    createContentSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+    // Image support can be added later
+  }
+  
+  
   // Initial render and state save
   renderAll();
   saveState();

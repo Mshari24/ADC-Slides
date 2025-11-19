@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
+
+
   <div id="app">
     <!-- Top Menu Bar -->
     <header class="menubar">
@@ -41,6 +41,14 @@
         <span class="document-title" contenteditable="true" spellcheck="false">Title</span>
       </div>
       <div class="secondary-right">
+        <button class="icon-btn" id="ai-generator-btn" title="AI Presentation Generator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+            <path d="M2 17l10 5 10-5"></path>
+            <path d="M2 12l10 5 10-5"></path>
+            <circle cx="19" cy="5" r="2" fill="currentColor"></circle>
+          </svg>
+        </button>
         <button class="icon-btn" title="Present">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -628,7 +636,165 @@
     </footer>
   </div>
 
+  <!-- AI Presentation Generator Panel -->
+  <div id="ai-generator-panel" class="ai-generator-panel hidden">
+    <div class="ai-panel-header">
+      <h3 class="ai-panel-title">AI Presentation Generator</h3>
+      <button class="ai-panel-close" id="ai-panel-close" title="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="ai-panel-content">
+      <!-- Workflow Selector -->
+      <div class="ai-workflow-selector">
+        <button class="ai-workflow-btn active" data-workflow="topic" id="ai-workflow-topic">
+          <span class="ai-workflow-icon">🔍</span>
+          <span class="ai-workflow-label">From Topic</span>
+        </button>
+        <button class="ai-workflow-btn" data-workflow="text" id="ai-workflow-text">
+          <span class="ai-workflow-icon">📄</span>
+          <span class="ai-workflow-label">From Text</span>
+        </button>
+        <button class="ai-workflow-btn" data-workflow="improve" id="ai-workflow-improve">
+          <span class="ai-workflow-icon">✨</span>
+          <span class="ai-workflow-label">Improve Slides</span>
+        </button>
+      </div>
+
+      <!-- Common Options (shown for topic and text modes) -->
+      <div class="ai-options-section" id="ai-options-section">
+        <div class="ai-option-group">
+          <label class="ai-option-label" for="ai-slide-count">Number of Slides</label>
+          <select id="ai-slide-count" class="ai-select">
+            <option value="5">5 slides</option>
+            <option value="8" selected>8 slides</option>
+            <option value="10">10 slides</option>
+            <option value="12">12 slides</option>
+            <option value="15">15 slides</option>
+            <option value="20">20 slides</option>
+          </select>
+        </div>
+        <div class="ai-option-group">
+          <label class="ai-option-label" for="ai-theme-selector">Theme</label>
+          <select id="ai-theme-selector" class="ai-select">
+            <option value="aramco" selected>Aramco</option>
+            <option value="blue">Blue</option>
+            <option value="modern-minimal">Modern Minimal</option>
+            <option value="gradient-soft">Gradient Soft</option>
+            <option value="dark-mode">Dark Mode</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Topic Workflow -->
+      <div class="ai-workflow-content active" id="ai-content-topic">
+        <div class="ai-input-section">
+          <label class="ai-input-label" for="ai-topic-input">Enter presentation topic</label>
+          <input 
+            type="text" 
+            id="ai-topic-input" 
+            class="ai-input" 
+            placeholder="e.g., Introduction to Machine Learning"
+          />
+          <div class="ai-info-text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>AI will research the web and generate comprehensive content</span>
+          </div>
+          <button class="ai-submit-btn" id="ai-topic-submit">
+            <span>Generate Presentation</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Text Workflow -->
+      <div class="ai-workflow-content" id="ai-content-text">
+        <div class="ai-input-section">
+          <label class="ai-input-label" for="ai-text-input">Paste your slide content</label>
+          <textarea 
+            id="ai-text-input" 
+            class="ai-textarea" 
+            placeholder="Paste your text here. The AI will organize it into a structured presentation with intelligent layouts, proper formatting, and professional styling."
+            rows="8"
+          ></textarea>
+          <button class="ai-submit-btn" id="ai-text-submit">
+            <span>Generate Presentation</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Improve Workflow -->
+      <div class="ai-workflow-content" id="ai-content-improve">
+        <div class="ai-input-section">
+          <div class="ai-improve-info">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+            <div>
+              <h4>Improve Current Slides</h4>
+              <p>AI will enhance your existing presentation with:</p>
+              <ul>
+                <li>Better content structure and flow</li>
+                <li>Professional formatting and styling</li>
+                <li>Intelligent layout selection</li>
+                <li>Enhanced visual design</li>
+              </ul>
+            </div>
+          </div>
+          <button class="ai-submit-btn" id="ai-improve-submit">
+            <span>Improve Presentation</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="ai-loading hidden" id="ai-loading">
+        <div class="ai-loading-spinner"></div>
+        <p class="ai-loading-text">Researching and generating your presentation...</p>
+        <div class="ai-loading-steps">
+          <div class="ai-loading-step active" id="step-research">
+            <span class="step-icon">🔍</span>
+            <span>Researching topic</span>
+          </div>
+          <div class="ai-loading-step" id="step-generate">
+            <span class="step-icon">✍️</span>
+            <span>Generating content</span>
+          </div>
+          <div class="ai-loading-step" id="step-design">
+            <span class="step-icon">🎨</span>
+            <span>Applying theme & layout</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Error State -->
+      <div class="ai-error hidden" id="ai-error">
+        <p class="ai-error-text"></p>
+      </div>
+    </div>
+  </div>
+
   <script src="./storage.js"></script>
+  <script src="./ai-generator.js"></script>
   <script src="./app.js"></script>
 </body>
 </html>
