@@ -2133,35 +2133,159 @@
     fileInput.click();
   }
 
-  function insertChart(chartType = 'bar') {
+  function showChartEditor(chartType) {
+    const chartTypeSelection = document.getElementById('chart-type-selection');
+    const chartEditorPanel = document.getElementById('chart-editor-panel');
+    const chartsPanelTitle = document.getElementById('charts-panel-title');
+    
+    if (!chartTypeSelection || !chartEditorPanel) return;
+    
+    // Hide type selection, show editor
+    chartTypeSelection.classList.add('hidden');
+    chartEditorPanel.classList.remove('hidden');
+    
+    // Update title
+    if (chartsPanelTitle) {
+      const chartNames = {
+        'bar': 'Bar Chart',
+        'pie': 'Pie Chart',
+        'line': 'Line Chart',
+        'area': 'Area Chart',
+        'doughnut': 'Doughnut Chart',
+        'column': 'Column Chart'
+      };
+      chartsPanelTitle.textContent = `Edit ${chartNames[chartType] || 'Chart'}`;
+    }
+    
+    // Initialize editor with default values
+    initializeChartEditor(chartType);
+  }
+
+  function initializeChartEditor(chartType) {
+    const chartWidth = document.getElementById('chart-width');
+    const chartHeight = document.getElementById('chart-height');
+    const chartDataCount = document.getElementById('chart-data-count');
+    const chartDataValues = document.getElementById('chart-data-values');
+    const chartColors = document.getElementById('chart-colors');
+    
+    // Set default dimensions
+    if (chartWidth) chartWidth.value = 400;
+    if (chartHeight) chartHeight.value = 300;
+    
+    // Set default data count
+    let defaultCount = 4;
+    if (chartType === 'line' || chartType === 'area') {
+      defaultCount = 6;
+    }
+    if (chartDataCount) {
+      chartDataCount.value = defaultCount;
+      // Remove existing listeners by cloning
+      const newInput = chartDataCount.cloneNode(true);
+      chartDataCount.parentNode.replaceChild(newInput, chartDataCount);
+      newInput.addEventListener('input', () => {
+        const count = parseInt(newInput.value) || defaultCount;
+        updateChartDataInputs(chartType, count);
+        updateChartColorInputs(count);
+      });
+    }
+    
+    // Initialize data inputs
+    updateChartDataInputs(chartType, defaultCount);
+    
+    // Initialize color inputs
+    updateChartColorInputs(defaultCount);
+  }
+
+  function updateChartDataInputs(chartType, count) {
+    const chartDataValues = document.getElementById('chart-data-values');
+    if (!chartDataValues) return;
+    
+    chartDataValues.innerHTML = '';
+    
+    const defaultLabels = chartType === 'line' || chartType === 'area' 
+      ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']
+      : ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9', 'Q10'];
+    
+    const defaultValues = [30, 45, 25, 50, 35, 40, 28, 42, 38, 33];
+    
+    for (let i = 0; i < count; i++) {
+      const item = document.createElement('div');
+      item.className = 'chart-data-item';
+      item.innerHTML = `
+        <input type="text" class="chart-data-label" data-index="${i}" value="${defaultLabels[i] || `Item ${i + 1}`}" placeholder="Label" />
+        <input type="number" class="chart-data-value" data-index="${i}" value="${defaultValues[i] || 30}" min="0" max="100" placeholder="Value" />
+      `;
+      chartDataValues.appendChild(item);
+    }
+  }
+
+  function updateChartColorInputs(count) {
+    const chartColors = document.getElementById('chart-colors');
+    if (!chartColors) return;
+    
+    chartColors.innerHTML = '';
+    
+    const defaultColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6'];
+    
+    for (let i = 0; i < count; i++) {
+      const item = document.createElement('div');
+      item.className = 'chart-color-item';
+      const color = defaultColors[i % defaultColors.length];
+      item.innerHTML = `
+        <input type="color" class="chart-color-picker" data-index="${i}" value="${color}" />
+        <input type="text" class="chart-color-hex" data-index="${i}" value="${color}" placeholder="#000000" />
+      `;
+      chartColors.appendChild(item);
+      
+      // Sync color picker and hex input
+      const colorPicker = item.querySelector('.chart-color-picker');
+      const colorHex = item.querySelector('.chart-color-hex');
+      colorPicker.addEventListener('input', (e) => {
+        colorHex.value = e.target.value;
+      });
+      colorHex.addEventListener('input', (e) => {
+        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+          colorPicker.value = e.target.value;
+        }
+      });
+    }
+  }
+
+  function insertChart(chartType = 'bar', options = {}) {
     const slide = state.slides[state.currentSlideIndex];
     
-    // Default data for different chart types
-    let defaultData = [];
-    if (chartType === 'bar' || chartType === 'column') {
-      defaultData = [
-        { label: 'Q1', value: 30 },
-        { label: 'Q2', value: 45 },
-        { label: 'Q3', value: 25 },
-        { label: 'Q4', value: 50 }
-      ];
-    } else if (chartType === 'pie' || chartType === 'doughnut') {
-      defaultData = [
-        { label: 'A', value: 30, color: '#3b82f6' },
-        { label: 'B', value: 25, color: '#ef4444' },
-        { label: 'C', value: 20, color: '#10b981' },
-        { label: 'D', value: 25, color: '#f59e0b' }
-      ];
-    } else if (chartType === 'line' || chartType === 'area') {
-      defaultData = [
-        { label: 'Jan', value: 20 },
-        { label: 'Feb', value: 35 },
-        { label: 'Mar', value: 25 },
-        { label: 'Apr', value: 40 },
-        { label: 'May', value: 30 },
-        { label: 'Jun', value: 45 }
-      ];
+    // Get values from editor
+    const chartWidth = document.getElementById('chart-width');
+    const chartHeight = document.getElementById('chart-height');
+    const chartDataCount = document.getElementById('chart-data-count');
+    
+    const width = options.width || (chartWidth ? parseInt(chartWidth.value) : 400);
+    const height = options.height || (chartHeight ? parseInt(chartHeight.value) : 300);
+    const dataCount = options.dataCount || (chartDataCount ? parseInt(chartDataCount.value) : 4);
+    
+    // Collect data values
+    const data = [];
+    const dataLabels = document.querySelectorAll('.chart-data-label');
+    const dataValues = document.querySelectorAll('.chart-data-value');
+    const colorPickers = document.querySelectorAll('.chart-color-picker');
+    
+    for (let i = 0; i < dataCount; i++) {
+      const label = dataLabels[i] ? dataLabels[i].value : `Item ${i + 1}`;
+      const value = dataValues[i] ? parseInt(dataValues[i].value) || 0 : 30;
+      const color = colorPickers[i] ? colorPickers[i].value : '#3b82f6';
+      
+      if (chartType === 'pie' || chartType === 'doughnut') {
+        data.push({ label, value, color });
+      } else {
+        data.push({ label, value });
+      }
     }
+    
+    // Collect colors
+    const colors = [];
+    colorPickers.forEach(picker => {
+      colors.push(picker.value);
+    });
     
     const newChart = {
       id: uid(),
@@ -2169,10 +2293,10 @@
       chartType: chartType,
       x: 200,
       y: 150,
-      width: 400,
-      height: 300,
-      data: defaultData,
-      colors: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4'],
+      width: width,
+      height: height,
+      data: data,
+      colors: colors.length > 0 ? colors : ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4'],
       showLegend: true,
       showLabels: true
     };
@@ -2191,6 +2315,16 @@
         showContextToolbar(chartElement);
       }
     }, 50);
+    
+    // Reset editor and close panel
+    const chartTypeSelection = document.getElementById('chart-type-selection');
+    const chartEditorPanel = document.getElementById('chart-editor-panel');
+    const chartsPanelTitle = document.getElementById('charts-panel-title');
+    
+    if (chartTypeSelection) chartTypeSelection.classList.remove('hidden');
+    if (chartEditorPanel) chartEditorPanel.classList.add('hidden');
+    if (chartsPanelTitle) chartsPanelTitle.textContent = 'Choose Chart Type';
+    selectedChartType = null;
     
     hideChartsPanel();
   }
@@ -2737,15 +2871,29 @@
     if (!chartsPanel || !chartsSidebarItem) return;
     
     const sidebarRect = chartsSidebarItem.getBoundingClientRect();
-    chartsPanel.style.top = `${sidebarRect.top}px`;
+    const panelHeight = chartsPanel.offsetHeight || 400;
+    const windowHeight = window.innerHeight;
+    const centeredTop = (windowHeight - panelHeight) / 2;
+    
+    chartsPanel.style.top = `${Math.max(20, centeredTop)}px`;
     chartsPanel.style.left = `${sidebarRect.right + 12}px`;
   }
 
   function showChartsView() {
     const chartsPanel = document.getElementById('charts-panel');
+    const chartTypeSelection = document.getElementById('chart-type-selection');
+    const chartEditorPanel = document.getElementById('chart-editor-panel');
+    const chartsPanelTitle = document.getElementById('charts-panel-title');
+    
     if (chartsPanel) {
       chartsPanel.classList.remove('hidden');
       positionChartsPanel();
+      
+      // Reset to type selection view
+      if (chartTypeSelection) chartTypeSelection.classList.remove('hidden');
+      if (chartEditorPanel) chartEditorPanel.classList.add('hidden');
+      if (chartsPanelTitle) chartsPanelTitle.textContent = 'Choose Chart Type';
+      selectedChartType = null;
     }
   }
 
@@ -4763,12 +4911,14 @@
     hideChartsPanel();
   });
 
-  // Chart type selection
+  // Chart type selection - show editor instead of inserting directly
+  let selectedChartType = null;
   chartOptionButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const chartType = btn.dataset.chartType;
       if (chartType) {
-        insertChart(chartType);
+        selectedChartType = chartType;
+        showChartEditor(chartType);
       }
     });
   });
@@ -4792,6 +4942,26 @@
   window.addEventListener('resize', () => {
     if (chartsPanel && !chartsPanel.classList.contains('hidden')) {
       positionChartsPanel();
+    }
+  });
+
+  // Chart Editor handlers
+  const chartEditorBack = document.getElementById('chart-editor-back');
+  const chartEditorApply = document.getElementById('chart-editor-apply');
+
+  chartEditorBack?.addEventListener('click', () => {
+    const chartTypeSelection = document.getElementById('chart-type-selection');
+    const chartEditorPanel = document.getElementById('chart-editor-panel');
+    const chartsPanelTitle = document.getElementById('charts-panel-title');
+    
+    if (chartTypeSelection) chartTypeSelection.classList.remove('hidden');
+    if (chartEditorPanel) chartEditorPanel.classList.add('hidden');
+    if (chartsPanelTitle) chartsPanelTitle.textContent = 'Choose Chart Type';
+  });
+
+  chartEditorApply?.addEventListener('click', () => {
+    if (selectedChartType) {
+      insertChart(selectedChartType);
     }
   });
 
@@ -4843,6 +5013,287 @@
 
   // Initialize zoom display
   updateSlideZoom(slideZoomLevel);
+
+  // Presentation Mode
+  const presentationMode = document.getElementById('presentation-mode');
+  const presentBtn = document.getElementById('present-btn');
+  const presentationSlide = document.getElementById('presentation-slide');
+  const presentationSlideInfo = document.getElementById('presentation-slide-info');
+  const presentationPrev = document.getElementById('presentation-prev');
+  const presentationNext = document.getElementById('presentation-next');
+  const presentationExit = document.getElementById('presentation-exit');
+  let presentationSlideIndex = 0;
+
+  function enterPresentationMode() {
+    if (!presentationMode || !presentationSlide) return;
+    presentationSlideIndex = state.currentSlideIndex;
+    presentationMode.classList.remove('hidden');
+    renderPresentationSlide();
+    updatePresentationInfo();
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  function exitPresentationMode() {
+    if (!presentationMode) return;
+    presentationMode.classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function renderPresentationSlide() {
+    if (!presentationSlide || !state.slides[presentationSlideIndex]) return;
+    const slide = state.slides[presentationSlideIndex];
+    
+    // Create a container for the presentation slide
+    const slideEl = document.createElement('div');
+    slideEl.style.width = '100%';
+    slideEl.style.height = '100%';
+    slideEl.style.position = 'relative';
+    slideEl.style.background = slide.background || '#ffffff';
+    slideEl.style.overflow = 'hidden';
+    
+    // Render slide elements (similar to renderStage but read-only)
+    slide.elements.forEach((el) => {
+      if (el.type === 'text') {
+        const node = document.createElement('div');
+        node.className = 'el text';
+        node.style.position = 'absolute';
+        node.style.left = (el.x / 1280 * 100) + '%';
+        node.style.top = (el.y / 720 * 100) + '%';
+        node.style.fontSize = (el.fontSize || 18) + 'px';
+        node.style.fontFamily = el.fontFamily || 'Inter, system-ui, sans-serif';
+        node.style.color = el.color || '#111';
+        node.style.fontWeight = el.fontWeight || 'normal';
+        node.style.fontStyle = el.fontStyle || 'normal';
+        node.style.textDecoration = el.underline ? 'underline' : 'none';
+        node.style.textAlign = el.textAlign || 'left';
+        node.style.lineHeight = el.lineHeight ? String(el.lineHeight) : '1.2';
+        node.style.backgroundColor = el.fillColor || 'transparent';
+        node.innerHTML = el.content || el.text || '';
+        node.style.pointerEvents = 'none';
+        slideEl.appendChild(node);
+      } else if (el.type === 'shape') {
+        const node = document.createElement('div');
+        node.className = 'el shape';
+        node.style.position = 'absolute';
+        node.style.left = (el.x / 1280 * 100) + '%';
+        node.style.top = (el.y / 720 * 100) + '%';
+        node.style.width = (el.width / 1280 * 100) + '%';
+        node.style.height = (el.height / 720 * 100) + '%';
+        node.style.backgroundColor = el.fillColor || 'transparent';
+        node.style.border = `${el.strokeWidth || 1}px solid ${el.strokeColor || 'transparent'}`;
+        node.style.borderRadius = el.shapeType === 'rounded-rectangle' || el.shapeType === 'circle' ? '8px' : '0';
+        node.style.pointerEvents = 'none';
+        slideEl.appendChild(node);
+      } else if (el.type === 'line') {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.pointerEvents = 'none';
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', el.path || '');
+        path.setAttribute('stroke', el.color || '#000');
+        path.setAttribute('stroke-width', (el.width || 2) + '');
+        path.setAttribute('fill', 'none');
+        svg.appendChild(path);
+        slideEl.appendChild(svg);
+      } else if (el.type === 'drawing') {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.position = 'absolute';
+        svg.style.left = '0';
+        svg.style.top = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.pointerEvents = 'none';
+        if (el.paths && Array.isArray(el.paths)) {
+          el.paths.forEach(pathData => {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData.d || '');
+            path.setAttribute('stroke', pathData.color || '#000');
+            path.setAttribute('stroke-width', (pathData.width || 3) + '');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(path);
+          });
+        }
+        slideEl.appendChild(svg);
+      } else if (el.type === 'image') {
+        const img = document.createElement('img');
+        img.style.position = 'absolute';
+        img.style.left = (el.x / 1280 * 100) + '%';
+        img.style.top = (el.y / 720 * 100) + '%';
+        img.style.width = (el.width / 1280 * 100) + '%';
+        img.style.height = (el.height / 720 * 100) + '%';
+        img.style.objectFit = 'contain';
+        img.src = el.src || '';
+        img.style.pointerEvents = 'none';
+        slideEl.appendChild(img);
+      } else if (el.type === 'sticky') {
+        const sticky = document.createElement('div');
+        sticky.className = 'el sticky';
+        sticky.style.position = 'absolute';
+        sticky.style.left = (el.x / 1280 * 100) + '%';
+        sticky.style.top = (el.y / 720 * 100) + '%';
+        sticky.style.width = (el.width / 1280 * 100) + '%';
+        sticky.style.height = (el.height / 720 * 100) + '%';
+        sticky.style.backgroundColor = el.color || '#fef08a';
+        sticky.style.borderRadius = '4px';
+        sticky.style.padding = '8px';
+        sticky.style.fontSize = '14px';
+        sticky.innerHTML = el.text || '';
+        sticky.style.pointerEvents = 'none';
+        slideEl.appendChild(sticky);
+      } else if (el.type === 'chart') {
+        const chartContainer = document.createElement('div');
+        chartContainer.style.position = 'absolute';
+        chartContainer.style.left = (el.x / 1280 * 100) + '%';
+        chartContainer.style.top = (el.y / 720 * 100) + '%';
+        chartContainer.style.width = (el.width / 1280 * 100) + '%';
+        chartContainer.style.height = (el.height / 720 * 100) + '%';
+        if (el.svg) {
+          chartContainer.innerHTML = el.svg;
+        }
+        chartContainer.style.pointerEvents = 'none';
+        slideEl.appendChild(chartContainer);
+      }
+    });
+    
+    presentationSlide.innerHTML = '';
+    presentationSlide.appendChild(slideEl);
+  }
+
+  function updatePresentationInfo() {
+    if (presentationSlideInfo) {
+      presentationSlideInfo.textContent = `${presentationSlideIndex + 1} / ${state.slides.length}`;
+    }
+  }
+
+  function goToPresentationSlide(index) {
+    if (index < 0 || index >= state.slides.length) return;
+    presentationSlideIndex = index;
+    renderPresentationSlide();
+    updatePresentationInfo();
+  }
+
+  presentBtn?.addEventListener('click', enterPresentationMode);
+  presentationExit?.addEventListener('click', exitPresentationMode);
+  presentationPrev?.addEventListener('click', () => {
+    if (presentationSlideIndex > 0) {
+      goToPresentationSlide(presentationSlideIndex - 1);
+    }
+  });
+  presentationNext?.addEventListener('click', () => {
+    if (presentationSlideIndex < state.slides.length - 1) {
+      goToPresentationSlide(presentationSlideIndex + 1);
+    }
+  });
+  
+  // Keyboard navigation in presentation mode
+  document.addEventListener('keydown', (e) => {
+    if (presentationMode && !presentationMode.classList.contains('hidden')) {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        if (presentationSlideIndex < state.slides.length - 1) {
+          goToPresentationSlide(presentationSlideIndex + 1);
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (presentationSlideIndex > 0) {
+          goToPresentationSlide(presentationSlideIndex - 1);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        exitPresentationMode();
+      }
+    }
+  });
+
+  // Export Menu
+  const exportBtn = document.getElementById('export-btn');
+  const exportMenu = document.getElementById('export-menu');
+  const exportShareLink = document.getElementById('export-share-link');
+  const exportPDF = document.getElementById('export-pdf');
+  const exportPowerPoint = document.getElementById('export-powerpoint');
+  const exportPNG = document.getElementById('export-png');
+
+  function toggleExportMenu() {
+    if (exportMenu) {
+      exportMenu.classList.toggle('hidden');
+    }
+  }
+
+  function closeExportMenu() {
+    if (exportMenu) {
+      exportMenu.classList.add('hidden');
+    }
+  }
+
+  exportBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleExportMenu();
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (exportMenu && !exportMenu.classList.contains('hidden')) {
+      if (!exportMenu.contains(e.target) && !exportBtn?.contains(e.target)) {
+        closeExportMenu();
+      }
+    }
+  });
+
+  // Export functions
+  exportShareLink?.addEventListener('click', () => {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('Link copied to clipboard!');
+    }).catch(() => {
+      prompt('Copy this link:', url);
+    });
+    closeExportMenu();
+  });
+
+  exportPDF?.addEventListener('click', () => {
+    alert('PDF export functionality will be implemented soon.');
+    closeExportMenu();
+  });
+
+  exportPowerPoint?.addEventListener('click', () => {
+    alert('PowerPoint export functionality will be implemented soon.');
+    closeExportMenu();
+  });
+
+  exportPNG?.addEventListener('click', () => {
+    const slide = state.slides[state.currentSlideIndex];
+    if (!slide) return;
+    
+    // Create a canvas to render the slide
+    const canvas = document.createElement('canvas');
+    canvas.width = 1280;
+    canvas.height = 720;
+    const ctx = canvas.getContext('2d');
+    
+    // Fill background
+    ctx.fillStyle = slide.background || '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Note: Full rendering would require more complex implementation
+    // This is a placeholder
+    canvas.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `slide-${state.currentSlideIndex + 1}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    
+    closeExportMenu();
+  });
 
   // Initial render and state save
   renderAll();
