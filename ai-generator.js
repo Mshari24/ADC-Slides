@@ -256,13 +256,27 @@
   // ============================================================================
   
   function openPanel() {
-    if (!elements.panel) return;
-    elements.panel.classList.remove('hidden');
-    // Focus appropriate input
-    if (state.currentWorkflow === 'topic' && elements.topicInput) {
-      setTimeout(() => elements.topicInput.focus(), 100);
-    } else if (state.currentWorkflow === 'text' && elements.textInput) {
-      setTimeout(() => elements.textInput.focus(), 100);
+    // Find the AI section in the right sidebar
+    const aiSidebarContent = document.querySelector('.ai-sidebar-content');
+    const aiSidebarCard = aiSidebarContent ? aiSidebarContent.closest('.right-sidebar-card') : null;
+    if (aiSidebarCard) {
+      // Scroll to the AI section in the sidebar
+      aiSidebarCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Focus appropriate input
+      if (state.currentWorkflow === 'topic' && elements.topicInput) {
+        setTimeout(() => elements.topicInput.focus(), 100);
+      } else if (state.currentWorkflow === 'text' && elements.textInput) {
+        setTimeout(() => elements.textInput.focus(), 100);
+      }
+    } else if (elements.panel) {
+      // Fallback to old modal behavior if sidebar version not found
+      elements.panel.classList.remove('hidden');
+      // Focus appropriate input
+      if (state.currentWorkflow === 'topic' && elements.topicInput) {
+        setTimeout(() => elements.topicInput.focus(), 100);
+      } else if (state.currentWorkflow === 'text' && elements.textInput) {
+        setTimeout(() => elements.textInput.focus(), 100);
+      }
     }
   }
 
@@ -1426,9 +1440,12 @@
       });
     }
     
-    // Close panel when clicking outside
+    // Close panel when clicking outside (only for modal version)
     document.addEventListener('click', (e) => {
-      if (elements.panel && !elements.panel.classList.contains('hidden')) {
+      const aiSidebarContent = document.querySelector('.ai-sidebar-content');
+      const aiSidebarCard = aiSidebarContent ? aiSidebarContent.closest('.right-sidebar-card') : null;
+      // Only handle modal closing if sidebar version doesn't exist
+      if (!aiSidebarCard && elements.panel && !elements.panel.classList.contains('hidden')) {
         const clickedInsidePanel = elements.panel.contains(e.target);
         const clickedOnButton = elements.button?.contains(e.target);
         
@@ -1438,9 +1455,12 @@
       }
     });
     
-    // Close panel on Escape key
+    // Close panel on Escape key (only for modal version)
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && !elements.panel?.classList.contains('hidden')) {
+      const aiSidebarContent = document.querySelector('.ai-sidebar-content');
+      const aiSidebarCard = aiSidebarContent ? aiSidebarContent.closest('.right-sidebar-card') : null;
+      // Only handle Escape closing if sidebar version doesn't exist
+      if (!aiSidebarCard && e.key === 'Escape' && !elements.panel?.classList.contains('hidden')) {
         closePanel();
       }
     });

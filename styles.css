@@ -7915,6 +7915,73 @@ body {
   flex: 1;
 }
 
+/* AI Sidebar Content (in right sidebar) */
+.ai-sidebar-content {
+  padding: 0;
+  overflow-y: visible;
+}
+
+.ai-sidebar-content .ai-workflow-selector {
+  margin-bottom: 16px;
+}
+
+.ai-sidebar-content .ai-options-section {
+  margin-bottom: 16px;
+  padding: 12px;
+}
+
+.ai-sidebar-content .ai-input-section {
+  gap: 12px;
+}
+
+.ai-sidebar-content .ai-textarea {
+  min-height: 120px;
+  max-height: 200px;
+}
+
+.ai-sidebar-content .ai-improve-info {
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.ai-sidebar-content .ai-improve-info h4 {
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.ai-sidebar-content .ai-improve-info p {
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.ai-sidebar-content .ai-improve-info ul {
+  font-size: 11px;
+  padding-left: 16px;
+  line-height: 1.6;
+}
+
+.ai-sidebar-content .ai-improve-info li {
+  margin-bottom: 3px;
+}
+
+.ai-sidebar-content .ai-loading {
+  padding: 20px 12px;
+}
+
+.ai-sidebar-content .ai-loading-text {
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+
+.ai-sidebar-content .ai-loading-steps {
+  gap: 8px;
+}
+
+.ai-sidebar-content .ai-loading-step {
+  font-size: 11px;
+  padding: 6px 8px;
+}
+
 /* Workflow Selector (3 buttons) */
 .ai-workflow-selector {
   display: flex;
