@@ -599,6 +599,8 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  position: relative;
+  z-index: 20000;
 }
 
 .icon-btn {
@@ -1716,9 +1718,130 @@ body {
 /* Export Menu */
 .export-menu-container {
   position: relative;
+  z-index: 20000;
 }
 
 .export-menu {
+  position: fixed;
+  top: 100px;
+  right: calc(50% - 150px);
+  background: linear-gradient(135deg, 
+    rgba(173, 216, 230, 0.4) 0%,
+    rgba(255, 255, 255, 0.7) 25%,
+    rgba(144, 238, 144, 0.4) 50%,
+    rgba(255, 255, 255, 0.7) 75%,
+    rgba(211, 211, 211, 0.4) 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 12px 24px;
+  width: 300px;
+  min-height: 56px;
+  z-index: 20000;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+
+.export-menu::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(0, 170, 231, 0.35) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(0, 108, 53, 0.35) 0%, transparent 50%),
+    radial-gradient(circle at 40% 20%, rgba(128, 128, 128, 0.3) 0%, transparent 50%);
+  animation: waveAnimation 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.export-menu::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 60% 30%, rgba(0, 170, 231, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 30% 70%, rgba(0, 108, 53, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(128, 128, 128, 0.25) 0%, transparent 50%);
+  animation: waveAnimation 10s ease-in-out infinite reverse;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes waveAnimation {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    transform: translate(30px, 30px) rotate(120deg) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) rotate(240deg) scale(0.9);
+  }
+}
+
+.export-menu > * {
+  position: relative;
+  z-index: 1;
+}
+
+.export-menu.hidden {
+  display: none;
+}
+
+.export-menu-item {
+  width: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #1e293b;
+  font-size: 14px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.export-menu-item:hover {
+  background: rgba(255, 255, 255, 0.75);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.export-menu-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.export-menu-item span {
+  flex: 1;
+}
+
+.save-menu-container {
+  position: relative;
+}
+
+.save-menu {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
@@ -1731,11 +1854,11 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.export-menu.hidden {
+.save-menu.hidden {
   display: none;
 }
 
-.export-menu-item {
+.save-menu-item {
   width: 100%;
   display: flex;
   align-items: center;
@@ -1751,17 +1874,17 @@ body {
   text-align: left;
 }
 
-.export-menu-item:hover {
+.save-menu-item:hover {
   background: rgba(0, 0, 0, 0.05);
 }
 
-.export-menu-item svg {
+.save-menu-item svg {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
 }
 
-.export-menu-item span {
+.save-menu-item span {
   flex: 1;
 }
 

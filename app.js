@@ -181,8 +181,8 @@
   }
 
   function updateUndoRedoButtons() {
-    const btnUndo = document.getElementById('btn-undo');
-    const btnRedo = document.getElementById('btn-redo');
+    const btnUndo = document.getElementById('top-toolbar-undo');
+    const btnRedo = document.getElementById('top-toolbar-redo');
     if (btnUndo) btnUndo.disabled = history.pointer === 0;
     if (btnRedo) btnRedo.disabled = history.pointer === history.stack.length - 1;
   }
@@ -2484,8 +2484,8 @@
   btnInsertText?.addEventListener('click', insertText);
 
   // Undo/Redo
-  document.getElementById('btn-undo')?.addEventListener('click', undo);
-  document.getElementById('btn-redo')?.addEventListener('click', redo);
+  document.getElementById('top-toolbar-undo')?.addEventListener('click', undo);
+  document.getElementById('top-toolbar-redo')?.addEventListener('click', redo);
 
   // Toolbar controls
   ['font-family', 'font-size', 'font-color', 'fill-color', 'stroke-color', 'stroke-width', 'stroke-dash'].forEach(id => {
@@ -5886,14 +5886,352 @@
     closeExportMenu();
   });
 
-  exportPDF?.addEventListener('click', () => {
-    alert('PDF export functionality will be implemented soon.');
-    closeExportMenu();
+  exportPDF?.addEventListener('click', async () => {
+    if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+      alert('PDF export libraries not loaded. Please refresh the page.');
+      closeExportMenu();
+      return;
+    }
+
+    // Save current slide index
+    const originalSlideIndex = state.currentSlideIndex;
+    let loadingMsg = null;
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [1280, 720]
+      });
+
+      // Show loading message
+      loadingMsg = document.createElement('div');
+      loadingMsg.style.position = 'fixed';
+      loadingMsg.style.top = '50%';
+      loadingMsg.style.left = '50%';
+      loadingMsg.style.transform = 'translate(-50%, -50%)';
+      loadingMsg.style.background = 'rgba(0, 0, 0, 0.8)';
+      loadingMsg.style.color = 'white';
+      loadingMsg.style.padding = '20px 40px';
+      loadingMsg.style.borderRadius = '8px';
+      loadingMsg.style.zIndex = '10000';
+      loadingMsg.textContent = 'Generating PDF...';
+      document.body.appendChild(loadingMsg);
+
+      for (let i = 0; i < state.slides.length; i++) {
+        // Switch to slide
+        state.currentSlideIndex = i;
+        renderAll();
+        
+        // Wait for render to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Capture slide
+        const canvas = await captureSlideFromStage();
+        if (!canvas) continue;
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1280, 720);
+      }
+
+      // Restore original slide
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      pdf.save(`${state.title || 'presentation'}.pdf`);
+      closeExportMenu();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+      // Restore original slide on error
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      closeExportMenu();
+    }
   });
 
-  exportPowerPoint?.addEventListener('click', () => {
-    alert('PowerPoint export functionality will be implemented soon.');
-    closeExportMenu();
+  exportPowerPoint?.addEventListener('click', async () => {
+    if (typeof PptxGenJS === 'undefined') {
+      alert('PPTX export library not loaded. Please refresh the page.');
+      closeExportMenu();
+      return;
+    }
+
+    if (typeof html2canvas === 'undefined') {
+      alert('Image conversion library not loaded. Please refresh the page.');
+      closeExportMenu();
+      return;
+    }
+
+    // Save current slide index
+    const originalSlideIndex = state.currentSlideIndex;
+    let loadingMsg = null;
+
+    try {
+      const pptx = new PptxGenJS();
+      pptx.layout = 'LAYOUT_WIDE';
+      pptx.defineLayout({ name: 'CUSTOM', width: 10, height: 5.625 });
+
+      // Show loading message
+      loadingMsg = document.createElement('div');
+      loadingMsg.style.position = 'fixed';
+      loadingMsg.style.top = '50%';
+      loadingMsg.style.left = '50%';
+      loadingMsg.style.transform = 'translate(-50%, -50%)';
+      loadingMsg.style.background = 'rgba(0, 0, 0, 0.8)';
+      loadingMsg.style.color = 'white';
+      loadingMsg.style.padding = '20px 40px';
+      loadingMsg.style.borderRadius = '8px';
+      loadingMsg.style.zIndex = '10000';
+      loadingMsg.textContent = 'Generating PPTX...';
+      document.body.appendChild(loadingMsg);
+
+      for (let i = 0; i < state.slides.length; i++) {
+        // Switch to slide
+        state.currentSlideIndex = i;
+        renderAll();
+        
+        // Wait for render to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Capture slide
+        const canvas = await captureSlideFromStage();
+        if (!canvas) continue;
+
+        const slide = pptx.addSlide();
+        slide.background = { path: canvas.toDataURL('image/png') };
+      }
+
+      // Restore original slide
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      pptx.writeFile({ fileName: `${state.title || 'presentation'}.pptx` });
+      closeExportMenu();
+    } catch (error) {
+      console.error('Error generating PPTX:', error);
+      alert('Error generating PPTX. Please try again.');
+      // Restore original slide on error
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      closeExportMenu();
+    }
+  });
+
+  // Save Menu
+  const saveBtn = document.getElementById('top-toolbar-save');
+  const saveMenu = document.getElementById('save-menu');
+  const savePDF = document.getElementById('save-pdf');
+  const savePPTX = document.getElementById('save-pptx');
+
+  function toggleSaveMenu() {
+    if (saveMenu) {
+      saveMenu.classList.toggle('hidden');
+    }
+  }
+
+  function closeSaveMenu() {
+    if (saveMenu) {
+      saveMenu.classList.add('hidden');
+    }
+  }
+
+  saveBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleSaveMenu();
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (saveMenu && !saveMenu.classList.contains('hidden')) {
+      if (!saveMenu.contains(e.target) && !saveBtn?.contains(e.target)) {
+        closeSaveMenu();
+      }
+    }
+  });
+
+  // Helper function to capture current slide from stage
+  async function captureSlideFromStage() {
+    if (!stageEl) return null;
+    
+    // Hide any UI overlays that might interfere
+    const overlays = document.querySelectorAll('.floating-toolbar, .context-menu, .text-control-bar');
+    const originalDisplay = [];
+    overlays.forEach(overlay => {
+      originalDisplay.push(overlay.style.display);
+      overlay.style.display = 'none';
+    });
+
+    try {
+      const canvas = await html2canvas(stageEl, {
+        width: 1280,
+        height: 720,
+        scale: 1,
+        useCORS: true,
+        logging: false,
+        backgroundColor: state.slides[state.currentSlideIndex]?.background || '#ffffff'
+      });
+
+      // Restore overlays
+      overlays.forEach((overlay, i) => {
+        overlay.style.display = originalDisplay[i] || '';
+      });
+
+      return canvas;
+    } catch (error) {
+      // Restore overlays on error
+      overlays.forEach((overlay, i) => {
+        overlay.style.display = originalDisplay[i] || '';
+      });
+      throw error;
+    }
+  }
+
+  // Save functions
+  savePDF?.addEventListener('click', async () => {
+    if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+      alert('PDF export libraries not loaded. Please refresh the page.');
+      closeSaveMenu();
+      return;
+    }
+
+    // Save current slide index
+    const originalSlideIndex = state.currentSlideIndex;
+    let loadingMsg = null;
+
+    try {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [1280, 720]
+      });
+
+      // Show loading message
+      loadingMsg = document.createElement('div');
+      loadingMsg.style.position = 'fixed';
+      loadingMsg.style.top = '50%';
+      loadingMsg.style.left = '50%';
+      loadingMsg.style.transform = 'translate(-50%, -50%)';
+      loadingMsg.style.background = 'rgba(0, 0, 0, 0.8)';
+      loadingMsg.style.color = 'white';
+      loadingMsg.style.padding = '20px 40px';
+      loadingMsg.style.borderRadius = '8px';
+      loadingMsg.style.zIndex = '10000';
+      loadingMsg.textContent = 'Generating PDF...';
+      document.body.appendChild(loadingMsg);
+
+      for (let i = 0; i < state.slides.length; i++) {
+        // Switch to slide
+        state.currentSlideIndex = i;
+        renderAll();
+        
+        // Wait for render to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Capture slide
+        const canvas = await captureSlideFromStage();
+        if (!canvas) continue;
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 1280, 720);
+      }
+
+      // Restore original slide
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      pdf.save(`${state.title || 'presentation'}.pdf`);
+      closeSaveMenu();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Error generating PDF. Please try again.');
+      // Restore original slide on error
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      closeSaveMenu();
+    }
+  });
+
+  savePPTX?.addEventListener('click', async () => {
+    if (typeof PptxGenJS === 'undefined') {
+      alert('PPTX export library not loaded. Please refresh the page.');
+      closeSaveMenu();
+      return;
+    }
+
+    if (typeof html2canvas === 'undefined') {
+      alert('Image conversion library not loaded. Please refresh the page.');
+      closeSaveMenu();
+      return;
+    }
+
+    // Save current slide index
+    const originalSlideIndex = state.currentSlideIndex;
+    let loadingMsg = null;
+
+    try {
+      const pptx = new PptxGenJS();
+      pptx.layout = 'LAYOUT_WIDE';
+      pptx.defineLayout({ name: 'CUSTOM', width: 10, height: 5.625 });
+
+      // Show loading message
+      loadingMsg = document.createElement('div');
+      loadingMsg.style.position = 'fixed';
+      loadingMsg.style.top = '50%';
+      loadingMsg.style.left = '50%';
+      loadingMsg.style.transform = 'translate(-50%, -50%)';
+      loadingMsg.style.background = 'rgba(0, 0, 0, 0.8)';
+      loadingMsg.style.color = 'white';
+      loadingMsg.style.padding = '20px 40px';
+      loadingMsg.style.borderRadius = '8px';
+      loadingMsg.style.zIndex = '10000';
+      loadingMsg.textContent = 'Generating PPTX...';
+      document.body.appendChild(loadingMsg);
+
+      for (let i = 0; i < state.slides.length; i++) {
+        // Switch to slide
+        state.currentSlideIndex = i;
+        renderAll();
+        
+        // Wait for render to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        // Capture slide
+        const canvas = await captureSlideFromStage();
+        if (!canvas) continue;
+
+        const slide = pptx.addSlide();
+        slide.background = { path: canvas.toDataURL('image/png') };
+      }
+
+      // Restore original slide
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      pptx.writeFile({ fileName: `${state.title || 'presentation'}.pptx` });
+      closeSaveMenu();
+    } catch (error) {
+      console.error('Error generating PPTX:', error);
+      alert('Error generating PPTX. Please try again.');
+      // Restore original slide on error
+      state.currentSlideIndex = originalSlideIndex;
+      renderAll();
+      if (loadingMsg) document.body.removeChild(loadingMsg);
+      closeSaveMenu();
+    }
   });
 
   exportPNG?.addEventListener('click', () => {
