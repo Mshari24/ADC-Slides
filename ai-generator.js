@@ -217,29 +217,90 @@
   
   let elements = {};
 
+  /**
+   * Robust element finder - location-independent
+   * Prefers elements inside the panel, then visible elements, then first found
+   */
+  function findElement(id, preferInsidePanel = false) {
+    const allMatches = document.querySelectorAll(`#${id}, [data-id="${id}"]`);
+    if (allMatches.length === 0) return null;
+    
+    if (allMatches.length === 1) return allMatches[0];
+    
+    // Multiple matches found - prioritize
+    const panel = elements.panel || document.getElementById(CONFIG.panelId);
+    
+    if (preferInsidePanel && panel) {
+      // Prefer element inside the panel
+      const insidePanel = Array.from(allMatches).find(el => panel.contains(el));
+      if (insidePanel) return insidePanel;
+    }
+    
+    // Prefer visible elements (offsetParent !== null means element is visible)
+    const visible = Array.from(allMatches).find(el => el.offsetParent !== null);
+    if (visible) return visible;
+    
+    // Fallback to first element
+    return allMatches[0];
+  }
+
+  /**
+   * Initialize all elements with robust location-independent finding
+   */
   function initializeElements() {
-    elements.panel = document.getElementById(CONFIG.panelId);
-    elements.button = document.getElementById(CONFIG.buttonId);
-    elements.closeButton = document.getElementById(CONFIG.closeButtonId);
-    elements.workflowTopicBtn = document.getElementById(CONFIG.workflowTopicId);
-    elements.workflowTextBtn = document.getElementById(CONFIG.workflowTextId);
-    elements.workflowImproveBtn = document.getElementById(CONFIG.workflowImproveId);
-    elements.topicContent = document.getElementById(CONFIG.topicContentId);
-    elements.textContent = document.getElementById(CONFIG.textContentId);
-    elements.improveContent = document.getElementById(CONFIG.improveContentId);
-    elements.optionsSection = document.getElementById(CONFIG.optionsSectionId);
-    elements.topicInput = document.getElementById(CONFIG.topicInputId);
-    elements.textInput = document.getElementById(CONFIG.textInputId);
-    elements.topicSubmit = document.getElementById(CONFIG.topicSubmitId);
-    elements.textSubmit = document.getElementById(CONFIG.textSubmitId);
-    elements.improveSubmit = document.getElementById(CONFIG.improveSubmitId);
-    elements.slideCount = document.getElementById(CONFIG.slideCountId);
-    elements.themeSelector = document.getElementById(CONFIG.themeSelectorId);
-    elements.loading = document.getElementById(CONFIG.loadingId);
-    elements.error = document.getElementById(CONFIG.errorId);
-    elements.researchStep = document.getElementById(CONFIG.researchStepId);
-    elements.generateStep = document.getElementById(CONFIG.generateStepId);
-    elements.designStep = document.getElementById(CONFIG.designStepId);
+    // Find panel first (required for other elements)
+    elements.panel = findElement(CONFIG.panelId) || document.getElementById(CONFIG.panelId);
+    
+    // Find button (can be anywhere) - use direct getElementById first for reliability
+    elements.button = document.getElementById(CONFIG.buttonId) || findElement(CONFIG.buttonId);
+    
+    // Debug: Log if button not found
+    if (!elements.button) {
+      console.warn(`AI Generator: Button with ID "${CONFIG.buttonId}" not found in DOM`);
+    }
+    
+    // Find elements, preferring those inside the panel
+    elements.closeButton = findElement(CONFIG.closeButtonId, true);
+    
+    // Find workflow buttons using querySelector for reliability (works regardless of DOM position)
+    const topicBtn = document.querySelector(`#${CONFIG.workflowTopicId}`);
+    const textBtn = document.querySelector(`#${CONFIG.workflowTextId}`);
+    const improveBtn = document.querySelector(`#${CONFIG.workflowImproveId}`);
+    
+    elements.workflowTopicBtn = topicBtn;
+    elements.workflowTextBtn = textBtn;
+    elements.workflowImproveBtn = improveBtn;
+    elements.topicContent = findElement(CONFIG.topicContentId, true);
+    elements.textContent = findElement(CONFIG.textContentId, true);
+    elements.improveContent = findElement(CONFIG.improveContentId, true);
+    elements.optionsSection = findElement(CONFIG.optionsSectionId, true);
+    
+    // Inputs and selects - prefer visible ones inside panel
+    elements.topicInput = findElement(CONFIG.topicInputId, true);
+    elements.textInput = findElement(CONFIG.textInputId, true);
+    elements.slideCount = findElement(CONFIG.slideCountId, true);
+    elements.themeSelector = findElement(CONFIG.themeSelectorId, true);
+    
+    // Submit buttons - prefer inside panel
+    elements.topicSubmit = findElement(CONFIG.topicSubmitId, true);
+    elements.textSubmit = findElement(CONFIG.textSubmitId, true);
+    elements.improveSubmit = findElement(CONFIG.improveSubmitId, true);
+    
+    // Loading and error elements
+    elements.loading = findElement(CONFIG.loadingId, true);
+    elements.error = findElement(CONFIG.errorId, true);
+    elements.researchStep = findElement(CONFIG.researchStepId, true);
+    elements.generateStep = findElement(CONFIG.generateStepId, true);
+    elements.designStep = findElement(CONFIG.designStepId, true);
+    
+    // Validate critical elements
+    const missing = [];
+    if (!elements.panel) missing.push('panel');
+    if (!elements.button) missing.push('button');
+    
+    if (missing.length > 0) {
+      console.warn(`AI Generator: Missing critical elements: ${missing.join(', ')}`);
+    }
   }
 
   // ============================================================================
@@ -256,129 +317,258 @@
   // ============================================================================
   
   function openPanel() {
-    // Find the AI section in the right sidebar
+    // Refresh element references in case DOM changed
+    initializeElements();
+    
+    // Find the AI section - check multiple possible locations
     const aiSidebarContent = document.querySelector('.ai-sidebar-content');
     const aiSidebarCard = aiSidebarContent ? aiSidebarContent.closest('.right-sidebar-card') : null;
+    
     if (aiSidebarCard) {
       // Scroll to the AI section in the sidebar
       aiSidebarCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       // Focus appropriate input
-      if (state.currentWorkflow === 'topic' && elements.topicInput) {
-        setTimeout(() => elements.topicInput.focus(), 100);
-      } else if (state.currentWorkflow === 'text' && elements.textInput) {
-        setTimeout(() => elements.textInput.focus(), 100);
+      const topicInput = getActiveElementValue(CONFIG.topicInputId) || elements.topicInput;
+      const textInput = getActiveElementValue(CONFIG.textInputId) || elements.textInput;
+      if (state.currentWorkflow === 'topic' && topicInput) {
+        setTimeout(() => topicInput.focus(), 100);
+      } else if (state.currentWorkflow === 'text' && textInput) {
+        setTimeout(() => textInput.focus(), 100);
       }
     } else if (elements.panel) {
-      // Fallback to old modal behavior if sidebar version not found
+      // Fallback to modal behavior if sidebar version not found
       elements.panel.classList.remove('hidden');
       // Focus appropriate input
-      if (state.currentWorkflow === 'topic' && elements.topicInput) {
-        setTimeout(() => elements.topicInput.focus(), 100);
-      } else if (state.currentWorkflow === 'text' && elements.textInput) {
-        setTimeout(() => elements.textInput.focus(), 100);
+      const topicInput = getActiveElementValue(CONFIG.topicInputId) || elements.topicInput;
+      const textInput = getActiveElementValue(CONFIG.textInputId) || elements.textInput;
+      if (state.currentWorkflow === 'topic' && topicInput) {
+        setTimeout(() => topicInput.focus(), 100);
+      } else if (state.currentWorkflow === 'text' && textInput) {
+        setTimeout(() => textInput.focus(), 100);
       }
     }
   }
 
   function closePanel() {
-    if (!elements.panel) return;
-    elements.panel.classList.add('hidden');
+    // Refresh panel reference
+    const panel = findElement(CONFIG.panelId) || elements.panel;
+    if (!panel) return;
+    
+    panel.classList.add('hidden');
     hideError();
     hideLoading();
-    // Clear inputs
-    if (elements.topicInput) elements.topicInput.value = '';
-    if (elements.textInput) elements.textInput.value = '';
+    
+    // Clear inputs - find all instances
+    const topicInputs = document.querySelectorAll(`#${CONFIG.topicInputId}`);
+    const textInputs = document.querySelectorAll(`#${CONFIG.textInputId}`);
+    topicInputs.forEach(input => input.value = '');
+    textInputs.forEach(input => input.value = '');
   }
 
-  function switchWorkflow(workflow) {
+  /**
+   * Select workflow - handles UI updates for workflow switching
+   * Works regardless of DOM position
+   */
+  function selectWorkflow(workflow) {
     if (state.isGenerating || workflow === state.currentWorkflow) return;
     
     state.currentWorkflow = workflow;
     
-    // Update workflow buttons
-    [elements.workflowTopicBtn, elements.workflowTextBtn, elements.workflowImproveBtn].forEach(btn => {
+    // Find all workflow buttons using querySelector (works regardless of DOM position)
+    const topicBtn = document.querySelector(`#${CONFIG.workflowTopicId}`);
+    const textBtn = document.querySelector(`#${CONFIG.workflowTextId}`);
+    const improveBtn = document.querySelector(`#${CONFIG.workflowImproveId}`);
+    
+    // Remove "active" from all workflow buttons
+    [topicBtn, textBtn, improveBtn].forEach(btn => {
       if (btn) btn.classList.remove('active');
     });
     
-    const activeBtn = workflow === 'topic' ? elements.workflowTopicBtn :
-                     workflow === 'text' ? elements.workflowTextBtn :
-                     elements.workflowImproveBtn;
-    if (activeBtn) activeBtn.classList.add('active');
-    
-    // Update content visibility
-    [elements.topicContent, elements.textContent, elements.improveContent].forEach(content => {
-      if (content) content.classList.remove('active');
-    });
-    
-    const activeContent = workflow === 'topic' ? elements.topicContent :
-                         workflow === 'text' ? elements.textContent :
-                         elements.improveContent;
-    if (activeContent) activeContent.classList.add('active');
-    
-    // Show/hide options section
-    if (elements.optionsSection) {
-      elements.optionsSection.style.display = workflow === 'improve' ? 'none' : 'grid';
+    // Add "active" to the clicked button
+    if (workflow === 'topic' && topicBtn) {
+      topicBtn.classList.add('active');
+    } else if (workflow === 'text' && textBtn) {
+      textBtn.classList.add('active');
+    } else if (workflow === 'improve' && improveBtn) {
+      improveBtn.classList.add('active');
     }
     
+    // Find all workflow content sections
+    const topicContent = document.querySelector(`#${CONFIG.topicContentId}`);
+    const textContent = document.querySelector(`#${CONFIG.textContentId}`);
+    const improveContent = document.querySelector(`#${CONFIG.improveContentId}`);
+    const optionsSection = document.querySelector(`#${CONFIG.optionsSectionId}`);
+    
+    // Hide all workflow content sections
+    [topicContent, textContent, improveContent].forEach(content => {
+      if (content) {
+        content.classList.remove('active');
+        content.classList.add('hidden');
+      }
+    });
+    
+    // Show only the selected workflow content
+    if (workflow === 'topic' && topicContent) {
+      topicContent.classList.add('active');
+      topicContent.classList.remove('hidden');
+      if (optionsSection) {
+        optionsSection.classList.remove('hidden');
+        optionsSection.style.display = '';
+      }
+    } else if (workflow === 'text' && textContent) {
+      textContent.classList.add('active');
+      textContent.classList.remove('hidden');
+      if (optionsSection) {
+        optionsSection.classList.remove('hidden');
+        optionsSection.style.display = '';
+      }
+    } else if (workflow === 'improve' && improveContent) {
+      improveContent.classList.add('active');
+      improveContent.classList.remove('hidden');
+      if (optionsSection) {
+        optionsSection.classList.add('hidden');
+        optionsSection.style.display = 'none';
+      }
+    }
+    
+    // Update element references
+    elements.topicContent = topicContent;
+    elements.textContent = textContent;
+    elements.improveContent = improveContent;
+    elements.optionsSection = optionsSection;
+    
     // Focus appropriate input
-    if (workflow === 'topic' && elements.topicInput) {
-      setTimeout(() => elements.topicInput.focus(), 100);
-    } else if (workflow === 'text' && elements.textInput) {
-      setTimeout(() => elements.textInput.focus(), 100);
+    const topicInput = document.querySelector(`#${CONFIG.topicInputId}`);
+    const textInput = document.querySelector(`#${CONFIG.textInputId}`);
+    if (workflow === 'topic' && topicInput) {
+      setTimeout(() => topicInput.focus(), 100);
+    } else if (workflow === 'text' && textInput) {
+      setTimeout(() => textInput.focus(), 100);
     }
   }
 
+  /**
+   * Update button state to loading or normal
+   */
+  function setButtonLoading(buttonId, isLoading) {
+    const buttons = document.querySelectorAll(`#${buttonId}`);
+    buttons.forEach(btn => {
+      if (!btn) return;
+      
+      if (isLoading) {
+        btn.disabled = true;
+        const span = btn.querySelector('span');
+        if (span) {
+          span.textContent = 'Generating...';
+        }
+        // Add spinner if not already present
+        if (!btn.querySelector('.ai-btn-spinner')) {
+          const spinner = document.createElement('div');
+          spinner.className = 'ai-btn-spinner';
+          spinner.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" opacity="0.75"></path></svg>';
+          btn.insertBefore(spinner, btn.firstChild);
+        }
+      } else {
+        btn.disabled = false;
+        const span = btn.querySelector('span');
+        if (span) {
+          // Restore original text based on button ID
+          if (buttonId === CONFIG.topicSubmitId || buttonId === CONFIG.textSubmitId) {
+            span.textContent = 'Generate Presentation';
+          } else if (buttonId === CONFIG.improveSubmitId) {
+            span.textContent = 'Improve Presentation';
+          }
+        }
+        // Remove spinner
+        const spinner = btn.querySelector('.ai-btn-spinner');
+        if (spinner) {
+          spinner.remove();
+        }
+      }
+    });
+  }
+
   function showLoading() {
-    if (elements.loading) {
-      elements.loading.classList.remove('hidden');
+    // Show loading UI using getElementById for reliability
+    const loadingEl = document.getElementById(CONFIG.loadingId);
+    if (loadingEl) {
+      loadingEl.classList.remove('hidden');
     }
+    
+    // Hide workflow content
     [elements.topicContent, elements.textContent, elements.improveContent].forEach(content => {
       if (content) content.style.display = 'none';
     });
+    
     state.isGenerating = true;
-    // Disable buttons
-    [elements.topicSubmit, elements.textSubmit, elements.improveSubmit].forEach(btn => {
-      if (btn) btn.disabled = true;
-    });
     // Reset steps
     updateLoadingStep('research');
   }
 
   function hideLoading() {
-    if (elements.loading) {
-      elements.loading.classList.add('hidden');
+    // Hide loading UI using getElementById for reliability
+    const loadingEl = document.getElementById(CONFIG.loadingId);
+    if (loadingEl) {
+      loadingEl.classList.add('hidden');
     }
+    
+    // Show workflow content again
     [elements.topicContent, elements.textContent, elements.improveContent].forEach(content => {
       if (content) content.style.display = '';
     });
+    
     state.isGenerating = false;
-    // Enable buttons
-    [elements.topicSubmit, elements.textSubmit, elements.improveSubmit].forEach(btn => {
-      if (btn) btn.disabled = false;
-    });
   }
 
   function updateLoadingStep(step) {
-    [elements.researchStep, elements.generateStep, elements.designStep].forEach(el => {
+    // Use getElementById for reliability
+    const researchStep = document.getElementById(CONFIG.researchStepId);
+    const generateStep = document.getElementById(CONFIG.generateStepId);
+    const designStep = document.getElementById(CONFIG.designStepId);
+    
+    // Remove active from all steps
+    [researchStep, generateStep, designStep].forEach(el => {
       if (el) el.classList.remove('active');
     });
     
-    if (step === 'research' && elements.researchStep) {
-      elements.researchStep.classList.add('active');
-    } else if (step === 'generate' && elements.generateStep) {
-      elements.generateStep.classList.add('active');
-    } else if (step === 'design' && elements.designStep) {
-      elements.designStep.classList.add('active');
+    // Add active to current step
+    if (step === 'research' && researchStep) {
+      researchStep.classList.add('active');
+    } else if (step === 'generate' && generateStep) {
+      generateStep.classList.add('active');
+    } else if (step === 'design' && designStep) {
+      designStep.classList.add('active');
     }
   }
 
   function showError(message) {
-    if (!elements.error) return;
-    const errorText = elements.error.querySelector('.ai-error-text');
-    if (errorText) {
-      errorText.textContent = message || 'An error occurred. Please try again.';
+    // Hide loading UI
+    const loadingEl = document.getElementById(CONFIG.loadingId);
+    if (loadingEl) {
+      loadingEl.classList.add('hidden');
     }
-    elements.error.classList.remove('hidden');
+    
+    // Show error UI
+    const errorEl = document.getElementById(CONFIG.errorId);
+    if (errorEl) {
+      const errorText = errorEl.querySelector('.ai-error-text');
+      if (errorText) {
+        errorText.textContent = message || 'An error occurred. Please try again.';
+      }
+      errorEl.classList.remove('hidden');
+    }
+    
+    // Restore workflow content visibility
+    [elements.topicContent, elements.textContent, elements.improveContent].forEach(content => {
+      if (content) content.style.display = '';
+    });
+    
+    state.isGenerating = false;
+    
+    // Restore all button states
+    setButtonLoading(CONFIG.topicSubmitId, false);
+    setButtonLoading(CONFIG.textSubmitId, false);
+    setButtonLoading(CONFIG.improveSubmitId, false);
   }
 
   function hideError() {
@@ -567,8 +757,8 @@
       return null;
     }
 
-    showLoading();
-    hideError();
+    // Loading UI is already shown by handleTopicSubmit
+    // Just update loading steps here
 
     try {
       // Step 1: Research
@@ -592,10 +782,7 @@
       return slides;
     } catch (error) {
       console.error('Error generating from topic:', error);
-      showError('Failed to generate presentation. Please try again.');
-      return null;
-    } finally {
-      hideLoading();
+      throw error; // Re-throw to be handled by caller
     }
   }
 
@@ -987,8 +1174,8 @@
       return null;
     }
 
-    showLoading();
-    hideError();
+    // Loading UI is already shown by handleTextSubmit
+    // Just update loading steps here
 
     try {
       // Extract topic from text for theme detection
@@ -998,6 +1185,9 @@
       // Auto-detect theme if not selected
       const themeConfig = getThemeConfig(theme, extractedTopic);
       const effectiveTheme = theme || detectTopicTheme(extractedTopic);
+      
+      updateLoadingStep('research');
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       updateLoadingStep('generate');
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -1010,10 +1200,7 @@
       return slides;
     } catch (error) {
       console.error('Error generating from text:', error);
-      showError('Failed to generate presentation. Please try again.');
-      return null;
-    } finally {
-      hideLoading();
+      throw error; // Re-throw to be handled by caller
     }
   }
 
@@ -1205,10 +1392,13 @@
       return null;
     }
 
-    showLoading();
-    hideError();
+    // Loading UI is already shown by handleImproveSubmit
+    // Just update loading steps here
 
     try {
+      updateLoadingStep('research');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       updateLoadingStep('generate');
       await new Promise(resolve => setTimeout(resolve, 1500));
       
@@ -1220,10 +1410,7 @@
       return improvedSlides;
     } catch (error) {
       console.error('Error improving slides:', error);
-      showError('Failed to improve slides. Please try again.');
-      return null;
-    } finally {
-      hideLoading();
+      throw error; // Re-throw to be handled by caller
     }
   }
 
@@ -1320,52 +1507,150 @@
   // Event Handlers
   // ============================================================================
   
+  /**
+   * Get active element value - finds the currently visible/active element
+   */
+  function getActiveElementValue(id) {
+    const allMatches = document.querySelectorAll(`#${id}`);
+    if (allMatches.length === 0) return null;
+    
+    // If only one, return it
+    if (allMatches.length === 1) return allMatches[0];
+    
+    // Multiple matches - find the active one
+    const panel = elements.panel;
+    
+    // Prefer element inside active workflow content
+    const activeContent = document.querySelector(`#${CONFIG.topicContentId}.active, #${CONFIG.textContentId}.active, #${CONFIG.improveContentId}.active`);
+    if (activeContent) {
+      const inActiveContent = Array.from(allMatches).find(el => activeContent.contains(el));
+      if (inActiveContent) return inActiveContent;
+    }
+    
+    // Prefer element inside panel
+    if (panel) {
+      const inPanel = Array.from(allMatches).find(el => panel.contains(el));
+      if (inPanel) return inPanel;
+    }
+    
+    // Prefer visible element
+    const visible = Array.from(allMatches).find(el => el.offsetParent !== null);
+    if (visible) return visible;
+    
+    // Fallback to first
+    return allMatches[0];
+  }
+
   async function handleTopicSubmit() {
     if (state.isGenerating) return;
     
-    const topic = elements.topicInput?.value;
-    const slideCount = elements.slideCount?.value || '8';
-    const theme = elements.themeSelector?.value || 'aramco';
+    // Refresh element references to ensure we have the latest
+    const topicInput = getActiveElementValue(CONFIG.topicInputId) || elements.topicInput;
+    const slideCount = getActiveElementValue(CONFIG.slideCountId) || elements.slideCount;
+    const themeSelector = getActiveElementValue(CONFIG.themeSelectorId) || elements.themeSelector;
     
-    const slides = await generateFromTopic(topic, slideCount, theme);
+    const topic = topicInput?.value || '';
+    const slideCountValue = slideCount?.value || '8';
+    const theme = themeSelector?.value || 'aramco';
     
-    if (slides) {
-      const success = createSlidesInEditor(slides);
-      if (success) {
-        closePanel();
+    if (!topic.trim()) {
+      showError('Please enter a topic.');
+      return;
+    }
+    
+    try {
+      // Immediately show loading UI and update button state
+      showLoading();
+      setButtonLoading(CONFIG.topicSubmitId, true);
+      hideError();
+      
+      const slides = await generateFromTopic(topic, slideCountValue, theme);
+      
+      if (slides) {
+        const success = createSlidesInEditor(slides);
+        if (success) {
+          closePanel();
+        }
       }
+    } catch (error) {
+      console.error('Error in handleTopicSubmit:', error);
+      showError('Failed to generate presentation. Please try again.');
+    } finally {
+      // Always restore button state and hide loading
+      hideLoading();
+      setButtonLoading(CONFIG.topicSubmitId, false);
     }
   }
 
   async function handleTextSubmit() {
     if (state.isGenerating) return;
     
-    const text = elements.textInput?.value;
-    const slideCount = elements.slideCount?.value || '8';
-    const theme = elements.themeSelector?.value || 'aramco';
+    // Refresh element references to ensure we have the latest
+    const textInput = getActiveElementValue(CONFIG.textInputId) || elements.textInput;
+    const slideCount = getActiveElementValue(CONFIG.slideCountId) || elements.slideCount;
+    const themeSelector = getActiveElementValue(CONFIG.themeSelectorId) || elements.themeSelector;
     
-    const slides = await generateFromText(text, slideCount, theme);
+    const text = textInput?.value || '';
+    const slideCountValue = slideCount?.value || '8';
+    const theme = themeSelector?.value || 'aramco';
     
-    if (slides) {
-      const success = createSlidesInEditor(slides);
-      if (success) {
-        closePanel();
+    if (!text.trim()) {
+      showError('Please paste your slide content.');
+      return;
+    }
+    
+    try {
+      // Immediately show loading UI and update button state
+      showLoading();
+      setButtonLoading(CONFIG.textSubmitId, true);
+      hideError();
+      
+      const slides = await generateFromText(text, slideCountValue, theme);
+      
+      if (slides) {
+        const success = createSlidesInEditor(slides);
+        if (success) {
+          closePanel();
+        }
       }
+    } catch (error) {
+      console.error('Error in handleTextSubmit:', error);
+      showError('Failed to generate presentation. Please try again.');
+    } finally {
+      // Always restore button state and hide loading
+      hideLoading();
+      setButtonLoading(CONFIG.textSubmitId, false);
     }
   }
 
   async function handleImproveSubmit() {
     if (state.isGenerating) return;
     
-    const theme = elements.themeSelector?.value || 'aramco';
+    // Refresh element references to ensure we have the latest
+    const themeSelector = getActiveElementValue(CONFIG.themeSelectorId) || elements.themeSelector;
+    const theme = themeSelector?.value || 'aramco';
     
-    const slides = await improveCurrentSlides(theme);
-    
-    if (slides) {
-      const success = createSlidesInEditor(slides);
-      if (success) {
-        closePanel();
+    try {
+      // Immediately show loading UI and update button state
+      showLoading();
+      setButtonLoading(CONFIG.improveSubmitId, true);
+      hideError();
+      
+      const slides = await improveCurrentSlides(theme);
+      
+      if (slides) {
+        const success = createSlidesInEditor(slides);
+        if (success) {
+          closePanel();
+        }
       }
+    } catch (error) {
+      console.error('Error in handleImproveSubmit:', error);
+      showError('Failed to improve slides. Please try again.');
+    } finally {
+      // Always restore button state and hide loading
+      hideLoading();
+      setButtonLoading(CONFIG.improveSubmitId, false);
     }
   }
 
@@ -1381,64 +1666,93 @@
     }
   }
 
-  function initialize() {
-    initializeElements();
+  /**
+   * Attach event listeners to elements
+   */
+  function attachEventListeners() {
+    // Button to open panel - always use event delegation for reliability
+    // This ensures it works even if button is added dynamically
+    document.addEventListener('click', (e) => {
+      const clickedButton = e.target.closest(`#${CONFIG.buttonId}`);
+      if (clickedButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        openPanel();
+      }
+    }, true);
     
-    if (!elements.panel || !elements.button) {
-      console.warn('AI Generator: Required DOM elements not found');
-      return;
-    }
-    
-    // Event listeners
+    // Also attach directly if button exists (for immediate response)
     if (elements.button) {
-      elements.button.addEventListener('click', openPanel);
+      elements.button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openPanel();
+      });
+      console.log('AI Generator: Button event listener attached directly');
+    } else {
+      console.warn('AI Generator: Button not found, using event delegation only');
     }
     
+    // Close button
     if (elements.closeButton) {
       elements.closeButton.addEventListener('click', closePanel);
     }
     
-    if (elements.workflowTopicBtn) {
-      elements.workflowTopicBtn.addEventListener('click', () => switchWorkflow('topic'));
+    // Workflow tab buttons - rebind using querySelector for reliability
+    const topicBtn = document.querySelector(`#${CONFIG.workflowTopicId}`);
+    const textBtn = document.querySelector(`#${CONFIG.workflowTextId}`);
+    const improveBtn = document.querySelector(`#${CONFIG.workflowImproveId}`);
+    
+    if (topicBtn) {
+      topicBtn.addEventListener('click', () => selectWorkflow('topic'));
     }
     
-    if (elements.workflowTextBtn) {
-      elements.workflowTextBtn.addEventListener('click', () => switchWorkflow('text'));
+    if (textBtn) {
+      textBtn.addEventListener('click', () => selectWorkflow('text'));
     }
     
-    if (elements.workflowImproveBtn) {
-      elements.workflowImproveBtn.addEventListener('click', () => switchWorkflow('improve'));
+    if (improveBtn) {
+      improveBtn.addEventListener('click', () => selectWorkflow('improve'));
     }
     
-    if (elements.topicSubmit) {
-      elements.topicSubmit.addEventListener('click', handleTopicSubmit);
-    }
+    // Submit buttons - use event delegation for robustness
+    document.addEventListener('click', (e) => {
+      const clickedButton = e.target.closest('button');
+      if (!clickedButton) return;
+      
+      const buttonId = clickedButton.id;
+      if (buttonId === CONFIG.topicSubmitId) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleTopicSubmit();
+      } else if (buttonId === CONFIG.textSubmitId) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleTextSubmit();
+      } else if (buttonId === CONFIG.improveSubmitId) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleImproveSubmit();
+      }
+    }, true);
     
-    if (elements.textSubmit) {
-      elements.textSubmit.addEventListener('click', handleTextSubmit);
-    }
-    
-    if (elements.improveSubmit) {
-      elements.improveSubmit.addEventListener('click', handleImproveSubmit);
-    }
-    
-    if (elements.topicInput) {
-      elements.topicInput.addEventListener('keydown', (e) => {
+    // Input keydown handlers - use event delegation
+    document.addEventListener('keydown', (e) => {
+      const target = e.target;
+      if (!target) return;
+      
+      if (target.id === CONFIG.topicInputId) {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           handleTopicSubmit();
         }
-      });
-    }
-    
-    if (elements.textInput) {
-      elements.textInput.addEventListener('keydown', (e) => {
+      } else if (target.id === CONFIG.textInputId) {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
           e.preventDefault();
           handleTextSubmit();
         }
-      });
-    }
+      }
+    }, true);
     
     // Close panel when clicking outside (only for modal version)
     document.addEventListener('click', (e) => {
@@ -1464,6 +1778,29 @@
         closePanel();
       }
     });
+  }
+
+  /**
+   * Initialize with retry logic
+   */
+  function initialize() {
+    initializeElements();
+    
+    // Retry once if critical elements not found
+    if (!elements.panel || !elements.button) {
+      setTimeout(() => {
+        console.log('AI Generator: Retrying element initialization...');
+        initializeElements();
+        if (elements.panel && elements.button) {
+          attachEventListeners();
+        } else {
+          console.warn('AI Generator: Required DOM elements not found after retry');
+        }
+      }, 50);
+      return;
+    }
+    
+    attachEventListeners();
   }
 
   // ============================================================================

@@ -4279,6 +4279,76 @@
     const textColorValue = colors.text || '#1e293b';
     const textLightValue = colors.textLight || '#475569';
     
+    // Fallback colors if theme has no custom design
+    const fallbackBg = backgroundColorValue === '#ffffff' ? '#fdfdfd' : backgroundColorValue;
+    const fallbackAccent = accentColorValue || '#3a77ff';
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, opacity) => {
+      if (!hex || hex.length < 7) return `rgba(0, 0, 0, ${opacity})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    };
+    
+    // Helper function to add decorative background shapes with safe zones
+    const addDecorativeShapes = () => {
+      // Safe zones: 140px horizontal, 100px vertical margins
+      // Title zone: top 20-35% (144-252px)
+      // Content zone: mid 35-80% (252-576px)
+      const safeLeft = 140;
+      const safeRight = 1280 - 140;
+      const safeTop = 100;
+      const safeBottom = 720 - 100;
+      const titleZoneTop = 144; // 20% of 720
+      const titleZoneBottom = 252; // 35% of 720
+      const contentZoneTop = 252; // 35% of 720
+      const contentZoneBottom = 576; // 80% of 720
+      
+      // Shape 1: Top-right corner (outside safe zones)
+      const shape1Size = 280;
+      const shape1Opacity = 0.09 + Math.random() * 0.04; // 0.09-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeRight - shape1Size + 40, // Right edge, partially off-screen
+        y: safeTop - shape1Size / 2, // Top edge
+        width: shape1Size,
+        height: shape1Size,
+        fillColor: hexToRgba(accentColorValue || fallbackAccent, shape1Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(32px)',
+        rotation: 1 + Math.random() * 2, // 1-3 degrees
+        scale: 1.02 + Math.random() * 0.03, // 1.02-1.05
+        zIndex: -1
+      });
+      
+      // Shape 2: Bottom-left corner (outside safe zones)
+      const shape2Size = 240;
+      const shape2Opacity = 0.08 + Math.random() * 0.05; // 0.08-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeLeft - shape2Size / 2, // Left edge
+        y: safeBottom - shape2Size / 2 + 20, // Bottom edge
+        width: shape2Size,
+        height: shape2Size,
+        fillColor: hexToRgba(secondaryColorValue, shape2Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(28px)',
+        rotation: 1.5 + Math.random() * 1.5, // 1.5-3 degrees
+        scale: 1.03 + Math.random() * 0.02, // 1.03-1.05
+        zIndex: -1
+      });
+    };
+    
     // Read fonts exclusively from design object
     const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
     const titleSizeValue = fonts.titleSize || 48;
@@ -4287,24 +4357,27 @@
     const bodyAlignValue = fonts.bodyAlign || 'left';
     const fontWeightValue = fonts.fontWeight || 'bold';
     
-    // Apply background color
-    slide.background = backgroundColorValue;
+    // Add decorative shapes FIRST (so they appear behind)
+    addDecorativeShapes();
+    slide.background = fallbackBg;
     
     const titleY = 250;
-    const subtitleY = 350;
+    const subtitleY = 380;
+    const padding = 60;
     
     // Adjust title X position based on alignment
-    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
-    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : 100);
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : padding);
+    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : padding);
     
-    // Main title
+    // Main title with shadow
+    const titleText = slideData.title || 'Title';
     slide.elements.push({
       id: uid(),
       type: 'text',
       x: titleX,
       y: titleY,
-      text: slideData.title || 'Title',
-      content: slideData.title || 'Title',
+      text: titleText,
+      content: titleText,
       fontSize: titleSizeValue,
       color: primaryColorValue,
       fontFamily: fontFamilyValue,
@@ -4315,18 +4388,69 @@
       lineHeight: 1.2,
       listType: null,
       rotation: 0,
+      scale: 1,
+      textShadow: '0 2px 8px rgba(0, 0, 0, 0.1)'
+    });
+    
+    // Accent underline beneath title (40% of title width, 3-4px height, centered)
+    const titleWidth = titleText.length * (titleSizeValue * 0.6);
+    const accentLineWidth = titleWidth * 0.4; // 40% of title width
+    const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
+                        (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
+    const accentLineY = titleY + titleSizeValue + 15;
+    
+    slide.elements.push({
+      id: uid(),
+      type: 'shape',
+      shapeType: 'rounded-rectangle',
+      x: accentLineX,
+      y: accentLineY,
+      width: accentLineWidth,
+      height: 3.5, // 3-4px
+      fillColor: primaryColorValue, // Use primary color for underline
+      strokeColor: 'transparent',
+      strokeWidth: 0,
+      borderRadius: '2px',
+      rotation: 0,
       scale: 1
     });
     
-    // Subtitle/body if provided
+    // Subtitle/body if provided - wrap in glassmorphism card
     if (slideData.body) {
       const bodyLines = slideData.body.split('\n').filter(l => l.trim());
+      const bodyText = bodyLines.join(' ');
+      const containerWidth = Math.min(bodyText.length * 9 + 80, 1000);
+      const containerHeight = bodyLines.length * 55 + 60;
+      const containerX = bodyAlignValue === 'center' ? 640 - (containerWidth / 2) :
+                         (bodyAlignValue === 'right' ? 1180 - containerWidth : padding);
+      const containerY = subtitleY - 30;
+      
+      // Glassmorphism container with blur
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'rounded-rectangle',
+        x: containerX,
+        y: containerY,
+        width: containerWidth,
+        height: containerHeight,
+        fillColor: 'rgba(255, 255, 255, 0.55)',
+        strokeColor: hexToRgba(fallbackAccent, 0.15),
+        strokeWidth: 1,
+        borderRadius: '18px',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+        backdropFilter: 'blur(16px)',
+        filter: 'blur(0px)',
+        rotation: 0,
+        scale: 1
+      });
+      
       bodyLines.forEach((line, idx) => {
         slide.elements.push({
           id: uid(),
           type: 'text',
           x: bodyX,
-          y: subtitleY + (idx * 50),
+          y: subtitleY + (idx * 55),
           text: line.trim(),
           content: line.trim(),
           fontSize: bodySizeValue,
@@ -4336,7 +4460,7 @@
           fontStyle: 'normal',
           textAlign: bodyAlignValue,
           underline: false,
-          lineHeight: 1.4,
+          lineHeight: 1.5,
           listType: null,
           rotation: 0,
           scale: 1
@@ -4359,6 +4483,71 @@
     const textColorValue = colors.text || '#1e293b';
     const textLightValue = colors.textLight || '#475569';
     
+    // Fallback colors if theme has no custom design
+    const fallbackBg = backgroundColorValue === '#ffffff' ? '#fdfdfd' : backgroundColorValue;
+    const fallbackAccent = accentColorValue || '#3a77ff';
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, opacity) => {
+      if (!hex || hex.length < 7) return `rgba(0, 0, 0, ${opacity})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    };
+    
+    // Helper function to add decorative background shapes with safe zones
+    const addDecorativeShapes = () => {
+      const safeLeft = 140;
+      const safeRight = 1280 - 140;
+      const safeTop = 100;
+      const safeBottom = 720 - 100;
+      const contentZoneTop = 252; // 35% of 720
+      const contentZoneBottom = 576; // 80% of 720
+      
+      // Shape 1: Top-right corner
+      const shape1Size = 260;
+      const shape1Opacity = 0.08 + Math.random() * 0.05; // 0.08-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeRight - shape1Size + 30,
+        y: safeTop - shape1Size / 2,
+        width: shape1Size,
+        height: shape1Size,
+        fillColor: hexToRgba(accentColorValue || fallbackAccent, shape1Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(30px)',
+        rotation: 1.2 + Math.random() * 1.8, // 1.2-3 degrees
+        scale: 1.02 + Math.random() * 0.03, // 1.02-1.05
+        zIndex: -1
+      });
+      
+      // Shape 2: Bottom-left corner
+      const shape2Size = 220;
+      const shape2Opacity = 0.07 + Math.random() * 0.06; // 0.07-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeLeft - shape2Size / 2,
+        y: safeBottom - shape2Size / 2 + 30,
+        width: shape2Size,
+        height: shape2Size,
+        fillColor: hexToRgba(secondaryColorValue, shape2Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(28px)',
+        rotation: 1.5 + Math.random() * 1.5, // 1.5-3 degrees
+        scale: 1.03 + Math.random() * 0.02, // 1.03-1.05
+        zIndex: -1
+      });
+    };
+    
     // Read fonts exclusively from design object
     const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
     const titleSizeValue = fonts.titleSize || 48;
@@ -4367,27 +4556,30 @@
     const bodyAlignValue = fonts.bodyAlign || 'left';
     const fontWeightValue = fonts.fontWeight || 'bold';
     
-    // Apply background color
-    slide.background = backgroundColorValue;
+    // Add decorative shapes FIRST (so they appear behind)
+    addDecorativeShapes();
+    slide.background = fallbackBg;
     
     const startY = 100;
     const titleY = startY;
-    const contentStartY = startY + 90;
-    const maxWidth = 1080; // Leave margins
-    const lineHeight = 32; // Tighter spacing for paragraphs
+    const contentStartY = startY + 140;
+    const maxWidth = 1080;
+    const lineHeight = 32;
+    const padding = 60;
     
     // Adjust positioning based on alignment
-    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
-    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : 100);
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : padding);
+    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : padding);
     
-    // Slide title
+    // Slide title with shadow
+    const titleText = slideData.title || 'Slide';
     slide.elements.push({
       id: uid(),
       type: 'text',
       x: titleX,
       y: titleY,
-      text: slideData.title || 'Slide',
-      content: slideData.title || 'Slide',
+      text: titleText,
+      content: titleText,
       fontSize: titleSizeValue,
       color: primaryColorValue,
       fontFamily: fontFamilyValue,
@@ -4398,10 +4590,34 @@
       lineHeight: 1.2,
       listType: null,
       rotation: 0,
+      scale: 1,
+      textShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+    });
+    
+    // Accent underline beneath title (40% of title width, centered)
+    const titleWidth = titleText.length * (titleSizeValue * 0.6);
+    const accentLineWidth = titleWidth * 0.4; // 40% of title width
+    const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
+                        (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
+    const accentLineY = titleY + titleSizeValue + 12;
+    
+    slide.elements.push({
+      id: uid(),
+      type: 'shape',
+      shapeType: 'rounded-rectangle',
+      x: accentLineX,
+      y: accentLineY,
+      width: accentLineWidth,
+      height: 3.5, // 3-4px
+      fillColor: primaryColorValue, // Use primary color for underline
+      strokeColor: 'transparent',
+      strokeWidth: 0,
+      borderRadius: '2px',
+      rotation: 0,
       scale: 1
     });
     
-    // Body content - handle as paragraphs, not line-by-line
+    // Body content - handle as paragraphs, wrapped in styled containers
     if (slideData.body) {
       // Split into paragraphs (by double newlines or long sentences)
       const paragraphs = slideData.body.split(/\n\n+/).filter(p => p.trim());
@@ -4410,13 +4626,43 @@
       }
       
       let currentY = contentStartY;
+      const containerPadding = 30; // 28-32px padding for content cards
+      const containerMaxWidth = Math.min(maxWidth, 1000);
       
       paragraphs.forEach((paragraph, paraIdx) => {
         // Clean paragraph text
         const cleanPara = paragraph.trim().replace(/\n/g, ' ');
         
+        // Calculate container dimensions
+        const estimatedLines = Math.ceil(cleanPara.length / 80);
+        const containerHeight = Math.max(estimatedLines * (bodySizeValue * 1.6) + (containerPadding * 2), 80);
+        const containerX = bodyAlignValue === 'center' ? 640 - (containerMaxWidth / 2) :
+                           (bodyAlignValue === 'right' ? 1180 - containerMaxWidth : padding);
+        
+        // Create glassmorphism text container
+        slide.elements.push({
+          id: uid(),
+          type: 'shape',
+          shapeType: 'rounded-rectangle',
+          x: containerX,
+          y: currentY - containerPadding,
+          width: containerMaxWidth,
+          height: containerHeight,
+          fillColor: 'rgba(255, 255, 255, 0.55)',
+          strokeColor: 'rgba(0, 0, 0, 0.08)',
+          strokeWidth: 1,
+          borderRadius: '18px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+          backdropFilter: 'blur(16px)',
+          filter: 'blur(0px)',
+          rotation: 0,
+          scale: 1
+        });
+        
         // Split long paragraphs into manageable chunks (max ~600 chars per element)
         const maxChars = 600;
+        let textY = currentY;
+        
         if (cleanPara.length > maxChars) {
           const sentences = cleanPara.match(/[^.!?]+[.!?]+/g) || [cleanPara];
           let currentChunk = '';
@@ -4428,7 +4674,7 @@
                 id: uid(),
                 type: 'text',
                 x: bodyX,
-                y: currentY,
+                y: textY,
                 text: currentChunk.trim(),
                 content: currentChunk.trim(),
                 fontSize: bodySizeValue,
@@ -4444,7 +4690,7 @@
                 scale: 1
               });
               
-              currentY += Math.ceil(currentChunk.length / 80) * (lineHeight * 1.6); // Estimate height
+              textY += Math.ceil(currentChunk.length / 80) * (lineHeight * 1.6); // Estimate height
               currentChunk = sentence + ' ';
             } else {
               currentChunk += sentence + ' ';
@@ -4457,7 +4703,7 @@
               id: uid(),
               type: 'text',
               x: bodyX,
-              y: currentY,
+              y: textY,
               text: currentChunk.trim(),
               content: currentChunk.trim(),
               fontSize: bodySizeValue,
@@ -4473,7 +4719,7 @@
               scale: 1
             });
             
-            currentY += Math.ceil(currentChunk.length / 80) * (lineHeight * 1.6);
+            textY += Math.ceil(currentChunk.length / 80) * (lineHeight * 1.6);
           }
         } else {
           // Single paragraph element
@@ -4481,7 +4727,7 @@
             id: uid(),
             type: 'text',
             x: bodyX,
-            y: currentY,
+            y: textY,
             text: cleanPara,
             content: cleanPara,
             fontSize: bodySizeValue,
@@ -4497,9 +4743,11 @@
             scale: 1
           });
           
-          // Estimate height: ~80 chars per line, lineHeight * 1.6
-          currentY += Math.ceil(cleanPara.length / 80) * (lineHeight * 1.6);
+          textY += Math.ceil(cleanPara.length / 80) * (lineHeight * 1.6);
         }
+        
+        // Update currentY for next paragraph
+        currentY = textY + containerPadding + 20;
         
         // Add spacing between paragraphs
         if (paraIdx < paragraphs.length - 1) {
@@ -4523,6 +4771,69 @@
     const textColorValue = colors.text || '#1e293b';
     const textLightValue = colors.textLight || '#475569';
     
+    // Fallback colors if theme has no custom design
+    const fallbackBg = backgroundColorValue === '#ffffff' ? '#fdfdfd' : backgroundColorValue;
+    const fallbackAccent = accentColorValue || '#3a77ff';
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, opacity) => {
+      if (!hex || hex.length < 7) return `rgba(0, 0, 0, ${opacity})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    };
+    
+    // Helper function to add decorative background shapes with safe zones
+    const addDecorativeShapes = () => {
+      const safeLeft = 140;
+      const safeRight = 1280 - 140;
+      const safeTop = 100;
+      const safeBottom = 720 - 100;
+      
+      // Shape 1: Top-right corner
+      const shape1Size = 270;
+      const shape1Opacity = 0.08 + Math.random() * 0.05; // 0.08-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeRight - shape1Size + 25,
+        y: safeTop - shape1Size / 2,
+        width: shape1Size,
+        height: shape1Size,
+        fillColor: hexToRgba(accentColorValue || fallbackAccent, shape1Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(32px)',
+        rotation: 1 + Math.random() * 2, // 1-3 degrees
+        scale: 1.02 + Math.random() * 0.03, // 1.02-1.05
+        zIndex: -1
+      });
+      
+      // Shape 2: Bottom-left corner
+      const shape2Size = 230;
+      const shape2Opacity = 0.07 + Math.random() * 0.06; // 0.07-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeLeft - shape2Size / 2,
+        y: safeBottom - shape2Size / 2 + 25,
+        width: shape2Size,
+        height: shape2Size,
+        fillColor: hexToRgba(secondaryColorValue, shape2Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(30px)',
+        rotation: 1.8 + Math.random() * 1.2, // 1.8-3 degrees
+        scale: 1.03 + Math.random() * 0.02, // 1.03-1.05
+        zIndex: -1
+      });
+    };
+    
     // Read fonts exclusively from design object
     const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
     const titleSizeValue = fonts.titleSize || 48;
@@ -4531,29 +4842,32 @@
     const bodyAlignValue = fonts.bodyAlign || 'left';
     const fontWeightValue = fonts.fontWeight || 'bold';
     
-    // Apply background color
-    slide.background = backgroundColorValue;
+    // Add decorative shapes FIRST (so they appear behind)
+    addDecorativeShapes();
+    slide.background = fallbackBg;
     
     const startY = 120;
     const titleY = startY;
-    const contentStartY = startY + 100;
-    const columnWidth = 500;
+    const contentStartY = startY + 140;
+    const columnWidth = 480;
     const columnGap = 80;
     const leftX = 100;
     const rightX = leftX + columnWidth + columnGap;
     const lineHeight = 32;
+    const padding = 60;
     
     // Adjust title X position based on alignment
-    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : padding);
     
-    // Title - use primaryColor for headings
+    // Title with shadow
+    const titleText = slideData.title || 'Slide';
     slide.elements.push({
       id: uid(),
       type: 'text',
       x: titleX,
       y: titleY,
-      text: slideData.title || 'Slide',
-      content: slideData.title || 'Slide',
+      text: titleText,
+      content: titleText,
       fontSize: titleSizeValue,
       color: primaryColorValue,
       fontFamily: fontFamilyValue,
@@ -4564,10 +4878,55 @@
       lineHeight: 1.2,
       listType: null,
       rotation: 0,
+      scale: 1,
+      textShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+    });
+    
+    // Accent underline beneath title (40% of title width, centered)
+    const titleWidth = titleText.length * (titleSizeValue * 0.6);
+    const accentLineWidth = titleWidth * 0.4; // 40% of title width
+    const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
+                        (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
+    const accentLineY = titleY + titleSizeValue + 12;
+    
+    slide.elements.push({
+      id: uid(),
+      type: 'shape',
+      shapeType: 'rounded-rectangle',
+      x: accentLineX,
+      y: accentLineY,
+      width: accentLineWidth,
+      height: 3.5, // 3-4px
+      fillColor: primaryColorValue, // Use primary color for underline
+      strokeColor: 'transparent',
+      strokeWidth: 0,
+      borderRadius: '2px',
+      rotation: 0,
       scale: 1
     });
     
-    // Split body into two columns
+    // Add vertical colored separator between columns
+    const separatorX = leftX + columnWidth + (columnGap / 2);
+    const separatorY = contentStartY - 20;
+    const separatorHeight = 400;
+    
+    slide.elements.push({
+      id: uid(),
+      type: 'shape',
+      shapeType: 'rounded-rectangle',
+      x: separatorX - 2,
+      y: separatorY,
+      width: 4,
+      height: separatorHeight,
+      fillColor: hexToRgba(secondaryColorValue || fallbackAccent, 0.35),
+      strokeColor: 'transparent',
+      strokeWidth: 0,
+      borderRadius: '2px',
+      rotation: 0,
+      scale: 1
+    });
+    
+    // Split body into two columns with styled containers
     if (slideData.body) {
       const bodyLines = slideData.body.split('\n').filter(l => l.trim());
       const midPoint = Math.ceil(bodyLines.length / 2);
@@ -4575,13 +4934,36 @@
       const rightColumn = bodyLines.slice(midPoint);
       
       [leftColumn, rightColumn].forEach((column, colIdx) => {
-        const xPos = colIdx === 0 ? leftX : rightX;
+        const xPos = colIdx === 0 ? leftX + padding : rightX + padding;
+        const containerX = colIdx === 0 ? leftX : rightX;
+        const containerHeight = column.length * lineHeight + (padding * 2);
+        
+        // Create glassmorphism container for each column
+        slide.elements.push({
+          id: uid(),
+          type: 'shape',
+          shapeType: 'rounded-rectangle',
+          x: containerX,
+          y: contentStartY - padding,
+          width: columnWidth,
+          height: containerHeight,
+          fillColor: 'rgba(255, 255, 255, 0.55)',
+          strokeColor: 'rgba(0, 0, 0, 0.08)',
+          strokeWidth: 1,
+          borderRadius: '18px',
+          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.06)',
+          backdropFilter: 'blur(16px)',
+          filter: 'blur(0px)',
+          rotation: 0,
+          scale: 1
+        });
+        
         column.forEach((line, idx) => {
           const isBullet = line.trim().startsWith('•');
           slide.elements.push({
             id: uid(),
             type: 'text',
-            x: isBullet ? xPos + 40 : xPos,
+            x: isBullet ? xPos + 30 : xPos,
             y: contentStartY + (idx * lineHeight),
             text: line.trim(),
             content: line.trim(),
@@ -4616,6 +4998,69 @@
     const textColorValue = colors.text || '#1e293b';
     const textLightValue = colors.textLight || '#475569';
     
+    // Fallback colors if theme has no custom design
+    const fallbackBg = backgroundColorValue === '#ffffff' ? '#fdfdfd' : backgroundColorValue;
+    const fallbackAccent = accentColorValue || '#3a77ff';
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, opacity) => {
+      if (!hex || hex.length < 7) return `rgba(0, 0, 0, ${opacity})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    };
+    
+    // Helper function to add decorative background shapes with safe zones
+    const addDecorativeShapes = () => {
+      const safeLeft = 140;
+      const safeRight = 1280 - 140;
+      const safeTop = 100;
+      const safeBottom = 720 - 100;
+      
+      // Shape 1: Top-right corner
+      const shape1Size = 250;
+      const shape1Opacity = 0.09 + Math.random() * 0.04; // 0.09-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeRight - shape1Size + 35,
+        y: safeTop - shape1Size / 2,
+        width: shape1Size,
+        height: shape1Size,
+        fillColor: hexToRgba(accentColorValue || fallbackAccent, shape1Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(35px)',
+        rotation: 1.5 + Math.random() * 1.5, // 1.5-3 degrees
+        scale: 1.02 + Math.random() * 0.03, // 1.02-1.05
+        zIndex: -1
+      });
+      
+      // Shape 2: Bottom-left corner
+      const shape2Size = 240;
+      const shape2Opacity = 0.08 + Math.random() * 0.05; // 0.08-0.13
+      slide.elements.push({
+        id: uid(),
+        type: 'shape',
+        shapeType: 'circle',
+        x: safeLeft - shape2Size / 2,
+        y: safeBottom - shape2Size / 2 + 20,
+        width: shape2Size,
+        height: shape2Size,
+        fillColor: hexToRgba(secondaryColorValue, shape2Opacity),
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        borderRadius: '50%',
+        filter: 'blur(30px)',
+        rotation: 1.2 + Math.random() * 1.8, // 1.2-3 degrees
+        scale: 1.03 + Math.random() * 0.02, // 1.03-1.05
+        zIndex: -1
+      });
+    };
+    
     // Read fonts exclusively from design object
     const fontFamilyValue = fonts.family || 'Inter, system-ui, sans-serif';
     const titleSizeValue = fonts.titleSize || 48;
@@ -4624,26 +5069,29 @@
     const bodyAlignValue = fonts.bodyAlign || 'left';
     const fontWeightValue = fonts.fontWeight || 'bold';
     
-    // Apply background color
-    slide.background = backgroundColorValue;
+    // Add decorative shapes FIRST (so they appear behind)
+    addDecorativeShapes();
+    slide.background = fallbackBg;
     
     const startY = 150;
     const titleY = startY;
-    const contentStartY = startY + 90;
-    const lineHeight = 50;
+    const contentStartY = startY + 140;
+    const lineHeight = 70;
+    const padding = 60;
     
     // Adjust title X position based on alignment
-    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : 100);
-    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : 100);
+    const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : padding);
+    const bodyX = bodyAlignValue === 'center' ? 640 : (bodyAlignValue === 'right' ? 1180 : padding);
     
-    // Title - use titleSize for the title
+    // Title with shadow
+    const titleText = slideData.title || 'Key Points';
     slide.elements.push({
       id: uid(),
       type: 'text',
       x: titleX,
       y: titleY,
-      text: slideData.title || 'Key Points',
-      content: slideData.title || 'Key Points',
+      text: titleText,
+      content: titleText,
       fontSize: titleSizeValue,
       color: primaryColorValue,
       fontFamily: fontFamilyValue,
@@ -4654,19 +5102,92 @@
       lineHeight: 1.2,
       listType: null,
       rotation: 0,
+      scale: 1,
+      textShadow: '0 2px 6px rgba(0, 0, 0, 0.08)'
+    });
+    
+    // Accent underline beneath title (40% of title width, centered)
+    const titleWidth = titleText.length * (titleSizeValue * 0.6);
+    const accentLineWidth = titleWidth * 0.4; // 40% of title width
+    const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
+                        (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
+    const accentLineY = titleY + titleSizeValue + 12;
+    
+    slide.elements.push({
+      id: uid(),
+      type: 'shape',
+      shapeType: 'rounded-rectangle',
+      x: accentLineX,
+      y: accentLineY,
+      width: accentLineWidth,
+      height: 3.5, // 3-4px
+      fillColor: primaryColorValue, // Use primary color for underline
+      strokeColor: 'transparent',
+      strokeWidth: 0,
+      borderRadius: '2px',
+      rotation: 0,
       scale: 1
     });
     
-    // Key points (centered, larger) - use bodySize + 4 for each bullet
+    // Key points (centered, larger) - use bodySize + 4 for each bullet with icons
     if (slideData.body) {
       const bodyLines = slideData.body.split('\n').filter(l => l.trim());
       bodyLines.forEach((line, idx) => {
         const cleanLine = line.replace(/^[•\-\d+\.\)]\s*/, '');
+        const pointY = contentStartY + (idx * lineHeight);
+        const iconSize = 24;
+        const iconX = bodyAlignValue === 'center' ? 640 - 400 : (bodyAlignValue === 'right' ? 1180 - 400 : padding);
+        const textX = iconX + iconSize + 20;
+        
+        // Checkmark icon (circle with accent color)
+        slide.elements.push({
+          id: uid(),
+          type: 'shape',
+          shapeType: 'circle',
+          x: iconX,
+          y: pointY - 2,
+          width: iconSize,
+          height: iconSize,
+          fillColor: hexToRgba(accentColorValue || fallbackAccent, 0.18),
+          strokeColor: accentColorValue || fallbackAccent,
+          strokeWidth: 2,
+          borderRadius: '50%',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+          rotation: 0,
+          scale: 1.05
+        });
+        
+        // Glassmorphism container for each key point
+        const containerWidth = 900;
+        const containerHeight = lineHeight - 10;
+        const containerX = bodyAlignValue === 'center' ? 640 - (containerWidth / 2) :
+                            (bodyAlignValue === 'right' ? 1180 - containerWidth : padding);
+        
+        slide.elements.push({
+          id: uid(),
+          type: 'shape',
+          shapeType: 'rounded-rectangle',
+          x: containerX,
+          y: pointY - 10,
+          width: containerWidth,
+          height: containerHeight,
+          fillColor: 'rgba(255, 255, 255, 0.55)',
+          strokeColor: 'rgba(0, 0, 0, 0.08)',
+          strokeWidth: 1,
+          borderRadius: '18px',
+          boxShadow: '0 6px 20px rgba(0, 0, 0, 0.06)',
+          backdropFilter: 'blur(16px)',
+          filter: 'blur(0px)',
+          rotation: 0,
+          scale: 1
+        });
+        
+        // Key point text
         slide.elements.push({
           id: uid(),
           type: 'text',
-          x: bodyX,
-          y: contentStartY + (idx * lineHeight),
+          x: textX,
+          y: pointY,
           text: cleanLine,
           content: cleanLine,
           fontSize: bodySizeValue + 4,
@@ -4686,8 +5207,56 @@
   }
 
   function createSummarySlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
-    // Summary slides behave like content slides but with the same design settings
+    // Summary slides use content slide layout but with enhanced visual design
+    // The createContentSlide function already adds styled containers and decorative elements
     createContentSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
+    
+    // Additional summary-specific enhancements: add highlight accent boxes
+    const design = slideData.design || {};
+    const colors = design.colors || {};
+    const accentColorValue = colors.accent || '#006c35';
+    const fallbackAccent = accentColorValue || '#3a77ff';
+    
+    // Helper function to convert hex to rgba
+    const hexToRgba = (hex, opacity) => {
+      if (!hex || hex.length < 7) return `rgba(0, 0, 0, ${opacity})`;
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    };
+    
+    // Add highlight accent boxes around summary containers for visual emphasis
+    if (slideData.body) {
+      const paragraphs = slideData.body.split(/\n\n+/).filter(p => p.trim());
+      if (paragraphs.length === 0) {
+        paragraphs.push(slideData.body);
+      }
+      
+      paragraphs.forEach((paragraph, paraIdx) => {
+        const cleanPara = paragraph.trim().replace(/\n/g, ' ');
+        const estimatedLines = Math.ceil(cleanPara.length / 80);
+        const containerHeight = Math.max(estimatedLines * 40 + 60, 80);
+        const containerWidth = Math.min(1000, 1080);
+        const containerX = 640 - (containerWidth / 2);
+        const containerY = 220 + (paraIdx * (containerHeight + 60));
+        
+        // Add highlight accent box behind container
+        slide.elements.push({
+          id: uid(),
+          type: 'shape',
+          shapeType: 'rounded-rectangle',
+          x: containerX - 8,
+          y: containerY - 8,
+          width: containerWidth + 16,
+          height: containerHeight + 16,
+          fillColor: hexToRgba(fallbackAccent, 0.05),
+          strokeColor: hexToRgba(fallbackAccent, 0.2),
+          strokeWidth: 2,
+          borderRadius: '16px'
+        });
+      });
+    }
   }
 
   function createImageTextSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize) {
@@ -4698,12 +5267,17 @@
     // Read background color exclusively from design object
     const backgroundColorValue = colors.background || '#ffffff';
     
+    // Fallback colors if theme has no custom design
+    const fallbackBg = backgroundColorValue === '#ffffff' ? '#fdfdfd' : backgroundColorValue;
+    
     // Apply background color
-    slide.background = backgroundColorValue;
+    slide.background = fallbackBg;
     
     // Apply title and body styles just like content slides (will read from slideData.design)
+    // This already includes styled containers, decorative bars, and visual design elements
     createContentSlide(slide, slideData, primaryColor, textColor, fontFamily, titleSize, bodySize);
-    // Image support can be added later
+    
+    // Image support can be added later - for now, slides have full visual design from createContentSlide
   }
   
   // Drawing interface event handlers
@@ -5069,6 +5643,21 @@
         node.style.textAlign = el.textAlign || 'left';
         node.style.lineHeight = el.lineHeight ? String(el.lineHeight) : '1.2';
         node.style.backgroundColor = el.fillColor || 'transparent';
+        // Support text shadow for enhanced visuals
+        if (el.textShadow) {
+          node.style.textShadow = el.textShadow;
+        }
+        // Support box shadow for text containers
+        if (el.boxShadow) {
+          node.style.boxShadow = el.boxShadow;
+        }
+        // Support transform for rotation and scale
+        if (el.rotation || el.scale) {
+          const rotation = el.rotation || 0;
+          const scale = el.scale || 1;
+          node.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+          node.style.transformOrigin = 'center center';
+        }
         node.innerHTML = el.content || el.text || '';
         node.style.pointerEvents = 'none';
         slideEl.appendChild(node);
@@ -5082,7 +5671,32 @@
         node.style.height = (el.height / 720 * 100) + '%';
         node.style.backgroundColor = el.fillColor || 'transparent';
         node.style.border = `${el.strokeWidth || 1}px solid ${el.strokeColor || 'transparent'}`;
-        node.style.borderRadius = el.shapeType === 'rounded-rectangle' || el.shapeType === 'circle' ? '8px' : '0';
+        // Support borderRadius property, or default based on shapeType
+        const borderRadius = el.borderRadius || (el.shapeType === 'rounded-rectangle' ? '12px' : (el.shapeType === 'circle' ? '50%' : '0'));
+        node.style.borderRadius = borderRadius;
+        // Support z-index for layering (decorative shapes behind content)
+        if (el.zIndex !== undefined) {
+          node.style.zIndex = el.zIndex;
+        }
+        // Support box shadow for depth
+        if (el.boxShadow) {
+          node.style.boxShadow = el.boxShadow;
+        }
+        // Support blur/filter effects for glassmorphism
+        if (el.filter) {
+          node.style.filter = el.filter;
+        }
+        if (el.backdropFilter) {
+          node.style.backdropFilter = el.backdropFilter;
+          node.style.webkitBackdropFilter = el.backdropFilter;
+        }
+        // Support transform for rotation and scale
+        if (el.rotation || el.scale) {
+          const rotation = el.rotation || 0;
+          const scale = el.scale || 1;
+          node.style.transform = `rotate(${rotation}deg) scale(${scale})`;
+          node.style.transformOrigin = 'center center';
+        }
         node.style.pointerEvents = 'none';
         slideEl.appendChild(node);
       } else if (el.type === 'line') {
