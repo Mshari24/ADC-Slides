@@ -6687,9 +6687,35 @@ body {
 }
 
 .hero-stats {
-  display: grid;
-  gap: 18px;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 43, 73, 0.1);
+}
+
+.hero-stat-text {
+  font-size: 13px;
+  color: rgba(0, 43, 73, 0.7);
+  line-height: 1.5;
+}
+
+.hero-stat-text span {
+  font-weight: 600;
+  color: var(--aramco-blue, #00aae7);
+}
+
+.dark-mode .hero-stat-text {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dark-mode .hero-stat-text span {
+  color: var(--aramco-blue, #00aae7);
+}
+
+.dark-mode .hero-stats {
+  border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .stat {

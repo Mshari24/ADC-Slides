@@ -115,10 +115,25 @@
   let currentDrawColor = '#000000';
   let currentDrawWidth = 3;
 
-  const persisted = loadPersistedState();
+  // Check URL parameters for presentation ID
+  const urlParams = new URLSearchParams(window.location.search);
+  const presentationId = urlParams.get('presentation');
+  const projectId = urlParams.get('project');
+  const isNewPresentation = !!presentationId; // If there's a presentation ID, it's a new one (not autosave)
+  
+  // Only load autosave if there's NO presentation ID in URL
+  // If there's a presentation ID, create a fresh presentation
+  const persisted = !presentationId ? loadPersistedState() : null;
+  
   if (persisted) {
     Object.assign(state, persisted);
+  } else {
+    // Create fresh state for new presentation
+    state.title = 'Untitled presentation';
+    state.currentSlideIndex = 0;
+    state.slides = [defaultSlide()];
   }
+  
   normalizeState(state);
   persistState();
 

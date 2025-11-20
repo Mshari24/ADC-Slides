@@ -144,6 +144,11 @@
             <div class="hero-actions">
               <a class="btn-primary new-highlight" href="./index.html" id="btn-create-new">Create</a>
             </div>
+            <div class="hero-stats" id="hero-stats">
+              <span class="hero-stat-text"><span id="stat-recent">0</span> Recent Works</span>
+              <span class="hero-stat-text"><span id="stat-favorites">0</span> Favorites</span>
+              <span class="hero-stat-text"><span id="stat-shared">0</span> Shared with You</span>
+            </div>
           </div>
         </div>
       </section>
@@ -262,6 +267,51 @@
         const hour = now.getHours();
         const part = hour < 12 ? 'Morning' : hour < 18 ? 'Afternoon' : 'Evening';
         greetingEl.textContent = `Good ${part}, ${displayName}!`;
+      }
+
+      // Make sure Create button generates unique presentation ID
+      const createBtn = document.getElementById('btn-create-new');
+      if (createBtn) {
+        createBtn.addEventListener('click', function(e) {
+          const url = new URL(this.href, window.location.href);
+          url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+          this.href = url.toString();
+        });
+      }
+
+      // Update statistics
+      const updateStats = () => {
+        const recentWork = refreshedAccount.recentWork || [];
+        const favorites = refreshedAccount.favorites || [];
+        const sharedItems = refreshedAccount.sharedItems || [];
+        
+        // Count favorites from favorite-list if available
+        const favoriteListEl = document.getElementById('favorite-list');
+        const favoriteCount = favoriteListEl ? favoriteListEl.children.length : favorites.length;
+        
+        // Count shared items from shared-decks if available
+        const sharedListEl = document.getElementById('shared-decks');
+        const sharedCount = sharedListEl ? sharedListEl.children.length : sharedItems.length;
+        
+        const statRecent = document.getElementById('stat-recent');
+        const statFavorites = document.getElementById('stat-favorites');
+        const statShared = document.getElementById('stat-shared');
+        
+        if (statRecent) statRecent.textContent = recentWork.length;
+        if (statFavorites) statFavorites.textContent = favoriteCount;
+        if (statShared) statShared.textContent = sharedCount;
+      };
+      
+      // Update stats after a short delay to ensure DOM is ready
+      setTimeout(updateStats, 100);
+      
+      // Also update when recent work is rendered
+      const recentListEl = document.getElementById('recent-list');
+      if (recentListEl) {
+        const observer = new MutationObserver(() => {
+          updateStats();
+        });
+        observer.observe(recentListEl, { childList: true, subtree: true });
       }
 
       const avatar = document.querySelector('.sidebar-avatar');
