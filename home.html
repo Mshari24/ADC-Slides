@@ -33,20 +33,18 @@
         </div>
         <span class="sb-label">New</span>
         <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
-          <span class="new-menu-heading">Start a deck</span>
+          <span class="new-menu-heading">CREATE NEW</span>
           <div class="new-menu-options">
             <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./index.html">
               <span class="new-menu-icon">＋</span>
               <span class="new-menu-text">
                 <strong>Blank presentation</strong>
-                <small>Empty canvas, 16:9 layout</small>
               </span>
             </button>
             <button type="button" class="new-menu-item" data-new-action="template" data-new-href="./index.html?template=ad">
               <span class="new-menu-icon">✦</span>
               <span class="new-menu-text">
                 <strong>AD template</strong>
-                <small>Aramco Digital branded masters</small>
               </span>
             </button>
           </div>
@@ -144,7 +142,7 @@
           <div class="hero-copy">
             <h1 id="greeting" class="greeting">Neptune Migration</h1>
             <div class="hero-actions">
-              <a class="btn-primary new-highlight" href="./index.html">Create</a>
+              <a class="btn-primary new-highlight" href="./index.html" id="btn-create-new">Create</a>
             </div>
           </div>
         </div>
@@ -161,22 +159,18 @@
             <button id="btn-blank" class="create-card" type="button">
               <span class="create-icon">＋</span>
               <span class="create-title">Blank presentation</span>
-              <span class="create-meta">16:9 canvas</span>
             </button>
             <button id="btn-ad" class="create-card" type="button">
               <span class="create-icon">✦</span>
               <span class="create-title">Aramco template</span>
-              <span class="create-meta">Corporate theme</span>
             </button>
             <button id="btn-import" class="create-card" type="button">
               <span class="create-icon">⇪</span>
               <span class="create-title">Import slides</span>
-              <span class="create-meta">PPT, PPTX, ODP</span>
             </button>
             <button id="btn-theme" class="create-card" type="button">
               <span class="create-icon">⌘</span>
               <span class="create-title">Apply theme</span>
-              <span class="create-meta">Brand color kits</span>
             </button>
           </div>
           <input id="input-import-slides" type="file" accept=".json,.ppt,.pptx,.odp" hidden />
@@ -188,41 +182,9 @@
             <div>
               <h2>Recent work</h2>
             </div>
-            <a class="panel-link" href="./project.html">View all activity</a>
+            <a class="panel-link" href="./recent-work.html">View all</a>
           </div>
           <div class="recent-table" id="recent-list">
-            <a class="recent-row" href="./index.html?open=q3-report" data-title="Q3 Report">
-              <div class="recent-primary">
-                <span class="recent-name">Q3 Report</span>
-                <span class="recent-meta">Presentation • Sep 18, 2025</span>
-              </div>
-              <span class="recent-owner">Strategy Office</span>
-              <span class="recent-status">In review</span>
-            </a>
-            <a class="recent-row" href="./index.html?open=all-hands" data-title="Team All-Hands">
-              <div class="recent-primary">
-                <span class="recent-name">Team All-Hands</span>
-                <span class="recent-meta">Presentation • Oct 2, 2025</span>
-              </div>
-              <span class="recent-owner">Digital PMO</span>
-              <span class="recent-status">Ready</span>
-            </a>
-            <a class="recent-row" href="./index.html?open=roadmap" data-title="Product Roadmap">
-              <div class="recent-primary">
-                <span class="recent-name">Product Roadmap</span>
-                <span class="recent-meta">Presentation • Oct 31, 2025</span>
-              </div>
-              <span class="recent-owner">Innovation Lab</span>
-              <span class="recent-status">Draft</span>
-            </a>
-            <a class="recent-row" href="./index.html?open=proposal" data-title="Client Proposal">
-              <div class="recent-primary">
-                <span class="recent-name">Client Proposal</span>
-                <span class="recent-meta">Presentation • Nov 1, 2025</span>
-              </div>
-              <span class="recent-owner">Advisory Group</span>
-              <span class="recent-status">Awaiting sign-off</span>
-            </a>
           </div>
         </div>
 
@@ -230,35 +192,10 @@
           <div class="panel-head">
             <div>
               <h2>Shared with you</h2>
-              <p class="panel-subtitle">Collaborative decks from your teams</p>
             </div>
-            <a class="panel-link" href="./project.html">Open projects</a>
+            <a class="panel-link" href="./shared-with-you.html">View all</a>
           </div>
           <div class="recent-table" id="shared-decks">
-            <a class="recent-row" href="./index.html?open=sales-enablement" data-title="Sales Enablement Kickoff">
-              <div class="recent-primary">
-                <span class="recent-name">Sales Enablement Kickoff</span>
-                <span class="recent-meta">Shared • Nov 9, 2025</span>
-              </div>
-              <span class="recent-owner">Nora Al-Qahtani</span>
-              <span class="recent-status">Marketing Ops</span>
-            </a>
-            <a class="recent-row" href="./index.html?open=esg-update" data-title="ESG Council Update">
-              <div class="recent-primary">
-                <span class="recent-name">ESG Council Update</span>
-                <span class="recent-meta">Shared • Nov 7, 2025</span>
-              </div>
-              <span class="recent-owner">Hassan Al-Sayed</span>
-              <span class="recent-status">Strategy Office</span>
-            </a>
-            <a class="recent-row" href="./index.html?open=innovation-summit" data-title="Innovation Summit Preview">
-              <div class="recent-primary">
-                <span class="recent-name">Innovation Summit Preview</span>
-                <span class="recent-meta">Shared • Nov 5, 2025</span>
-              </div>
-              <span class="recent-owner">Layla Haddad</span>
-              <span class="recent-status">Innovation Lab</span>
-            </a>
           </div>
         </div>
 
@@ -266,34 +203,10 @@
           <div class="panel-head">
             <div>
               <h2>Favorites</h2>
-              <p class="panel-subtitle">Pinned decks ready to open</p>
             </div>
+            <a class="panel-link" href="./favorites.html">View all</a>
           </div>
           <div class="favorite-grid" id="favorite-list">
-            <a class="favorite-card" href="./index.html?open=executive-brief" data-title="Executive Brief">
-              <span class="favorite-icon">★</span>
-              <div class="favorite-details">
-                <span class="favorite-name">Executive Brief</span>
-                <span class="favorite-meta">Updated • Oct 28, 2025</span>
-              </div>
-              <span class="favorite-owner">Leadership Office</span>
-            </a>
-            <a class="favorite-card" href="./index.html?open=q4-outlook" data-title="Q4 Outlook">
-              <span class="favorite-icon">★</span>
-              <div class="favorite-details">
-                <span class="favorite-name">Q4 Outlook</span>
-                <span class="favorite-meta">Updated • Nov 5, 2025</span>
-              </div>
-              <span class="favorite-owner">Strategy Team</span>
-            </a>
-            <a class="favorite-card" href="./index.html?open=esg-digest" data-title="ESG Digest">
-              <span class="favorite-icon">★</span>
-              <div class="favorite-details">
-                <span class="favorite-name">ESG Digest</span>
-                <span class="favorite-meta">Updated • Oct 14, 2025</span>
-              </div>
-              <span class="favorite-owner">Sustainability Council</span>
-            </a>
           </div>
         </div>
       </section>
@@ -405,24 +318,8 @@
       const teamList = document.getElementById('projects-list');
 
       const searchData = {
-        files: [
-          { title: 'Executive Brief', type: 'Presentation', date: 'Oct 28, 2025', link: './index.html?open=executive-brief' },
-          { title: 'Q4 Outlook', type: 'Presentation', date: 'Nov 5, 2025', link: './index.html?open=q4-outlook' },
-          { title: 'ESG Digest', type: 'Presentation', date: 'Oct 14, 2025', link: './index.html?open=esg-digest' },
-          { title: 'Q3 Report', type: 'Presentation', date: 'Sep 18, 2025', link: './index.html?open=q3-report' },
-          { title: 'Team All-Hands', type: 'Presentation', date: 'Oct 2, 2025', link: './index.html?open=all-hands' },
-          { title: 'Product Roadmap', type: 'Presentation', date: 'Oct 31, 2025', link: './index.html?open=roadmap' },
-          { title: 'Client Proposal', type: 'Presentation', date: 'Nov 1, 2025', link: './index.html?open=proposal' },
-          { title: 'Sales Enablement Kickoff', type: 'Presentation', date: 'Nov 9, 2025', link: './index.html?open=sales-enablement' },
-          { title: 'ESG Council Update', type: 'Presentation', date: 'Nov 7, 2025', link: './index.html?open=esg-update' },
-          { title: 'Innovation Summit Preview', type: 'Presentation', date: 'Nov 5, 2025', link: './index.html?open=innovation-summit' }
-        ],
-        people: [
-          { name: 'Q3 Marketing Team', type: 'Chat', members: 12, link: './chat.html' },
-          { name: 'Digital PMO', type: 'Chat', members: 9, link: './chat.html' },
-          { name: 'Innovation Lab', type: 'Chat', members: 7, link: './chat.html' },
-          { name: 'Advisory Group', type: 'Chat', members: 6, link: './chat.html' }
-        ]
+        files: [],
+        people: []
       };
 
       const searchCollections = [favoriteList, recentList, sharedList, teamList];
@@ -521,11 +418,16 @@
       const inputTheme = document.getElementById('input-import-theme');
 
       btnBlank?.addEventListener('click', () => {
-        window.location.href = './index.html';
+        const url = new URL('./index.html', window.location.href);
+        url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+        window.location.href = url.toString();
       });
 
       btnAd?.addEventListener('click', () => {
-        window.location.href = './index.html?template=ad';
+        const url = new URL('./index.html', window.location.href);
+        url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+        url.searchParams.set('template', 'ad');
+        window.location.href = url.toString();
       });
 
       const triggerSlides = () => inputSlides && inputSlides.click();
@@ -656,10 +558,15 @@
         menuItems.forEach((button) => {
           button.addEventListener('click', (event) => {
             event.stopPropagation();
-            const target = button.dataset.newHref || defaultHref;
+            let target = button.dataset.newHref || defaultHref;
             setOpen(false);
             if (target) {
-              window.location.href = target;
+              // Add unique presentation ID
+              const url = new URL(target, window.location.href);
+              if (!url.searchParams.has('presentation')) {
+                url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+              }
+              window.location.href = url.toString();
             }
           });
         });
