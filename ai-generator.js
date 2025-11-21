@@ -10,6 +10,9 @@
   // Configuration & Constants
   // ============================================================================
   
+  // HuggingFace API Token (set your token here)
+  const HF_TOKEN = "PUT-MY-TOKEN-HERE";
+  
   const CONFIG = {
     panelId: 'ai-generator-panel',
     buttonId: 'ai-generator-btn',
@@ -28,6 +31,7 @@
     improveSubmitId: 'ai-improve-submit',
     slideCountId: 'ai-slide-count',
     themeSelectorId: 'ai-theme-selector',
+    languageSelectorId: 'ai-language-selector',
     loadingId: 'ai-loading',
     errorId: 'ai-error',
     researchStepId: 'step-research',
@@ -581,13 +585,739 @@
   // Internet Research (Simulated - Full-Depth Multi-Source Research)
   // ============================================================================
   
-  async function performWebResearch(topic) {
-    // Simulating comprehensive multi-source web research
+  /**
+   * Fetch web context for a topic using web search
+   * Returns relevant keywords, summary, facts, examples, and trends
+   */
+  async function fetchWebContext(topic) {
     updateLoadingStep('research');
     
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Topic-specific knowledge base for common topics
+    const topicKnowledge = getTopicSpecificKnowledge(topic);
+    if (topicKnowledge) {
+      return topicKnowledge;
+    }
     
-    // Simulated comprehensive research results with deep content
+    // Try to fetch from web search API (Bing or placeholder)
+    try {
+      // Check if API key is available (you can set this in environment or config)
+      const apiKey = window.BING_API_KEY || null;
+      
+      if (apiKey) {
+        const searchUrl = `https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(topic)}&count=5`;
+        const response = await fetch(searchUrl, {
+          headers: {
+            'Ocp-Apim-Subscription-Key': apiKey
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return parseWebSearchResults(data, topic);
+        }
+      }
+      
+      // Fallback: Use topic-based keyword extraction
+      return generateWebContextFallback(topic);
+    } catch (error) {
+      console.warn('Web search failed, using fallback:', error);
+      return generateWebContextFallback(topic);
+    }
+  }
+
+  /**
+   * Get topic-specific knowledge for common topics
+   */
+  function getTopicSpecificKnowledge(topic) {
+    const topicLower = topic.toLowerCase().trim();
+    
+    // KSA / Saudi Arabia specific knowledge
+    if (topicLower === 'ksa' || topicLower === 'saudi arabia' || topicLower.includes('saudi')) {
+      return {
+        keywords: ['Saudi Vision 2030', 'NEOM', 'GIGA projects', 'economic diversification', 'MBS', 'Crown Prince', 'oil economy', 'Red Sea Project', 'Qiddiya', 'Riyadh'],
+        summary: 'Saudi Arabia (KSA) is undergoing massive transformation through Vision 2030, focusing on economic diversification, mega-projects like NEOM and GIGA initiatives, social reforms, and reducing oil dependency.',
+        topFacts: [
+          'Vision 2030 launched in 2016 to diversify economy away from oil',
+          'NEOM is a $500 billion futuristic megacity project',
+          'GIGA projects include Red Sea Project, Qiddiya, and Diriyah Gate',
+          'Social reforms include women driving, entertainment sector opening',
+          'Saudi Arabia is the world\'s largest oil exporter'
+        ],
+        industryExamples: [
+          'NEOM - futuristic city and economic zone',
+          'Red Sea Project - luxury tourism destination',
+          'Qiddiya - entertainment and sports hub',
+          'Riyadh Metro - public transportation system',
+          'King Salman Energy Park - industrial complex'
+        ],
+        recentTrends: [
+          'Green energy initiatives and carbon neutrality goals',
+          'Entertainment and tourism sector expansion',
+          'Technology and AI integration in mega-projects',
+          'International partnerships and investments',
+          'Youth empowerment and job creation programs'
+        ]
+      };
+    }
+    
+    // Add more topic-specific knowledge here
+    return null;
+  }
+
+  /**
+   * Parse web search results into structured context
+   */
+  function parseWebSearchResults(searchData, topic) {
+    const keywords = [];
+    const topFacts = [];
+    const industryExamples = [];
+    const recentTrends = [];
+    let summary = '';
+    
+    if (searchData.webPages && searchData.webPages.value) {
+      const pages = searchData.webPages.value.slice(0, 5);
+      
+      pages.forEach((page, idx) => {
+        if (page.snippet) {
+          summary += (summary ? ' ' : '') + page.snippet;
+          
+          // Extract keywords from snippet
+          const words = page.snippet.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
+          keywords.push(...words.slice(0, 3));
+          
+          // Extract facts (sentences ending with periods)
+          const sentences = page.snippet.match(/[^.!?]+[.!?]+/g) || [];
+          topFacts.push(...sentences.slice(0, 2));
+        }
+        
+        if (page.name) {
+          industryExamples.push(page.name);
+        }
+      });
+    }
+    
+    // Deduplicate and limit
+    return {
+      keywords: [...new Set(keywords)].slice(0, 10),
+      summary: summary || `Comprehensive information about ${topic} based on current web sources.`,
+      topFacts: topFacts.slice(0, 8),
+      industryExamples: industryExamples.slice(0, 5),
+      recentTrends: recentTrends.slice(0, 5)
+    };
+  }
+
+  /**
+   * Generate fallback web context when API is unavailable
+   */
+  function generateWebContextFallback(topic) {
+    // Extract keywords from topic
+    const topicWords = topic.split(/\s+/).filter(w => w.length > 2);
+    const keywords = [
+      ...topicWords,
+      `${topic} overview`,
+      `${topic} trends`,
+      `${topic} applications`,
+      `${topic} benefits`
+    ];
+    
+    return {
+      keywords: keywords.slice(0, 10),
+      summary: `${topic} is a significant topic with multiple dimensions including key concepts, practical applications, industry impact, and future developments.`,
+      topFacts: [
+        `${topic} involves important principles and methodologies`,
+        `Key aspects include strategic implementation and best practices`,
+        `Industry adoption has been growing across multiple sectors`,
+        `Future trends point to continued evolution and innovation`
+      ],
+      industryExamples: [
+        `Major companies implementing ${topic}`,
+        `Successful ${topic} case studies`,
+        `${topic} in different industries`
+      ],
+      recentTrends: [
+        `Emerging ${topic} technologies`,
+        `Market growth in ${topic} sector`,
+        `Innovation in ${topic} applications`
+      ]
+    };
+  }
+
+  /**
+   * Generate AI response - placeholder for new AI integration
+   * Replace this function with your new AI service (e.g., OpenAI, Anthropic)
+   * 
+   * This placeholder returns mock data to prevent errors while the UI remains functional.
+   * Replace with actual AI API integration when ready.
+   */
+  async function generateAIResponse(prompt) {
+    // TODO: Implement your new AI service integration here
+    // Example: OpenAI, Anthropic, or other AI provider
+    
+    // Placeholder: Return mock structured content so the app runs without errors
+    // This allows the UI to function while you integrate your new AI service
+    return `Title: Introduction
+• Overview of the topic
+• Key concepts and definitions
+• Importance and relevance
+
+Title: Main Points
+• First key point with explanation
+• Second key point with details
+• Third key point with examples
+
+Title: Applications
+• Real-world use cases
+• Industry examples
+• Practical implementations
+
+Title: Conclusion
+• Summary of key points
+• Future considerations
+• Final thoughts`;
+  }
+
+  /**
+   * Detect if text contains Arabic characters and translate to English
+   */
+  function detectAndTranslateArabic(text) {
+    if (!text) return text;
+    
+    // Check if text contains Arabic characters
+    const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+    const hasArabic = arabicPattern.test(text);
+    
+    if (!hasArabic) {
+      return text; // Already in English or other language
+    }
+    
+    // Simple translation mapping for common Arabic terms
+    // In production, you would use a translation API here
+    const commonTranslations = {
+      'السعودية': 'Saudi Arabia',
+      'رؤية': 'Vision',
+      'نيوم': 'NEOM',
+      'مشروع': 'Project',
+      'اقتصاد': 'Economy',
+      'تطوير': 'Development',
+      'استراتيجية': 'Strategy',
+      'تحول': 'Transformation',
+      'رقمي': 'Digital',
+      'طاقة': 'Energy',
+      'نفط': 'Oil',
+      'غاز': 'Gas',
+      'صحة': 'Health',
+      'تعليم': 'Education',
+      'تقنية': 'Technology',
+      'ذكاء': 'Intelligence',
+      'اصطناعي': 'Artificial'
+    };
+    
+    // Try to translate common terms
+    let translated = text;
+    for (const [arabic, english] of Object.entries(commonTranslations)) {
+      translated = translated.replace(new RegExp(arabic, 'g'), english);
+    }
+    
+    // If still contains Arabic, return a generic English version
+    if (arabicPattern.test(translated)) {
+      // Extract non-Arabic parts and create English topic
+      const englishParts = translated.split(/[\u0600-\u06FF]+/).filter(p => p.trim());
+      if (englishParts.length > 0) {
+        translated = englishParts.join(' ').trim() || 'Topic';
+      } else {
+        translated = 'Topic'; // Fallback
+      }
+    }
+    
+    return translated.trim();
+  }
+
+
+  /**
+   * Generate real AI text using HuggingFace Inference API
+   * Handles Arabic topic translation and generates high-quality academic content
+   */
+  async function generateRealAIText(topic, slideCount) {
+    // Detect and translate Arabic topics to English
+    const englishTopic = detectAndTranslateArabic(topic);
+    
+    // Build high-quality academic prompt
+    const prompt = `Write a clear, smart academic explanation about: ${englishTopic}. 
+    
+Include:
+- Key insights and strategic importance
+- Practical examples and real-world applications
+- Core concepts and fundamental principles
+- Current trends and future implications
+
+Format as ${slideCount} sections. Each section should have:
+- A clear title
+- 2-4 key bullet points
+- Concise, accurate information
+- No generic phrases or filler text
+
+Write in professional academic English. Be specific and relevant to ${englishTopic}.`;
+
+    try {
+      // Check if token is set
+      if (!HF_TOKEN || HF_TOKEN === "PUT-MY-TOKEN-HERE") {
+        throw new Error('HuggingFace token not configured');
+      }
+
+      const response = await fetch(
+        "https://api-inference.huggingface.co/models/google/flan-t5-base",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${HF_TOKEN}`
+          },
+          body: JSON.stringify({
+            inputs: prompt
+          })
+        }
+      );
+
+      if (!response.ok) {
+        // Handle rate limiting or model loading
+        if (response.status === 503) {
+          throw new Error('Model is loading, please wait a moment and try again');
+        }
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Extract generated text from response
+      let generatedText = '';
+      
+      if (Array.isArray(result)) {
+        if (result.length > 0 && result[0].generated_text) {
+          generatedText = result[0].generated_text;
+        } else if (result.length > 0 && typeof result[0] === 'string') {
+          generatedText = result[0];
+        }
+      } else if (result && typeof result === 'object') {
+        if (result.generated_text) {
+          generatedText = result.generated_text;
+        } else if (result[0] && result[0].generated_text) {
+          generatedText = result[0].generated_text;
+        } else if (result.text) {
+          generatedText = result.text;
+        }
+      } else if (typeof result === 'string') {
+        generatedText = result;
+      }
+
+      // Validate generated content
+      if (!generatedText || generatedText.trim().length < 20) {
+        throw new Error('Insufficient content generated');
+      }
+
+      return generatedText;
+    } catch (error) {
+      console.warn('HuggingFace API call failed:', error);
+      throw error; // Re-throw to be handled by caller
+    }
+  }
+
+  /**
+   * Generate AI content using HuggingFace Inference API with web context
+   * Falls back to offline generation if API fails
+   */
+  async function generateAIContent(topic, slideCount, webContext) {
+    updateLoadingStep('generate');
+    
+    try {
+      // Use real AI generation
+      const aiText = await generateRealAIText(topic, slideCount);
+      
+      // Parse the AI-generated text into structured slides
+      return parseAIContent(aiText, topic, slideCount, webContext);
+    } catch (error) {
+      console.warn('Real AI generation failed, using fallback:', error);
+      
+      // Fallback: Use web context to build structured content
+      const contextSummary = webContext?.summary || '';
+      const keyFacts = webContext?.topFacts ? webContext.topFacts.join('; ') : '';
+      const keywords = webContext?.keywords ? webContext.keywords.join(', ') : '';
+      const trends = webContext?.recentTrends ? webContext.recentTrends.join('; ') : '';
+      
+      // Build fallback prompt with web context
+      const fallbackPrompt = `Generate ${slideCount} presentation slides about '${topic}'.
+
+${contextSummary ? `Context: ${contextSummary}` : ''}
+${keyFacts ? `Key facts: ${keyFacts}` : ''}
+${keywords ? `Keywords: ${keywords}` : ''}
+${trends ? `Trends: ${trends}` : ''}
+
+Format each slide as:
+Title: [Title]
+• [Bullet 1]
+• [Bullet 2]
+• [Bullet 3]`;
+
+      try {
+        // Try HuggingFace API one more time with simpler prompt
+        if (HF_TOKEN && HF_TOKEN !== "PUT-MY-TOKEN-HERE") {
+          const response = await fetch(
+            "https://api-inference.huggingface.co/models/google/flan-t5-base",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${HF_TOKEN}`
+              },
+              body: JSON.stringify({
+                inputs: fallbackPrompt
+              })
+            }
+          );
+
+          if (response.ok) {
+            const result = await response.json();
+            let generatedText = '';
+            
+            if (Array.isArray(result) && result[0]?.generated_text) {
+              generatedText = result[0].generated_text;
+            } else if (result?.generated_text) {
+              generatedText = result.generated_text;
+            } else if (typeof result === 'string') {
+              generatedText = result;
+            }
+
+            if (generatedText && generatedText.trim().length > 20) {
+              return parseAIContent(generatedText, topic, slideCount, webContext);
+            }
+          }
+        }
+      } catch (fallbackError) {
+        console.warn('Fallback API call also failed:', fallbackError);
+      }
+      
+      // Final fallback: Use structured content generation
+      return generateFallbackContent(topic, slideCount, webContext);
+    }
+  }
+
+  /**
+   * Parse AI-generated text into structured slide content
+   * Enhanced with web context for better relevance
+   */
+  function parseAIContent(aiText, topic, slideCount, webContext = null) {
+    const slides = [];
+    const lines = aiText.split('\n').filter(line => line.trim());
+    
+    let currentSlide = null;
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      
+      // Detect slide title patterns (enhanced for new format)
+      const titlePatterns = [
+        /^Slide\s+\d+:\s*Title:\s*(.+)$/i,
+        /^Slide\s+\d+\s+Title:\s*(.+)$/i,
+        /^Title:\s*(.+)$/i,
+        /^Slide\s+\d+:\s*(.+)$/i,
+      ];
+      
+      // Also detect standalone titles (lines that look like titles)
+      const looksLikeTitle = trimmed.length > 0 && 
+                             trimmed.length < 80 && 
+                             !trimmed.startsWith('•') && 
+                             !trimmed.startsWith('-') && 
+                             !trimmed.match(/^\d+\./) &&
+                             !trimmed.match(/^Bullet Points?:/i) &&
+                             (trimmed.match(/^[A-Z]/) || trimmed.includes(':')) &&
+                             !trimmed.includes('•');
+      
+      let titleMatch = null;
+      for (const pattern of titlePatterns) {
+        titleMatch = trimmed.match(pattern);
+        if (titleMatch) break;
+      }
+      
+      // If no pattern match but looks like a title, treat as title
+      if (!titleMatch && looksLikeTitle && (!currentSlide || currentSlide.bullets.length > 0)) {
+        // Save previous slide if it has content
+        if (currentSlide && currentSlide.bullets.length > 0) {
+          slides.push(currentSlide);
+        }
+        // Extract title (remove colon if present)
+        const titleText = trimmed.replace(/:\s*$/, '').trim();
+        currentSlide = {
+          title: titleText,
+          bullets: []
+        };
+      } else if (titleMatch) {
+        // Save previous slide
+        if (currentSlide && currentSlide.bullets.length > 0) {
+          slides.push(currentSlide);
+        }
+        // Start new slide
+        currentSlide = {
+          title: titleMatch[1].trim(),
+          bullets: []
+        };
+      }
+      // Detect bullet points (multiple formats)
+      else if (trimmed.match(/^[•\-\*]\s*(.+)$/) || 
+               trimmed.match(/^[\-\–]\s*(.+)$/) ||
+               trimmed.match(/^\d+[\.\)]\s*(.+)$/) ||
+               trimmed.match(/^Bullet Points?:/i)) {
+        if (currentSlide) {
+          // Skip "Bullet Points:" header line
+          if (trimmed.match(/^Bullet Points?:/i)) {
+            // Do nothing, this is just a header
+          } else {
+            const bulletMatch = trimmed.match(/^[•\-\*]\s*(.+)$/) || 
+                               trimmed.match(/^[\-\–]\s*(.+)$/) ||
+                               trimmed.match(/^\d+[\.\)]\s*(.+)$/);
+            if (bulletMatch) {
+              const bulletText = bulletMatch[1].trim();
+              if (bulletText.length > 5 && !bulletText.match(/^Bullet Points?:/i)) {
+                currentSlide.bullets.push(bulletText);
+              }
+            }
+          }
+        }
+      }
+      // Regular text line - convert to bullet if current slide exists and line is substantial
+      else if (trimmed.length > 15 && currentSlide && !trimmed.match(/^(Slide|Title|Bullet)/i)) {
+        // Only add if it looks like content, not a title
+        if (trimmed.length < 150 && (trimmed.includes('.') || trimmed.includes(',') || trimmed.length > 20)) {
+          currentSlide.bullets.push(trimmed);
+        }
+      }
+    }
+    
+    // Add last slide
+    if (currentSlide && currentSlide.bullets.length > 0) {
+      slides.push(currentSlide);
+    }
+    
+    // If no slides were parsed, try alternative parsing
+    if (slides.length === 0) {
+      // Split by common separators and create slides
+      const sections = aiText.split(/\n\s*\n/).filter(s => s.trim().length > 20);
+      
+      for (let i = 0; i < Math.min(sections.length, slideCount); i++) {
+        const section = sections[i].trim();
+        const lines = section.split('\n').filter(l => l.trim());
+        const firstLine = lines[0] || '';
+        const restLines = lines.slice(1);
+        
+        slides.push({
+          title: firstLine.length < 80 ? firstLine : `${topic}: Section ${i + 1}`,
+          bullets: restLines.filter(l => l.trim().length > 10).slice(0, 6)
+        });
+      }
+    }
+    
+    // Ensure we have enough slides
+    while (slides.length < slideCount) {
+      const slideNum = slides.length + 1;
+      slides.push({
+        title: slideNum === 1 ? `Introduction to ${topic}` : `${topic}: Key Aspect ${slideNum}`,
+        bullets: [
+          `Important concept related to ${topic}`,
+          `Key insight about ${topic}`,
+          `Practical application of ${topic}`
+        ]
+      });
+    }
+    
+    // Enhance slides with web context if available
+    if (webContext && slides.length > 0) {
+      // Inject relevant keywords and facts into slides
+      slides.forEach((slide, idx) => {
+        if (!slide.bullets || slide.bullets.length < 3) {
+          // Use web context to fill missing bullets
+          const availableFacts = webContext.topFacts || [];
+          const availableKeywords = webContext.keywords || [];
+          
+          let factIdx = 0;
+          while (slide.bullets.length < 3) {
+            if (availableFacts.length > factIdx) {
+              slide.bullets.push(availableFacts[factIdx]);
+            } else if (availableKeywords.length > factIdx) {
+              slide.bullets.push(`Important information about ${availableKeywords[factIdx]}`);
+            } else {
+              slide.bullets.push(`Key insight about ${slide.title}`);
+            }
+            factIdx++;
+          }
+        }
+        
+        // Ensure bullets are topic-relevant
+        slide.bullets = slide.bullets.map(bullet => {
+          // Replace generic phrases with topic-specific content
+          if (webContext.keywords && webContext.keywords.length > 0) {
+            const keyword = webContext.keywords[Math.floor(Math.random() * webContext.keywords.length)];
+            if (bullet.includes('topic') || bullet.includes('concept')) {
+              return bullet.replace(/topic|concept/gi, keyword);
+            }
+          }
+          return bullet;
+        });
+        
+        // Limit to 6 bullets max
+        slide.bullets = slide.bullets.slice(0, 6);
+      });
+    } else {
+      // Ensure each slide has at least 3 bullets (fallback)
+      slides.forEach(slide => {
+        if (!slide.bullets || slide.bullets.length < 3) {
+          while (slide.bullets.length < 3) {
+            slide.bullets.push(`Additional insight about ${slide.title}`);
+          }
+        }
+        // Limit to 6 bullets max
+        slide.bullets = slide.bullets.slice(0, 6);
+      });
+    }
+    
+    // Limit to requested slide count
+    return slides.slice(0, slideCount);
+  }
+
+  /**
+   * Fallback content generation when API fails
+   * Generates professional English slides with high-quality content
+   */
+  function generateFallbackContent(topic, slideCount, webContext = null) {
+    const slides = [];
+    
+    // Use web context to create more relevant slides
+    if (webContext) {
+      // Title slide - professional English introduction
+      slides.push({
+        title: topic,
+        bullets: webContext.topFacts ? webContext.topFacts.slice(0, 4) : [
+          `Comprehensive overview of ${topic}`,
+          `Multiple dimensions and practical applications`,
+          `Requires examination of various interconnected factors`
+        ]
+      });
+      
+      // Use keywords and examples from web context
+      if (webContext.keywords && webContext.keywords.length > 0) {
+        const keywordSlides = Math.min(2, Math.floor(slideCount / 3));
+        for (let i = 0; i < keywordSlides && slides.length < slideCount - 1; i++) {
+          const startIdx = i * 3;
+          const keywords = webContext.keywords.slice(startIdx, startIdx + 3);
+          slides.push({
+            title: `${keywords[0] || topic}: Key Aspects`,
+            bullets: keywords.map(k => `Critical information about ${k}`).concat([
+              `Strategic relationship to ${topic}`,
+              `Practical implementation frameworks`
+            ]).slice(0, 5)
+          });
+        }
+      }
+      
+      // Industry examples slide
+      if (webContext.industryExamples && webContext.industryExamples.length > 0 && slides.length < slideCount - 1) {
+        slides.push({
+          title: `Industry Examples and Applications`,
+          bullets: webContext.industryExamples.slice(0, 5).map(ex => 
+            typeof ex === 'string' ? ex : `Example: ${ex}`
+          )
+        });
+      }
+      
+      // Trends slide
+      if (webContext.recentTrends && webContext.recentTrends.length > 0 && slides.length < slideCount - 1) {
+        slides.push({
+          title: `Recent Trends and Developments`,
+          bullets: webContext.recentTrends.slice(0, 5).map(trend => 
+            typeof trend === 'string' ? trend : `Trend: ${trend}`
+          )
+        });
+      }
+    }
+    
+    // Fill remaining slides with professional English templates
+    const slideTemplates = [
+      { title: `Introduction`, bullets: [`Comprehensive overview of ${topic}`, `Core concepts and fundamental principles`, `Strategic importance and contemporary relevance`] },
+      { title: `Understanding ${topic}`, bullets: [`Essential components and structural elements`, `Operational mechanisms and functional dynamics`, `Key characteristics and defining features`] },
+      { title: `Applications`, bullets: [`Real-world implementation scenarios`, `Industry-specific use cases and adaptations`, `Practical benefits and measurable outcomes`] },
+      { title: `Benefits and Value`, bullets: [`Strategic advantages and competitive positioning`, `Operational impact and efficiency gains`, `Long-term value creation and sustainability`] },
+      { title: `Challenges`, bullets: [`Common obstacles and implementation barriers`, `Strategic challenges and mitigation approaches`, `Best practices for successful navigation`] },
+      { title: `Future Trends`, bullets: [`Emerging developments and innovation pathways`, `Projected evolution and market dynamics`, `Strategic implications and opportunities`] },
+      { title: `Best Practices`, bullets: [`Proven methodologies and recommended approaches`, `Critical success factors and key enablers`, `Implementation strategies and execution frameworks`] },
+      { title: `Case Studies`, bullets: [`Real-world examples and practical demonstrations`, `Success stories and lessons learned`, `Actionable insights and transferable knowledge`] },
+      { title: `Conclusion`, bullets: [`Key takeaways and strategic insights`, `Summary of critical points and implications`, `Next steps and recommended actions`] }
+    ];
+    
+    while (slides.length < slideCount) {
+      const idx = slides.length;
+      if (idx < slideTemplates.length) {
+        slides.push(slideTemplates[idx]);
+      } else {
+        slides.push({
+          title: `${topic}: Key Aspect ${idx + 1}`,
+          bullets: [
+            `Critical concept with strategic relevance`,
+            `Key insight and practical implications`,
+            `Application framework and implementation approach`
+          ]
+        });
+      }
+    }
+    
+    return slides.slice(0, slideCount);
+  }
+
+  /**
+   * Convert paragraphs to bullet points
+   */
+  function paragraphToBullets(paragraph) {
+    if (!paragraph || typeof paragraph !== 'string') {
+      return [];
+    }
+    
+    // Split by sentences
+    const sentences = paragraph.match(/[^.!?]+[.!?]+/g) || [paragraph];
+    
+    // Group into bullets (2-3 sentences per bullet)
+    const bullets = [];
+    let currentBullet = '';
+    
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i].trim();
+      if (sentence.length < 10) continue;
+      
+      if (currentBullet.length === 0) {
+        currentBullet = sentence;
+      } else if (currentBullet.length + sentence.length < 150) {
+        currentBullet += ' ' + sentence;
+      } else {
+        bullets.push(currentBullet);
+        currentBullet = sentence;
+      }
+    }
+    
+    if (currentBullet) {
+      bullets.push(currentBullet);
+    }
+    
+    // Ensure at least 3 bullets, max 6
+    if (bullets.length === 0) {
+      return [paragraph.substring(0, 200)];
+    }
+    
+    return bullets.slice(0, 6);
+  }
+
+  async function performWebResearch(topic) {
+    // Legacy function - now redirects to AI generation
+    // Keeping for backward compatibility
+    updateLoadingStep('research');
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Return structured format compatible with old code
     return {
       definition: `${topic} represents a fundamental concept in modern technology and business practices. It encompasses a wide range of principles, methodologies, and applications that have transformed how organizations operate and innovate. The concept has evolved significantly over the past decade, driven by technological advancements, changing market demands, and emerging best practices. Understanding ${topic} requires examining its historical development, core theoretical foundations, and practical implementation strategies across various industries and contexts.`,
       
@@ -652,6 +1382,11 @@
     
     const topicLower = topic.toLowerCase();
     
+    // KSA / Saudi Arabia - Check first
+    if (topicLower === 'ksa' || topicLower === 'saudi arabia' || topicLower.includes('saudi') || topicLower.includes('ksa')) {
+      return THEMES['energy-oil-gas']; // Use Aramco theme for KSA
+    }
+    
     // Energy, Oil & Gas, Aramco - Check for "saudi aramco" first (two words)
     if (topicLower.includes('saudi aramco') || topicLower.match(/\b(aramco|oil|gas|petroleum|energy|crude|refinery|drilling|upstream|downstream|hydrocarbon)\b/)) {
       return THEMES['energy-oil-gas'];
@@ -704,7 +1439,7 @@
   // Intelligent Layout Selection (Topic-Aware)
   // ============================================================================
   
-  function selectLayout(slideIndex, totalSlides, content, slideType, themeConfig) {
+  function selectLayout(slideIndex, totalSlides, content, slideType, themeConfig, title = '') {
     if (slideIndex === 0) return LAYOUTS.title;
     if (slideIndex === totalSlides - 1) return LAYOUTS.summary;
     
@@ -713,6 +1448,28 @@
     const layoutStyle = themeConfig?.layoutStyle || 'corporate';
     const contentLength = Array.isArray(content) ? content.length : (content || '').length;
     const hasImages = content && typeof content === 'string' && content.toLowerCase().includes('image');
+    
+    // Keyword-based layout selection
+    const titleLower = (title || '').toLowerCase();
+    const contentLower = typeof content === 'string' ? content.toLowerCase() : '';
+    const combinedText = titleLower + ' ' + contentLower;
+    
+    // If title contains "Definition", use title layout
+    if (titleLower.includes('definition') || titleLower.includes('introduction') || titleLower.includes('overview')) {
+      return LAYOUTS.content;
+    }
+    
+    // If title contains "Key Factors" or similar, use two-column layout
+    if (titleLower.match(/\b(key factors|factors|components|elements|aspects|considerations|challenges)\b/)) {
+      return LAYOUTS['two-column'];
+    }
+    
+    // If content has many bullets (>5), use key-points layout
+    const bulletCount = (typeof content === 'string' ? content.match(/[•\-\*]/g || []).length : 0) || 
+                        (Array.isArray(content) ? content.length : 0);
+    if (bulletCount > 5) {
+      return LAYOUTS['key-points'];
+    }
     
     // Topic-aware layout selection
     if (hasImages) return LAYOUTS['image-text'];
@@ -731,7 +1488,7 @@
     
     // Creative topics: prefer key-points or content
     if (layoutStyle === 'creative') {
-      if (contentLength < 400) return LAYOUTS['key-points'];
+      if (contentLength < 400 || bulletCount >= 3) return LAYOUTS['key-points'];
       return LAYOUTS.content;
     }
     
@@ -742,7 +1499,7 @@
     
     // Default behavior
     if (contentLength > 600) return LAYOUTS['two-column'];
-    if (contentLength < 300) return LAYOUTS['key-points'];
+    if (contentLength < 300 || bulletCount >= 3) return LAYOUTS['key-points'];
     
     return LAYOUTS.content;
   }
@@ -761,31 +1518,219 @@
     // Just update loading steps here
 
     try {
-      // Step 1: Research
+      // Step 1: Translate Arabic to English if needed
+      const englishTopic = detectAndTranslateArabic(topic);
+      
+      // Step 2: Fetch web context for topic (for theme detection and context)
       updateLoadingStep('research');
-      const research = await performWebResearch(topic);
+      const webContext = await fetchWebContext(englishTopic);
       
-      // Step 2: Auto-detect theme if not selected
-      const themeConfig = getThemeConfig(theme, topic);
-      const effectiveTheme = theme || detectTopicTheme(topic);
+      // Step 3: Auto-detect theme if not selected
+      const themeConfig = getThemeConfig(theme, englishTopic);
+      const effectiveTheme = theme || detectTopicTheme(englishTopic);
       
-      // Step 3: Generate content
+      // Step 4: Build prompt for AI generation (English only)
       updateLoadingStep('generate');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const finalPrompt = `Generate a structured presentation about: "${englishTopic}"
+Number of slides: ${parseInt(slideCount)}
+
+Return ONLY clean English text with clear headings.
+No Arabic. No mixing. All titles and descriptions must be clean academic English.
+
+Format each slide as:
+Title: [Title]
+• [Key point 1]
+• [Key point 2]
+• [Key point 3]
+• [Key point 4]
+
+Requirements:
+- Accurate, real, and factual information
+- Professional academic writing style
+- Clear structure with titles and bullet points
+- Practical examples where relevant
+- English language only`;
+
+      // Step 5: Generate content using AI service
+      let aiText;
+      try {
+        aiText = await generateAIResponse(finalPrompt);
+      } catch (error) {
+        throw new Error("AI API error: " + error.message);
+      }
       
-      const slides = generateSlidesFromResearch(topic, research, parseInt(slideCount), effectiveTheme, themeConfig);
+      if (!aiText || aiText.trim().length < 20) {
+        throw new Error("Insufficient content generated from AI");
+      }
       
-      // Step 4: Apply design
+      // Step 6: Parse AI text into structured slides
+      const aiSlides = parseAIContent(aiText, englishTopic, parseInt(slideCount), webContext);
+      
+      // Step 7: Convert AI content to presentation slides with design
       updateLoadingStep('design');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const slides = generateSlidesFromAIContent(englishTopic, aiSlides, parseInt(slideCount), effectiveTheme, themeConfig);
       
       return slides;
     } catch (error) {
       console.error('Error generating from topic:', error);
+      
+      // Show error in #ai-error
+      const errorMsg = error.message || 'Unknown error';
+      showError(`AI request failed: ${errorMsg}`);
+      
       throw error; // Re-throw to be handled by caller
     }
   }
 
+  /**
+   * Generate slides from AI-generated content
+   * Converts AI slides (with titles and bullets) into presentation format
+   */
+  function generateSlidesFromAIContent(topic, aiSlides, slideCount, theme, themeConfig) {
+    const slides = [];
+    const designConfig = themeConfig || THEMES[theme] || THEMES.aramco;
+    
+    const titleAlign = designConfig.titleAlign || 'center';
+    const bodyAlign = designConfig.bodyAlign || 'left';
+    const fontWeight = designConfig.fontWeight || 'bold';
+    
+    // Title slide - English title + Arabic subtitle
+    slides.push({
+      title: topic,
+      body: `A comprehensive exploration of ${topic}, examining key insights, practical applications, and strategic implications.`,
+      layout: LAYOUTS.title,
+      design: {
+        colors: {
+          primary: designConfig.primary,
+          secondary: designConfig.secondary,
+          accent: designConfig.accent,
+          background: designConfig.background,
+          text: designConfig.text,
+          textLight: designConfig.textLight,
+        },
+        fonts: {
+          family: designConfig.fontFamily,
+          titleSize: 56,
+          bodySize: 22,
+          titleAlign: titleAlign,
+          bodyAlign: bodyAlign,
+          fontWeight: fontWeight,
+        },
+        layoutStyle: designConfig.layoutStyle,
+      },
+      notes: `Introduction to ${topic}`,
+    });
+    
+    // Convert AI slides to presentation slides
+    for (let i = 0; i < aiSlides.length && slides.length < slideCount; i++) {
+      const aiSlide = aiSlides[i];
+      const slideIndex = slides.length;
+      
+      // Format title (Title Case)
+      const formattedTitle = formatTitle(aiSlide.title || `Slide ${slideIndex + 1}`);
+      
+      // Convert bullets to body content (professional English)
+      let bodyContent = '';
+      if (aiSlide.bullets && aiSlide.bullets.length > 0) {
+        // Format bullets with bullet points (clean English content)
+        bodyContent = aiSlide.bullets.map(bullet => {
+          // Remove existing bullet markers and clean up
+          const cleanBullet = bullet.replace(/^[•\-\*\-]\s*/, '').trim();
+          // Remove any leading dashes or numbers
+          const finalBullet = cleanBullet.replace(/^[\d\.\)]\s*/, '').trim();
+          return `• ${finalBullet}`;
+        }).join('\n');
+      } else {
+        // Default professional English content
+        bodyContent = `• Key insights and strategic implications\n• Core concepts and practical applications\n• Real-world relevance and impact`;
+      }
+      
+      // Select layout based on title keywords and content
+      const bulletCount = aiSlide.bullets ? aiSlide.bullets.length : 3;
+      const selectedLayout = selectLayout(slideIndex, slideCount, bodyContent, 'content', designConfig, formattedTitle);
+      
+      slides.push({
+        title: formattedTitle,
+        body: bodyContent,
+        layout: selectedLayout,
+        design: {
+          colors: {
+            primary: designConfig.primary,
+            secondary: designConfig.secondary,
+            accent: designConfig.accent,
+            background: designConfig.background,
+            text: designConfig.text,
+            textLight: designConfig.textLight,
+          },
+          fonts: {
+            family: designConfig.fontFamily,
+            titleSize: slideIndex === 0 ? 56 : 42,
+            bodySize: 20,
+            titleAlign: titleAlign,
+            bodyAlign: bodyAlign,
+            fontWeight: fontWeight,
+          },
+          layoutStyle: designConfig.layoutStyle,
+        },
+        notes: `Content about ${formattedTitle}`,
+      });
+    }
+    
+    // Ensure we have the requested number of slides
+    while (slides.length < slideCount) {
+      const slideIndex = slides.length;
+      slides.push({
+        title: `${topic}: Key Aspect ${slideIndex}`,
+        body: `• Critical concept related to ${topic}\n• Strategic insight and implications\n• Practical application and relevance`,
+        layout: LAYOUTS.content,
+        design: {
+          colors: {
+            primary: designConfig.primary,
+            secondary: designConfig.secondary,
+            accent: designConfig.accent,
+            background: designConfig.background,
+            text: designConfig.text,
+            textLight: designConfig.textLight,
+          },
+          fonts: {
+            family: designConfig.fontFamily,
+            titleSize: 42,
+            bodySize: 20,
+            titleAlign: titleAlign,
+            bodyAlign: bodyAlign,
+            fontWeight: fontWeight,
+          },
+          layoutStyle: designConfig.layoutStyle,
+        },
+        notes: `Additional content about ${topic}`,
+      });
+    }
+    
+    return slides.slice(0, slideCount);
+  }
+
+  /**
+   * Format title to Title Case
+   */
+  function formatTitle(title) {
+    if (!title) return '';
+    
+    // Remove common prefixes
+    title = title.replace(/^(Title:\s*|Slide\s+\d+:\s*)/i, '');
+    
+    // Convert to Title Case
+    return title.split(' ').map(word => {
+      if (word.length === 0) return word;
+      return word[0].toUpperCase() + word.slice(1).toLowerCase();
+    }).join(' ');
+  }
+
+  /**
+   * Legacy function - kept for backward compatibility
+   * Now redirects to AI-based generation
+   */
   function generateSlidesFromResearch(topic, research, slideCount, theme, themeConfig) {
     const slides = [];
     // Use provided themeConfig (already includes auto-detection logic)
@@ -1186,20 +2131,81 @@
       const themeConfig = getThemeConfig(theme, extractedTopic);
       const effectiveTheme = theme || detectTopicTheme(extractedTopic);
       
+      // Step 1: Fetch web context for better AI generation
       updateLoadingStep('research');
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const webContext = await fetchWebContext(extractedTopic);
       
+      // Step 2: Translate Arabic to English if needed
+      const englishTopic = detectAndTranslateArabic(extractedTopic);
+      
+      // Step 2: Use AI service to enhance/improve the text content
       updateLoadingStep('generate');
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      const slides = parseTextToSlides(text, parseInt(slideCount), effectiveTheme, themeConfig);
-      
-      updateLoadingStep('design');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return slides;
+      try {
+        // Build prompt for AI generation (English only)
+        const finalPrompt = `Generate a structured presentation based on this text: "${text.substring(0, 500)}"
+Number of slides: ${parseInt(slideCount)}
+
+Return ONLY clean English text with clear headings.
+No Arabic. No mixing. All titles and descriptions must be clean academic English.
+
+Format each slide as:
+Title: [Title]
+• [Key point 1]
+• [Key point 2]
+• [Key point 3]
+• [Key point 4]
+
+Requirements:
+- Accurate, real, and factual information
+- Professional academic writing style
+- Clear structure with titles and bullet points
+- Practical examples where relevant
+- English language only`;
+
+        // Generate AI-enhanced content using AI service
+        let aiText;
+        try {
+          aiText = await generateAIResponse(finalPrompt);
+        } catch (error) {
+          throw new Error("AI API error: " + error.message);
+        }
+        
+        if (!aiText || aiText.trim().length < 20) {
+          throw new Error("Insufficient content generated from AI");
+        }
+        
+        // Parse AI content into slides
+        const aiSlides = parseAIContent(aiText, englishTopic, parseInt(slideCount), webContext);
+        
+        // Convert to presentation format with design
+        const slides = generateSlidesFromAIContent(englishTopic, aiSlides, parseInt(slideCount), effectiveTheme, themeConfig);
+        
+        updateLoadingStep('design');
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        return slides;
+      } catch (aiError) {
+        console.warn('AI enhancement failed, using text parsing:', aiError);
+        
+        // Show error in #ai-error
+        const errorMsg = aiError.message || 'Unknown error';
+        showError(`AI request failed: ${errorMsg}`);
+        
+        // Fallback to original text parsing
+        const slides = parseTextToSlides(text, parseInt(slideCount), effectiveTheme, themeConfig);
+        
+        updateLoadingStep('design');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        return slides;
+      }
     } catch (error) {
       console.error('Error generating from text:', error);
+      
+      // Show error in #ai-error
+      const errorMsg = error.message || 'Unknown error';
+      showError(`AI request failed: ${errorMsg}`);
+      
       throw error; // Re-throw to be handled by caller
     }
   }
@@ -1548,10 +2554,12 @@
     const topicInput = getActiveElementValue(CONFIG.topicInputId) || elements.topicInput;
     const slideCount = getActiveElementValue(CONFIG.slideCountId) || elements.slideCount;
     const themeSelector = getActiveElementValue(CONFIG.themeSelectorId) || elements.themeSelector;
+    const languageSelector = getActiveElementValue(CONFIG.languageSelectorId);
     
     const topic = topicInput?.value || '';
     const slideCountValue = slideCount?.value || '8';
     const theme = themeSelector?.value || 'aramco';
+    const language = languageSelector?.value || 'en';
     
     if (!topic.trim()) {
       showError('Please enter a topic.');
@@ -1564,17 +2572,94 @@
       setButtonLoading(CONFIG.topicSubmitId, true);
       hideError();
       
-      const slides = await generateFromTopic(topic, slideCountValue, theme);
+      // Call backend API
+      const response = await fetch('/api/ai/generate-slides', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: topic.trim(),
+          slideCount: parseInt(slideCountValue),
+          language: language,
+        }),
+      });
+
+      // Check content type before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Non-JSON response received:', text.substring(0, 200));
+        throw new Error(`Server returned non-JSON response. Make sure the server is running and the API endpoint is correct. Status: ${response.status}`);
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
       
-      if (slides) {
+      if (!data.success || !data.slides || !Array.isArray(data.slides)) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Convert API response to format expected by createSlidesInEditor
+      const themeConfig = getThemeConfig(theme, topic);
+      const designConfig = themeConfig || THEMES[theme] || THEMES.aramco;
+      const titleAlign = designConfig.titleAlign || 'center';
+      const bodyAlign = designConfig.bodyAlign || 'left';
+      const fontWeight = designConfig.fontWeight || 'bold';
+
+      const slides = data.slides.map((apiSlide, index) => {
+        // Convert bullets array to body text with bullet points
+        const bodyContent = apiSlide.bullets
+          .map(bullet => `• ${bullet}`)
+          .join('\n');
+
+        // Select layout based on slide index and content
+        const selectedLayout = index === 0 
+          ? LAYOUTS.title 
+          : selectLayout(index, data.slides.length, bodyContent, 'content', designConfig, apiSlide.title);
+
+        return {
+          title: apiSlide.title,
+          body: bodyContent,
+          layout: selectedLayout,
+          design: {
+            colors: {
+              primary: designConfig.primary,
+              secondary: designConfig.secondary,
+              accent: designConfig.accent,
+              background: designConfig.background,
+              text: designConfig.text,
+              textLight: designConfig.textLight,
+            },
+            fonts: {
+              family: designConfig.fontFamily,
+              titleSize: index === 0 ? 56 : 42,
+              bodySize: 20,
+              titleAlign: titleAlign,
+              bodyAlign: bodyAlign,
+              fontWeight: fontWeight,
+            },
+            layoutStyle: designConfig.layoutStyle,
+          },
+          notes: `Content about ${apiSlide.title}`,
+        };
+      });
+      
+      if (slides && slides.length > 0) {
         const success = createSlidesInEditor(slides);
         if (success) {
           closePanel();
         }
+      } else {
+        throw new Error('No slides were generated');
       }
     } catch (error) {
       console.error('Error in handleTopicSubmit:', error);
-      showError('Failed to generate presentation. Please try again.');
+      showError(error.message || 'Failed to generate presentation. Please try again.');
     } finally {
       // Always restore button state and hide loading
       hideLoading();
@@ -1615,7 +2700,10 @@
       }
     } catch (error) {
       console.error('Error in handleTextSubmit:', error);
-      showError('Failed to generate presentation. Please try again.');
+      // Error message already shown in generateFromText if it's an API error
+      if (!error.message || (!error.message.includes('API') && !error.message.includes('API Key'))) {
+        showError('Failed to generate presentation. Please try again.');
+      }
     } finally {
       // Always restore button state and hide loading
       hideLoading();
