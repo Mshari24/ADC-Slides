@@ -291,8 +291,12 @@
   // Rendering
   function renderSidebar() {
     if (!sidebarEl) return;
+    if (!state || !Array.isArray(state.slides)) return;
+    
     sidebarEl.innerHTML = '';
     state.slides.forEach((slide, idx) => {
+      if (!slide) return;
+      
       const thumb = document.createElement('div');
       thumb.className = 'slide-thumb' + (idx === state.currentSlideIndex ? ' selected' : '');
       thumb.dataset.index = String(idx);
@@ -304,6 +308,12 @@
 
       const inner = document.createElement('div');
       inner.className = 'thumb-inner';
+      
+      // Ensure slide.elements exists
+      if (!Array.isArray(slide.elements)) {
+        slide.elements = [];
+      }
+      
       // Render preview of elements
       slide.elements.forEach((el) => {
         if (el.type === 'text') {
@@ -552,6 +562,14 @@
   }
 
   function renderStage() {
+    if (!stageEl) {
+      console.error('Stage element not found');
+      return;
+    }
+    
+    // Add slide-container class for styling
+    stageEl.classList.add('slide-container');
+    
     // Don't clear if we're in the middle of drawing (preserve temp SVG)
     if (!isDrawingMode || !currentDrawing) {
       stageEl.innerHTML = '';
@@ -561,23 +579,72 @@
       const elementsToRemove = stageEl.querySelectorAll('.el:not(.drawing-temp)');
       elementsToRemove.forEach(el => el.remove());
     }
+    
+    if (!state || !Array.isArray(state.slides) || state.slides.length === 0) {
+      console.warn('No slides in state');
+      return;
+    }
+    
     const slide = state.slides[state.currentSlideIndex];
-    if (!slide) return;
+    if (!slide) {
+      console.warn('Current slide not found');
+      return;
+    }
+    
+    // Ensure slide.elements exists
+    if (!Array.isArray(slide.elements)) {
+      slide.elements = [];
+    }
+    
+    // Determine if this is a title-only slide
+    const isTitleOnlySlide = slide.layout === 'title' || 
+                            (slide.elements.length === 1 && slide.elements[0].isTitleOnly);
     
     // Remove previous selection listeners
     document.querySelectorAll('.el').forEach(el => {
       el.classList.remove('selected');
     });
     
-    slide.elements.forEach((el) => {
+    slide.elements.forEach((el, index) => {
       if (el.type === 'text') {
         const node = document.createElement('div');
         node.className = 'el text';
         node.dataset.id = el.id;
         node.contentEditable = el.locked ? 'false' : 'true';
         node.spellcheck = false;
-        node.style.left = el.x + 'px';
-        node.style.top = el.y + 'px';
+        
+        // Apply positioning and classes
+        if (el.isTitleOnly) {
+          // Title-only slide: center both horizontally and vertically
+          // Calculate center position accounting for padding
+          const stageWidth = stageEl.offsetWidth || 1280;
+          const stageHeight = stageEl.offsetHeight || 720;
+          node.style.left = '50%';
+          node.style.top = '50%';
+          node.style.transform = 'translate(-50%, -50%)';
+          // For title-only slides, set width to 80% of content area
+          node.style.width = '80%';
+          node.style.maxWidth = '80%';
+          node.style.left = '50%';
+          node.style.marginLeft = '0';
+          node.style.textAlign = 'center';
+          node.classList.add('slide-title', 'title-only');
+        } else {
+          // Normal positioning
+          node.style.left = el.x + 'px';
+          node.style.top = el.y + 'px';
+          
+          // Add appropriate classes
+          if (el.isContentTitle) {
+            node.classList.add('slide-title', 'content-title');
+          } else if (el.isBullet) {
+            node.classList.add('slide-bullet');
+            // Apply staggered animation delay
+            const delay = 0.15 + (el.bulletIndex !== undefined ? el.bulletIndex : index) * 0.08;
+            node.style.animationDelay = `${delay}s`;
+          }
+        }
+        
         node.style.minWidth = '80px';
         node.style.minHeight = '24px';
         node.style.fontSize = (el.fontSize || 18) + 'px';
@@ -590,7 +657,6 @@
         node.style.lineHeight = el.lineHeight ? String(el.lineHeight) : '1.2';
         node.style.backgroundColor = el.fillColor || 'transparent';
         node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || 'transparent'}`;
-        node.style.transformOrigin = 'top left';
         node.innerHTML = el.content || el.text || 'Double-click to edit';
         node.classList.toggle('locked', !!el.locked);
         node.style.cursor = el.locked ? 'default' : 'text';
@@ -1851,22 +1917,36 @@
   }
 
   function renderAll() {
+    if (!state || !Array.isArray(state.slides)) {
+      console.error('Invalid state: slides array missing');
+      return;
+    }
+    
     // Update page numbers on all slides before rendering
     state.slides.forEach((slide, idx) => {
+      if (!slide) return;
+      if (!Array.isArray(slide.elements)) {
+        slide.elements = [];
+      }
       slide.elements.forEach(el => {
-        if (el.isPageNumber) {
+        if (el && el.isPageNumber) {
           const pageText = String(idx + 1);
           el.text = pageText;
           el.content = pageText;
         }
       });
     });
+    
     if (deckTitleEl) {
-      deckTitleEl.textContent = state.title;
+      deckTitleEl.textContent = state.title || 'Untitled presentation';
     }
+    
     renderSidebar();
     renderStage();
-    setStatus(`Slide ${state.currentSlideIndex + 1} of ${state.slides.length}`);
+    
+    const slideCount = state.slides ? state.slides.length : 0;
+    const currentIndex = typeof state.currentSlideIndex === 'number' ? state.currentSlideIndex : 0;
+    setStatus(`Slide ${currentIndex + 1} of ${slideCount}`);
   }
 
   // Actions
@@ -6263,9 +6343,117 @@
   });
 
   // Initial render and state save
-  renderAll();
-  saveState();
-  updateUndoRedoButtons();
+  function initializeApp() {
+    try {
+      // Ensure state is valid
+      if (!state || !Array.isArray(state.slides) || state.slides.length === 0) {
+        state.slides = [defaultSlide()];
+        state.currentSlideIndex = 0;
+      }
+      
+      // Ensure all slides have elements array
+      state.slides.forEach(slide => {
+        if (!slide) return;
+        if (!Array.isArray(slide.elements)) {
+          slide.elements = [];
+        }
+      });
+      
+      normalizeState(state);
+      
+      // Render if DOM elements exist
+      if (stageEl && sidebarEl) {
+        renderAll();
+        saveState();
+        updateUndoRedoButtons();
+      } else {
+        console.warn('DOM elements not ready, retrying...');
+        // Retry after a short delay
+        setTimeout(() => {
+          if (stageEl && sidebarEl) {
+            renderAll();
+            saveState();
+            updateUndoRedoButtons();
+          } else {
+            console.error('Failed to initialize: DOM elements not found');
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error initializing app:', error);
+      // Try to render anyway with minimal state
+      try {
+        if (stageEl) {
+          state.slides = [defaultSlide()];
+          state.currentSlideIndex = 0;
+          normalizeState(state);
+          renderAll();
+        }
+      } catch (e) {
+        console.error('Critical error:', e);
+      }
+    }
+  }
+  
+  // Expose function for AI generator to add slides to state
+  window.addAISlides = function(slideObjects) {
+    if (!Array.isArray(slideObjects) || slideObjects.length === 0) {
+      console.warn('Invalid slide objects provided');
+      return;
+    }
+    
+    // Add each slide to state
+    slideObjects.forEach(slideObj => {
+      // Ensure slide has required structure
+      if (slideObj && slideObj.id && Array.isArray(slideObj.elements)) {
+        state.slides.push(slideObj);
+      } else {
+        console.warn('Invalid slide object:', slideObj);
+      }
+    });
+    
+    // Update current slide index to the last added slide
+    state.currentSlideIndex = state.slides.length - 1;
+    
+    // Normalize state and render
+    normalizeState(state);
+    renderAll();
+    saveState();
+  };
+
+  // Listen for AI slides event
+  window.addEventListener('ai-slides-generated', function(e) {
+    if (e.detail && e.detail.slides) {
+      window.addAISlides(e.detail.slides);
+    }
+  });
+
+  // Start initialization - scripts are loaded at bottom of HTML so DOM should be ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  } else {
+    initializeApp();
+  }
 })();
 
+// Slide creation functions for AI generator
+function createNewSlide() {
+    const slideArea = document.getElementById('slide-area');
+    const slide = document.createElement('div');
+    slide.className = 'slide';
+    slideArea.appendChild(slide);
+    return slide;
+}
 
+function createTextBox(text) {
+    const box = document.createElement('div');
+    box.className = 'text-box';
+    box.contentEditable = true;
+    box.innerText = text || '';
+    return box;
+}
+
+function saveSlidesToLocalStorage() {
+    // simple placeholder to avoid errors
+    return;
+}
