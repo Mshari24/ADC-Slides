@@ -88,6 +88,109 @@
     st.currentSlideIndex = Math.min(Math.max(0, st.currentSlideIndex), st.slides.length - 1);
   }
 
+  // Global drag state management
+  let globalDragState = {
+    isDragging: false,
+    activeElement: null,
+    activeNode: null,
+    offsetX: 0,  // mouseX - elementX
+    offsetY: 0   // mouseY - elementY
+  };
+
+  // Global document mouseup handler - ensures dragging always stops
+  // This is the PRIMARY handler at the highest level to guarantee release always fires
+  document.addEventListener('mouseup', (e) => {
+    // Always reset drag state if dragging
+    if (globalDragState.isDragging && globalDragState.activeElement && globalDragState.activeNode) {
+      const el = globalDragState.activeElement;
+      const node = globalDragState.activeNode;
+      
+      // Save state for the dragged element
+      if (typeof saveState === 'function') {
+        saveState();
+      }
+      
+      // Remove dragging class
+      node.classList.remove('dragging');
+      
+      // Reset global drag state
+      globalDragState.isDragging = false;
+      globalDragState.activeElement = null;
+      globalDragState.activeNode = null;
+      
+      // Reset cursor
+      document.body.style.cursor = '';
+      
+      // Reset cursor on all elements
+      document.querySelectorAll('.el').forEach(element => {
+        if (!element.classList.contains('locked')) {
+          if (element.classList.contains('text')) {
+            element.style.cursor = 'text';
+            element.style.userSelect = 'text';
+          } else {
+            element.style.cursor = 'move';
+            element.style.userSelect = '';
+          }
+        }
+      });
+      
+      // Trigger renderSidebar if available
+      if (typeof renderSidebar === 'function') {
+        renderSidebar();
+      }
+    }
+  }, true); // Use capture phase to ensure it fires first
+
+  // Unified drag handler for images, charts, PDFs, and icons
+  function setupUnifiedDragHandler(el, node, defaultWidth, defaultHeight) {
+    function startDrag(e) {
+      if (e.button !== 0 || el.locked) return;
+      if (globalDragState.isDragging) return; // Prevent multiple drags
+      
+      // Set dragging state immediately on mousedown
+      globalDragState.isDragging = true;
+      globalDragState.activeElement = el;
+      globalDragState.activeNode = node;
+      
+      // Store initial offset: mouseX - elementX, mouseY - elementY
+      const stageRect = stageWrap ? stageWrap.getBoundingClientRect() : { left: 0, top: 0 };
+      globalDragState.offsetX = e.clientX - stageRect.left - el.x;
+      globalDragState.offsetY = e.clientY - stageRect.top - el.y;
+      
+      document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+      node.classList.add('selected');
+      updateToolbarFromSelection();
+      showContextToolbar(node);
+      hideTextControlBar();
+      node.style.cursor = 'grabbing';
+      document.body.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+    
+    node.addEventListener('mousedown', startDrag);
+    
+    const handleMouseMove = (e) => {
+      if (globalDragState.activeElement !== el || globalDragState.activeNode !== node) return;
+      if (!globalDragState.isDragging) return; // Only apply movement when isDragging = true
+      
+      // Use offset-based positioning: element position = mouse position - offset
+      const stageRect = stageWrap ? stageWrap.getBoundingClientRect() : { left: 0, top: 0 };
+      const newX = e.clientX - stageRect.left - globalDragState.offsetX;
+      const newY = e.clientY - stageRect.top - globalDragState.offsetY;
+      
+      // Constrain to stage bounds using provided default dimensions
+      el.x = Math.max(0, Math.min(1280 - (el.width || defaultWidth), newX));
+      el.y = Math.max(0, Math.min(720 - (el.height || defaultHeight), newY));
+      node.style.left = el.x + 'px';
+      node.style.top = el.y + 'px';
+      persistState();
+    };
+    
+    // Mouseup is handled by document-level handler - no individual handler needed
+    window.addEventListener('mousemove', handleMouseMove);
+    // Document-level handler will reset global drag state
+  }
+
   const stageEl = document.getElementById('stage');
   const stageWrap = document.querySelector('.stage-wrap');
   const sidebarEl = document.getElementById('slides-sidebar');
@@ -831,14 +934,29 @@
             e.preventDefault();
             return;
           }
+          if (globalDragState.isDragging) return; // Prevent multiple drags
+          
           dragFromIcon = !!options.fromIcon;
           dragStartTime = Date.now();
           dragStartPos = { x: e.clientX, y: e.clientY };
-          dragging = false;
+          
+          // Set dragging state immediately on mousedown
+          globalDragState.isDragging = true;
+          globalDragState.activeElement = el;
+          globalDragState.activeNode = node;
+          
+          // Store initial offset: mouseX - elementX, mouseY - elementY
+          // Calculate offset relative to the element's position
+          const stageRect = stageWrap ? stageWrap.getBoundingClientRect() : { left: 0, top: 0 };
+          globalDragState.offsetX = e.clientX - stageRect.left - el.x;
+          globalDragState.offsetY = e.clientY - stageRect.top - el.y;
+          
+          // Keep local variables for compatibility with existing code
           startX = e.clientX;
           startY = e.clientY;
           origX = el.x;
           origY = el.y;
+          
           document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
           node.classList.add('selected');
           updateToolbarFromSelection();
@@ -874,56 +992,52 @@
             return;
           }
           if (dragStartTime === 0 || (editingElementId === el.id && !dragFromIcon)) return;
-          const moveDistance = Math.abs(e.clientX - dragStartPos.x) + Math.abs(e.clientY - dragStartPos.y);
-          if ((moveDistance > 5 || dragFromIcon) && !dragging) {
-            dragging = true;
-            node.style.cursor = 'move';
-            node.style.userSelect = 'none';
-          }
-          if (dragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            el.x = Math.max(0, Math.min(1280 - 20, origX + dx));
-            el.y = Math.max(0, Math.min(720 - 20, origY + dy));
-            node.style.left = el.x + 'px';
-            node.style.top = el.y + 'px';
-            showDragInfo();
-            persistState();
-          }
+          if (globalDragState.activeElement !== el || globalDragState.activeNode !== node) return;
+          if (!globalDragState.isDragging) return;
+          
+          // Use offset-based positioning: element position = mouse position - offset
+          const stageRect = stageWrap ? stageWrap.getBoundingClientRect() : { left: 0, top: 0 };
+          const newX = e.clientX - stageRect.left - globalDragState.offsetX;
+          const newY = e.clientY - stageRect.top - globalDragState.offsetY;
+          
+          // Constrain to stage bounds
+          el.x = Math.max(0, Math.min(1280 - 20, newX));
+          el.y = Math.max(0, Math.min(720 - 20, newY));
+          node.style.left = el.x + 'px';
+          node.style.top = el.y + 'px';
+          node.style.cursor = 'move';
+          node.style.userSelect = 'none';
+          showDragInfo();
+          persistState();
         };
 
-        const handleMouseUp = () => {
+        // Resizing has its own mouseup handler (not part of global drag state)
+        const handleResizeMouseUp = () => {
           if (resizing) {
             resizing = false;
             document.body.style.cursor = '';
             saveState();
             renderSidebar();
             if (editingElementId === el.id) enterTextEditing(node, el);
-            return;
           }
-          if (dragging) {
-            dragging = false;
-            node.classList.remove('dragging');
-            saveState();
-            renderSidebar();
-            if (editingElementId === el.id) {
-              enterTextEditing(node, el);
-            }
-          } else if (dragStartTime > 0 && !el.locked && !dragFromIcon) {
+        };
+
+        // Text editing click handler (separate from drag)
+        const handleTextClick = () => {
+          if (dragStartTime > 0 && !el.locked && !dragFromIcon && !globalDragState.isDragging) {
             enterTextEditing(node, el);
           }
           dragStartTime = 0;
           dragFromIcon = false;
           hideDragInfo();
-          document.body.style.cursor = '';
-          if (node) {
-            node.style.cursor = 'text';
-            node.style.userSelect = 'text';
-          }
         };
 
         window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        // Resizing uses its own handler
+        window.addEventListener('mouseup', handleResizeMouseUp);
+        
+        // Text editing click is handled by document-level handler checking dragStartTime
+        // The document-level handler will reset global drag state
 
         resizeHandle.addEventListener('mousedown', (e) => {
           e.stopPropagation();
@@ -1016,8 +1130,7 @@
           document.execCommand('insertText', false, text);
         });
         
-        // Drag functionality
-        let dragging = false;
+        // Drag functionality - using global drag state
         let startX = 0, startY = 0, origX = 0, origY = 0;
         let dragStartTime = 0;
         let dragStartPos = { x: 0, y: 0 };
@@ -1032,18 +1145,35 @@
             e.preventDefault();
             return;
           }
+          if (globalDragState.isDragging) return; // Prevent multiple drags
+          
           dragStartTime = Date.now();
           dragStartPos = { x: e.clientX, y: e.clientY };
-          dragging = false;
+          
+          // Set dragging state immediately on mousedown
+          globalDragState.isDragging = true;
+          globalDragState.activeElement = el;
+          globalDragState.activeNode = node;
+          
+          // Store initial offset: mouseX - elementX, mouseY - elementY
+          // Calculate offset relative to the element's position
+          const stageRect = stageWrap ? stageWrap.getBoundingClientRect() : { left: 0, top: 0 };
+          globalDragState.offsetX = e.clientX - stageRect.left - el.x;
+          globalDragState.offsetY = e.clientY - stageRect.top - el.y;
+          
+          // Keep local variables for compatibility
           startX = e.clientX;
           startY = e.clientY;
           origX = el.x;
           origY = el.y;
+          
           document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
           node.classList.add('selected');
           updateToolbarFromSelection();
           showContextToolbar(node);
           node.classList.add('dragging');
+          node.style.cursor = 'grabbing';
+          document.body.style.cursor = 'grabbing';
           e.preventDefault();
         }
         
@@ -1069,38 +1199,27 @@
         });
         
         const handleMouseMove = (e) => {
+          if (globalDragState.activeElement !== el || globalDragState.activeNode !== node) return;
+          if (!globalDragState.isDragging) return;
           if (dragStartTime === 0) return;
-          const moveDistance = Math.abs(e.clientX - dragStartPos.x) + Math.abs(e.clientY - dragStartPos.y);
-          if (moveDistance > 5 && !dragging) {
-            dragging = true;
-            node.style.cursor = 'move';
-            node.style.userSelect = 'none';
-          }
-          if (dragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            el.x = Math.max(0, Math.min(1280 - (el.width || 200), origX + dx));
-            el.y = Math.max(0, Math.min(720 - (el.height || 200), origY + dy));
-            node.style.left = el.x + 'px';
-            node.style.top = el.y + 'px';
-            persistState();
-          }
+          
+          // Use offset-based positioning: element position = mouse position - offset
+          const stageRect = stageWrap ? stageWrap.getBoundingClientRect() : { left: 0, top: 0 };
+          const newX = e.clientX - stageRect.left - globalDragState.offsetX;
+          const newY = e.clientY - stageRect.top - globalDragState.offsetY;
+          
+          // Constrain to stage bounds
+          el.x = Math.max(0, Math.min(1280 - (el.width || 200), newX));
+          el.y = Math.max(0, Math.min(720 - (el.height || 200), newY));
+          node.style.left = el.x + 'px';
+          node.style.top = el.y + 'px';
+          node.style.userSelect = 'none';
+          persistState();
         };
         
-        const handleMouseUp = () => {
-          if (dragging) {
-            dragging = false;
-            node.classList.remove('dragging');
-            saveState();
-          }
-          dragStartTime = 0;
-          document.body.style.cursor = '';
-          node.style.cursor = 'move';
-          node.style.userSelect = '';
-        };
-        
+        // Mouseup is handled by document-level handler - no individual handler needed
         window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        // Document-level handler will reset global drag state
         
         stageEl.appendChild(node);
       } else if (el.type === 'image' && el.src) {
@@ -1123,55 +1242,8 @@
         img.draggable = false;
         node.appendChild(img);
         
-        // Drag functionality
-        let dragging = false;
-        let startX = 0, startY = 0, origX = 0, origY = 0;
-        
-        function startDrag(e) {
-          if (e.button !== 0 || el.locked) return;
-          dragging = false;
-          startX = e.clientX;
-          startY = e.clientY;
-          origX = el.x;
-          origY = el.y;
-          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
-          node.classList.add('selected');
-          updateToolbarFromSelection();
-          showContextToolbar(node);
-          hideTextControlBar();
-          e.preventDefault();
-        }
-        
-        node.addEventListener('mousedown', startDrag);
-        
-        const handleMouseMove = (e) => {
-          if (!dragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
-            dragging = true;
-            node.style.cursor = 'grabbing';
-            document.body.style.cursor = 'grabbing';
-          }
-          if (dragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            el.x = Math.max(0, Math.min(1280 - (el.width || 300), origX + dx));
-            el.y = Math.max(0, Math.min(720 - (el.height || 200), origY + dy));
-            node.style.left = el.x + 'px';
-            node.style.top = el.y + 'px';
-            persistState();
-          }
-        };
-        
-        const handleMouseUp = () => {
-          if (dragging) {
-            dragging = false;
-            saveState();
-          }
-          node.style.cursor = 'move';
-          document.body.style.cursor = '';
-        };
-        
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        // Drag functionality - using unified drag handler
+        setupUnifiedDragHandler(el, node, 300, 200);
         
         stageEl.appendChild(node);
       } else if (el.type === 'pdf' && el.src) {
@@ -1226,55 +1298,8 @@
           }
         });
         
-        // Drag functionality
-        let dragging = false;
-        let startX = 0, startY = 0, origX = 0, origY = 0;
-        
-        function startDrag(e) {
-          if (e.button !== 0 || el.locked) return;
-          dragging = false;
-          startX = e.clientX;
-          startY = e.clientY;
-          origX = el.x;
-          origY = el.y;
-          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
-          node.classList.add('selected');
-          updateToolbarFromSelection();
-          showContextToolbar(node);
-          hideTextControlBar();
-          e.preventDefault();
-        }
-        
-        node.addEventListener('mousedown', startDrag);
-        
-        const handleMouseMove = (e) => {
-          if (!dragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
-            dragging = true;
-            node.style.cursor = 'grabbing';
-            document.body.style.cursor = 'grabbing';
-          }
-          if (dragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            el.x = Math.max(0, Math.min(1280 - (el.width || 200), origX + dx));
-            el.y = Math.max(0, Math.min(720 - (el.height || 250), origY + dy));
-            node.style.left = el.x + 'px';
-            node.style.top = el.y + 'px';
-            persistState();
-          }
-        };
-        
-        const handleMouseUp = () => {
-          if (dragging) {
-            dragging = false;
-            saveState();
-          }
-          node.style.cursor = 'move';
-          document.body.style.cursor = '';
-        };
-        
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        // Drag functionality - using unified drag handler
+        setupUnifiedDragHandler(el, node, 200, 250);
         
         stageEl.appendChild(node);
       } else if (el.type === 'chart') {
@@ -1478,55 +1503,8 @@
         
         node.appendChild(svg);
         
-        // Drag functionality
-        let dragging = false;
-        let startX = 0, startY = 0, origX = 0, origY = 0;
-        
-        function startDrag(e) {
-          if (e.button !== 0 || el.locked) return;
-          dragging = false;
-          startX = e.clientX;
-          startY = e.clientY;
-          origX = el.x;
-          origY = el.y;
-          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
-          node.classList.add('selected');
-          updateToolbarFromSelection();
-          showContextToolbar(node);
-          hideTextControlBar();
-          e.preventDefault();
-        }
-        
-        node.addEventListener('mousedown', startDrag);
-        
-        const handleMouseMove = (e) => {
-          if (!dragging && (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5)) {
-            dragging = true;
-            node.style.cursor = 'grabbing';
-            document.body.style.cursor = 'grabbing';
-          }
-          if (dragging) {
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            el.x = Math.max(0, Math.min(1280 - (el.width || 400), origX + dx));
-            el.y = Math.max(0, Math.min(720 - (el.height || 300), origY + dy));
-            node.style.left = el.x + 'px';
-            node.style.top = el.y + 'px';
-            persistState();
-          }
-        };
-        
-        const handleMouseUp = () => {
-          if (dragging) {
-            dragging = false;
-            saveState();
-          }
-          node.style.cursor = 'move';
-          document.body.style.cursor = '';
-        };
-        
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        // Drag functionality - using unified drag handler
+        setupUnifiedDragHandler(el, node, 400, 300);
         
         stageEl.appendChild(node);
       } else if (el.type === 'shape') {
@@ -2768,36 +2746,8 @@
   window.openAIGenerator = openAIGeneratorModal;
   window.closeAIGenerator = closeAIGeneratorModal;
 
-  // Attach event listener to AI Generate button
-  function initAIGenerateButton() {
-    const btnAIGenerate = document.getElementById('btn-ai-generate');
-    if (btnAIGenerate) {
-      // Remove any existing listeners by cloning
-      const newBtn = btnAIGenerate.cloneNode(true);
-      btnAIGenerate.parentNode.replaceChild(newBtn, btnAIGenerate);
-      
-      // Add fresh event listener
-      document.getElementById('btn-ai-generate').addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        openAIGeneratorModal();
-      });
-      console.log('AI Generate button connected successfully');
-    } else {
-      console.warn('AI Generate button (btn-ai-generate) not found, retrying...');
-      setTimeout(initAIGenerateButton, 100);
-    }
-  }
-
-  // Initialize button connection
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAIGenerateButton);
-  } else {
-    initAIGenerateButton();
-  }
-
-  // Also try after a delay as backup
-  setTimeout(initAIGenerateButton, 200);
+  // Note: btn-ai-generate listener is handled in ai-generator.js initializeAIPage() to avoid duplicates
+  // This function removed to prevent duplicate listeners
 
   // Close modal when clicking outside (on the backdrop)
   const aiGeneratorPage = document.getElementById('ai-generator-page');
@@ -6948,11 +6898,7 @@
       card.classList.toggle('active', card.dataset.themeId === themeId);
     });
 
-    // Update theme selector in AI generator if it exists
-    const aiThemeSelector = document.getElementById('ai-theme-selector');
-    if (aiThemeSelector) {
-      aiThemeSelector.value = themeId;
-    }
+    // Theme selection is now only through theme cards - no dropdown selectors
 
     console.log('Theme loaded:', theme.name);
   }

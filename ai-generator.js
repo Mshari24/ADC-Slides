@@ -6,6 +6,17 @@
 (function() {
   'use strict';
 
+  // Global variable to store selected theme name
+  let selectedTheme = null;
+  
+  // Expose selectedTheme globally for external access
+  Object.defineProperty(window, 'selectedTheme', {
+    get: function() { return selectedTheme; },
+    set: function(value) { selectedTheme = value; },
+    enumerable: true,
+    configurable: true
+  });
+
   // ----------------------
   //  Loading Indicator Functions
   // ----------------------
@@ -1514,7 +1525,7 @@
   //  AI Presentation Logic
   // ----------------------
 
-  async function generateSlidesFromAI(topic, slideCount, language) {
+  async function generateSlidesFromAI(topic, slideCount, language, selectedTheme) {
     showLoading();
     try {
         const response = await fetch('http://localhost:3000/api/ai/generate-slides', {
@@ -1523,7 +1534,8 @@
           body: JSON.stringify({
                 topic: topic,
                 slideCount: slideCount,
-                language: language
+                language: language,
+                selectedTheme: selectedTheme || null
           })
         });
 
@@ -1578,23 +1590,139 @@
     console.log('AI generator initialization complete');
   }
 
+  // Helper function to create check icon SVG
+  function createCheckIcon() {
+    const checkIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    checkIcon.setAttribute('viewBox', '0 0 24 24');
+    checkIcon.setAttribute('width', '20');
+    checkIcon.setAttribute('height', '20');
+    checkIcon.style.cssText = 'position: absolute; top: 8px; right: 8px; z-index: 10; pointer-events: none;';
+    
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', '12');
+    circle.setAttribute('cy', '12');
+    circle.setAttribute('r', '10');
+    circle.setAttribute('fill', '#0097D6');
+    circle.setAttribute('stroke', '#ffffff');
+    circle.setAttribute('stroke-width', '2');
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M9 12l2 2 4-4');
+    path.setAttribute('stroke', '#ffffff');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('fill', 'none');
+    
+    checkIcon.appendChild(circle);
+    checkIcon.appendChild(path);
+    
+    return checkIcon;
+  }
+
+  // Helper function to remove check icon from a card
+  function removeCheckIcon(card) {
+    const existingCheck = card.querySelector('.theme-check-icon');
+    if (existingCheck) {
+      existingCheck.remove();
+    }
+  }
+
+  // Helper function to add check icon to a card
+  function addCheckIcon(card) {
+    // Remove any existing check icon first
+    removeCheckIcon(card);
+    
+    // Create and add new check icon
+    const checkIcon = createCheckIcon();
+    checkIcon.classList.add('theme-check-icon');
+    card.appendChild(checkIcon);
+  }
+
+  // Theme selection function - receives theme identifier directly
+  function selectTheme(themeIdentifier) {
+    // themeIdentifier should be: "Aramco", "Blue", "Modern", "Gradient", "Dark"
+    
+    // Ensure themeIdentifier is a valid string (never undefined or null)
+    if (!themeIdentifier || typeof themeIdentifier !== 'string') {
+      console.error('Invalid theme identifier:', themeIdentifier);
+      return;
+    }
+    
+    // Update selected theme globally - always store as string
+    const validTheme = String(themeIdentifier).trim();
+    window.selectedTheme = validTheme;
+    selectedTheme = validTheme;
+    
+    // Update visual state for all theme cards
+    const themeBoxes = document.querySelectorAll('.ai-theme-box');
+    themeBoxes.forEach(box => {
+      box.classList.remove('active');
+      box.classList.remove('selected');
+      // Remove check icon from all cards
+      removeCheckIcon(box);
+    });
+    
+    // Map identifier to display name for card matching
+    const identifierToNameMap = {
+      'Aramco': 'Aramco',
+      'Blue': 'Blue',
+      'Modern': 'Modern Minimal',
+      'Gradient': 'Gradient Soft',
+      'Dark': 'Dark Mode'
+    };
+    
+    const displayName = identifierToNameMap[themeIdentifier] || themeIdentifier;
+    
+    themeBoxes.forEach(box => {
+      const boxLabel = box.querySelector('.ai-theme-label');
+      if (boxLabel && boxLabel.textContent === displayName) {
+        box.classList.add('active');
+        box.classList.add('selected');
+        // Add check icon to selected card
+        addCheckIcon(box);
+      }
+    });
+    
+    console.log('Selected theme:', themeIdentifier);
+  }
+
+  // Expose selectTheme globally for external access
+  window.selectTheme = selectTheme;
+
   // Text workflow handler - defined at module scope
   async function handleTextSubmit() {
     console.log('AI text button clicked');
     const textInput = document.getElementById('ai-text-input');
     const text = textInput?.value.trim();
-    const slideCount = parseInt(document.getElementById('ai-slide-count')?.value);
+    const slideCountInput = document.getElementById('number-of-slides')?.value;
     const language = document.getElementById('ai-language-selector')?.value;
+    const selectedTheme = window.selectedTheme || null; // Get selected theme from global variable
 
     if (!text) {
         alert('Please enter some text.');
         return;
     }
 
+    // Validate slide count - if empty, treat as null and stop
+    if (!slideCountInput || slideCountInput.trim() === '') {
+      alert('Please enter the number of slides.');
+      return;
+    }
+
+    // Always convert to integer using parseInt
+    const slideCount = parseInt(slideCountInput, 10);
+
+    // Validate theme selection - ensure selectedTheme is NOT undefined, null, or empty
+    if (!selectedTheme || selectedTheme === null || selectedTheme === undefined || selectedTheme === '') {
+      alert('Please select a theme.');
+      return;
+    }
+
     showLoading();
     try {
       // Use text as topic for now (can be enhanced later)
-      const result = await generateSlidesFromAI(text, slideCount, language);
+      const result = await generateSlidesFromAI(text, slideCount, language, selectedTheme);
 
       if (result.error) {
           alert(result.error);
@@ -1628,7 +1756,11 @@
         window.dispatchEvent(event);
       }
 
-      alert(`Successfully generated ${slidesToGenerate.length} slides!`);
+      // Auto-redirect without showing alert
+      const presentationId = result.presentationId;
+      if (presentationId) {
+        window.location.href = 'index.html?presentation=' + presentationId;
+      }
     } catch (err) {
       console.error('Text submit error:', err);
       alert(`Error generating slides: ${err.message || 'Unknown error'}`);
@@ -1656,31 +1788,93 @@
     startLoading();
     
     try {
-      const topic = document.getElementById('ai-input')?.value.trim();
-      const slideCount = parseInt(document.getElementById('ai-slide-count')?.value);
-      const language = document.getElementById('ai-language-selector')?.value;
+      const selectedTopic = document.getElementById('ai-input')?.value.trim();
+      const slideCountInput = document.getElementById('number-of-slides')?.value;
+      const selectedLanguage = document.getElementById('ai-language-selector')?.value;
+      const selectedTheme = window.selectedTheme || null; // Get selected theme from global variable
 
-      if (!topic) {
+      if (!selectedTopic) {
         alert('Please enter a topic.');
         stopLoading();
         return;
       }
 
-      const result = await generateSlidesFromAI(topic, slideCount, language);
+      // Validate slide count - if empty, treat as null and stop
+      if (!slideCountInput || slideCountInput.trim() === '') {
+        alert('Please enter the number of slides.');
+        stopLoading();
+        return;
+      }
 
-      if (result.error) {
-        alert(result.error);
+      // Always convert to integer using parseInt
+      const selectedSlideCount = parseInt(slideCountInput, 10);
+
+      // Validate slideCount is a valid number
+      if (isNaN(selectedSlideCount) || selectedSlideCount < 1) {
+        alert('Please enter a valid number of slides.');
+        stopLoading();
+        return;
+      }
+
+      // Validate theme selection - ensure selectedTheme is NOT undefined, null, or empty
+      if (!selectedTheme || selectedTheme === null || selectedTheme === undefined || selectedTheme === '') {
+        alert('Please select a theme.');
+        stopLoading();
+        return;
+      }
+
+      // Validate language - ensure it's not undefined, default to 'en' if empty
+      const finalLanguage = selectedLanguage && selectedLanguage.trim() !== '' 
+        ? selectedLanguage.trim() 
+        : 'en';
+
+      // Ensure all values are defined before sending
+      const requestBody = {
+        slideCount: selectedSlideCount,  // Always a number
+        theme: selectedTheme,            // Always a string (validated above)
+        topic: selectedTopic,            // Always a string (validated above)
+        language: finalLanguage          // Always a string (defaults to 'en')
+      };
+
+      // Double-check: ensure no undefined values
+      if (requestBody.slideCount === undefined || 
+          requestBody.theme === undefined || 
+          requestBody.topic === undefined || 
+          requestBody.language === undefined) {
+        console.error('Invalid request body:', requestBody);
+        alert('Error: Missing required fields. Please try again.');
+        stopLoading();
+        return;
+      }
+
+      const response = await fetch('http://localhost:3000/api/ai/generate-slides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        alert(errorData.error || 'Failed to fetch');
+        stopLoading();
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        alert(data.error);
         stopLoading();
         return;
       }
       
-      if (!result.slides) {
+      if (!data.slides) {
         alert('No slides returned.');
         stopLoading();
         return;
       }
 
-      const slidesToGenerate = result.slides.slice(0, slideCount);
+      const slidesToGenerate = data.slides.slice(0, selectedSlideCount);
 
       // Create slide objects matching defaultSlide() structure exactly
       const slideObjects = slidesToGenerate.map((slideData, index) => {
@@ -1690,7 +1884,7 @@
       // Add slides to state through window.addAISlides (exposed by app.js)
       if (typeof window !== 'undefined' && window.addAISlides) {
         window.addAISlides(slideObjects);
-      } else {
+        } else {
         // Fallback: dispatch event that app.js listens to
         const event = new CustomEvent('ai-slides-generated', { 
           detail: { slides: slideObjects },
@@ -1699,27 +1893,44 @@
         window.dispatchEvent(event);
       }
 
-      alert(`Successfully generated ${slidesToGenerate.length} slides!`);
+      // Auto-redirect without showing alert
+      const presentationId = data.presentationId;
+      if (presentationId) {
+        window.location.href = 'index.html?presentation=' + presentationId;
+      }
     } catch (error) {
       console.error('Error in generateSlidesRequest:', error);
-      alert(`Error generating slides: ${error.message || 'An unexpected error occurred.'}`);
+      alert('Failed to fetch');
     } finally {
       // Always stop loading, even if there's an error
       stopLoading();
     }
   }
 
-  async function generateSlides() {
-    startLoading();
+  // Single unified generate handler function
+  async function handleGenerate() {
+    // Validate theme selection before proceeding
+    const currentTheme = window.selectedTheme || selectedTheme;
+    if (!currentTheme || currentTheme === null || currentTheme === undefined || currentTheme === '') {
+      alert('Please select a theme.');
+      return;
+    }
+    
     try {
+      // generateSlidesRequest() handles loading state internally
       await generateSlidesRequest();
+      
+      // Close AI page after successful generation (if it's open)
+      if (typeof hideAIPage === 'function' && isAIPageVisible) {
+        hideAIPage();
+        isAIPageVisible = false;
+      }
     } catch (e) {
       console.error('Generate slides error:', e);
       const errorMessage = e.message || 'An unexpected error occurred while generating slides.';
       alert(`Error generating slides: ${errorMessage}`);
-    } finally {
-      stopLoading();
     }
+    // Note: generateSlidesRequest() handles stopLoading() in its finally block
   }
 
   // ----------------------
@@ -1736,7 +1947,7 @@
       const spinner = '<svg class="loading-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>';
       if (generateText) {
         generateText.innerHTML = spinner + ' Generating...';
-      } else {
+        } else {
         generateBtn.innerHTML = spinner + ' Generating...';
       }
     }
@@ -1750,7 +1961,7 @@
       const spinner = '<svg class="loading-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>';
       if (pageText) {
         pageText.innerHTML = spinner + ' Generating...';
-      } else {
+        } else {
         pageBtn.innerHTML = spinner + ' Generating...';
       }
     }
@@ -1767,7 +1978,7 @@
       generateBtn.classList.remove('loading');
       if (generateText) {
         generateText.innerText = 'Generate Presentation';
-      } else {
+        } else {
         generateBtn.textContent = 'Generate Presentation';
       }
     }
@@ -1842,6 +2053,9 @@
     }
   };
 
+  // Guard flag to prevent duplicate initialization
+  let aiPageInitialized = false;
+
   function initializeAIPage() {
     // Support both possible button IDs
     aiPageBtn = document.getElementById('ai-generate-btn') || document.getElementById('btn-ai-generate');
@@ -1849,32 +2063,31 @@
     
     if (!aiPageBtn) {
       console.error('AI generate button not found. Looking for: ai-generate-btn or btn-ai-generate');
-      // Try again after a short delay
       setTimeout(initializeAIPage, 100);
       return;
     }
     
     if (!aiPage) {
       console.error('AI generator page not found. Looking for: ai-generator-page');
-      // Try again after a short delay
       setTimeout(initializeAIPage, 100);
       return;
     }
 
-    console.log('AI Generate button found:', aiPageBtn);
-    console.log('AI Generator page found:', aiPage);
+    // Prevent duplicate initialization
+    if (aiPageInitialized) {
+      return;
+    }
+    aiPageInitialized = true;
 
     // Remove all existing event listeners by cloning and replacing
     const newBtn = aiPageBtn.cloneNode(true);
     aiPageBtn.parentNode.replaceChild(newBtn, aiPageBtn);
     aiPageBtn = newBtn;
     
-    // Add event listener with capture phase to ensure it fires first
+    // Add ONLY ONE event listener
     aiPageBtn.addEventListener('click', function(e) {
-      console.log('AI Generate button clicked!', e);
       e.preventDefault();
       e.stopPropagation();
-      e.stopImmediatePropagation();
       
       if (isAIPageVisible) {
         hideAIPage();
@@ -1882,33 +2095,9 @@
         showAIPage();
       }
       return false;
-    }, true);
-    
-    // Also set onclick as backup (fires after addEventListener)
-    aiPageBtn.onclick = function(e) {
-      console.log('AI Generate button clicked (onclick backup)!', e);
-      e.preventDefault();
-      e.stopPropagation();
-      if (isAIPageVisible) {
-        hideAIPage();
-      } else {
-        showAIPage();
-      }
-      return false;
-    };
-    
-    // Test the connection
-    console.log('AI Generate button connected successfully');
-    console.log('Button element:', aiPageBtn);
-    console.log('Page element:', aiPage);
-    
-    // Verify click handler is attached
-    if (aiPageBtn.onclick) {
-      console.log('onclick handler attached:', typeof aiPageBtn.onclick);
-    }
+    });
 
-    // Default to 'topic' workflow (workflow selector buttons removed)
-    // Show topic content by default
+    // Default to 'topic' workflow
     document.querySelectorAll('.ai-generator-workflow-content').forEach(content => {
       content.classList.remove('active');
     });
@@ -1920,12 +2109,12 @@
     // Theme box selection - Create proper theme cards
     const themeBoxes = aiPage.querySelectorAll('.ai-theme-box');
     const themeMap = {
-      'T1': { id: 'aramco', name: 'Aramco', letter: 'A' },
-      'T2': { id: 'blue', name: 'Blue', letter: 'B' },
-      'T3': { id: 'modern-minimal', name: 'Modern Minimal', letter: 'M' },
-      'T4': { id: 'gradient-soft', name: 'Gradient Soft', letter: 'G' },
-      'T5': { id: 'dark-mode', name: 'Dark Mode', letter: 'D' },
-      'T6': { id: 'aramco', name: 'Aramco', letter: 'A' }
+      'T1': { id: 'aramco', name: 'Aramco', identifier: 'Aramco', letter: 'A' },
+      'T2': { id: 'blue', name: 'Blue', identifier: 'Blue', letter: 'B' },
+      'T3': { id: 'modern-minimal', name: 'Modern Minimal', identifier: 'Modern', letter: 'M' },
+      'T4': { id: 'gradient-soft', name: 'Gradient Soft', identifier: 'Gradient', letter: 'G' },
+      'T5': { id: 'dark-mode', name: 'Dark Mode', identifier: 'Dark', letter: 'D' },
+      'T6': { id: 'aramco', name: 'Aramco', identifier: 'Aramco', letter: 'A' }
     };
     
     themeBoxes.forEach(box => {
@@ -1935,8 +2124,6 @@
         const gradientSection = document.createElement('div');
         gradientSection.className = 'ai-theme-gradient';
         gradientSection.style.cssText = 'flex: 1; min-height: 110px; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box;';
-        
-        // Apply theme-specific gradient via CSS class (will be handled by CSS selectors)
         
         const letter = document.createElement('div');
         letter.className = 'ai-theme-letter';
@@ -1962,50 +2149,28 @@
         box.appendChild(bottomBar);
         box.dataset.themeId = themeData.id;
         
+        // Attach click handler - calls selectTheme() with theme identifier
         box.addEventListener('click', () => {
-          themeBoxes.forEach(b => b.classList.remove('active'));
-          box.classList.add('active');
-          
-          // Update theme selector
-          const themeSelectors = [
-            document.getElementById('ai-theme-selector'),
-            document.getElementById('ai-page-theme-selector')
-          ];
-          themeSelectors.forEach(selector => {
-            if (selector) {
-              selector.value = themeData.id;
-            }
-          });
+          selectTheme(themeData.identifier);
         });
       }
     });
 
-    // Generate button handler
+    // Restore selected theme state if one was previously selected
+    const currentSelectedTheme = window.selectedTheme || selectedTheme;
+    if (currentSelectedTheme && typeof currentSelectedTheme === 'string' && currentSelectedTheme.trim() !== '') {
+      // Restore visual state without changing the stored value
+      selectTheme(currentSelectedTheme);
+    }
+
+    // Generate button handler - attach handleGenerate listener
     const generateBtn = document.getElementById('ai-page-generate-btn');
     if (generateBtn) {
-      generateBtn.addEventListener('click', async () => {
-        // Start loading immediately
-        startLoading();
-        
-        try {
-          // Call generateSlidesRequest which handles the generation
-          // Note: generateSlidesRequest() also calls startLoading() internally,
-          // but that's okay - it ensures loading state is set
-          await generateSlidesRequest();
-          
-          // Close AI page after successful generation
-          if (typeof hideAIPage === 'function') {
-            hideAIPage();
-            isAIPageVisible = false;
-          }
-        } catch (e) {
-          console.error('Generate slides error:', e);
-          alert(`Error generating slides: ${e.message || 'An unexpected error occurred.'}`);
-        } finally {
-          // Always stop loading, even if there's an error
-          stopLoading();
-        }
-      });
+      // Remove ALL existing event listeners by cloning and replacing
+      generateBtn.replaceWith(generateBtn.cloneNode(true));
+      
+      // Attach ONLY ONE event listener
+      document.getElementById('ai-page-generate-btn').addEventListener('click', handleGenerate);
     }
 
     // Sync page inputs with sidebar inputs for compatibility
@@ -2013,7 +2178,7 @@
       const inputMapping = {
         'ai-page-input': 'ai-input',
         'ai-page-text-input': 'ai-text-input',
-        'ai-page-slide-count': 'ai-slide-count',
+        'ai-page-slide-count': 'number-of-slides',
         'ai-page-language-selector': 'ai-language-selector'
       };
 
@@ -2048,61 +2213,49 @@
     });
   }
 
-  // Initialize immediately if DOM is ready, otherwise wait for DOMContentLoaded
+  // Single initialization function - called only once
   function initAIGenerator() {
     // Initialize AI system (for sidebar compatibility)
     initializeAI();
     
-    // Initialize AI Full Page View
-    initializeAIPage();
-  }
-
-  // Try immediate initialization if DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAIGenerator);
-  } else {
-    // DOM is already ready
-    initAIGenerator();
-  }
-
-  // Also wrap in DOMContentLoaded as backup
-  document.addEventListener('DOMContentLoaded', () => {
-    // Initialize AI system (for sidebar compatibility)
-    initializeAI();
-    
-    // Initialize AI Full Page View
+    // Initialize AI Full Page View (handles btn-ai-generate and ai-page-generate-btn)
     initializeAIPage();
 
     // MAIN TOPIC BUTTON LISTENER - Only for "From Topic" workflow (sidebar)
     const generateBtn = document.getElementById('ai-topic-submit');
     if (generateBtn) {
       // Remove any existing listeners
-      generateBtn.onclick = null;
       generateBtn.replaceWith(generateBtn.cloneNode(true));
       const newGenerateBtn = document.getElementById('ai-topic-submit');
-      newGenerateBtn.onclick = generateSlides;
-        } else {
-      console.error('ai-topic-submit button not found');
+      newGenerateBtn.addEventListener('click', handleGenerate);
     }
 
     // TEXT WORKFLOW BUTTON LISTENER - Only for "From Text" workflow
     const textSubmitBtn = document.getElementById('ai-text-submit');
     if (textSubmitBtn) {
-      textSubmitBtn.onclick = handleTextSubmit;
+      // Remove any existing listeners
+      textSubmitBtn.replaceWith(textSubmitBtn.cloneNode(true));
+      const newTextSubmitBtn = document.getElementById('ai-text-submit');
+      newTextSubmitBtn.addEventListener('click', handleTextSubmit);
     }
 
     // IMPROVE WORKFLOW BUTTON LISTENER
     const improveSubmitBtn = document.getElementById('ai-improve-submit');
     if (improveSubmitBtn) {
-      improveSubmitBtn.onclick = handleImproveSubmit;
+      // Remove any existing listeners
+      improveSubmitBtn.replaceWith(improveSubmitBtn.cloneNode(true));
+      const newImproveSubmitBtn = document.getElementById('ai-improve-submit');
+      newImproveSubmitBtn.addEventListener('click', handleImproveSubmit);
     }
-  });
+  }
 
-  // Immediate initialization attempt (runs as soon as script loads)
-  // This ensures the button works even if DOMContentLoaded already fired
-  setTimeout(() => {
-    initializeAIPage();
-  }, 50);
+  // Initialize only once when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAIGenerator);
+  } else {
+    // DOM is already ready
+    initAIGenerator();
+  }
 
   // Simple function to open AI Generator - exposed globally
   function openAIGenerator() {
@@ -2119,37 +2272,7 @@
   // Expose function globally
   window.openAIGenerator = openAIGenerator;
 
-  // Connect button with ID btn-ai-generate
-  function connectAIGenerateButton() {
-    const btn = document.getElementById('btn-ai-generate');
-    if (!btn) {
-      console.warn('Button btn-ai-generate not found, retrying...');
-      setTimeout(connectAIGenerateButton, 100);
-      return;
-    }
-    
-    // Remove any existing listeners by cloning
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
-    
-    // Get the new button reference
-    const freshBtn = document.getElementById('btn-ai-generate');
-    
-    // Add event listener exactly as requested
-    freshBtn.addEventListener('click', openAIGenerator);
-    
-    console.log('AI Generate button (btn-ai-generate) connected successfully');
-  }
-
-  // Try to connect immediately
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', connectAIGenerateButton);
-  } else {
-    connectAIGenerateButton();
-  }
-
-  // Also try after delays as backup
-  setTimeout(connectAIGenerateButton, 200);
-  setTimeout(connectAIGenerateButton, 500);
+  // Note: btn-ai-generate listener is handled in initializeAIPage() to avoid duplicates
+  // No separate connectAIGenerateButton() needed
 
 })();
