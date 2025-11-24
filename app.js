@@ -3117,6 +3117,9 @@
   const toolsSidebarItem = document.querySelector('.sidebar-item[title="Tools"]');
   const toolsPanel = document.getElementById('tools-panel');
   const toolOptionButtons = toolsPanel ? toolsPanel.querySelectorAll('.text-option-btn[data-tool]') : [];
+  const adSidebarItem = document.querySelector('.sidebar-item[title="AD"]');
+  const adPanel = document.getElementById('ad-panel');
+  const adGraphicItems = adPanel ? adPanel.querySelectorAll('.ad-graphic-item') : [];
   const toolsMainView = toolsPanel ? toolsPanel.querySelector('.tools-view-main') : null;
   const toolsShapesView = toolsPanel ? toolsPanel.querySelector('.tools-view-shapes') : null;
   const toolsLinesView = toolsPanel ? toolsPanel.querySelector('.tools-view-lines') : null;
@@ -3216,16 +3219,13 @@
 
   function positionChartsPanel() {
     const chartsPanel = document.getElementById('charts-panel');
-    const chartsSidebarItem = document.querySelector('.sidebar-item[title="Charts"]');
+    const textSidebarItem = document.querySelector('.sidebar-item[title="Text"]');
     
-    if (!chartsPanel || !chartsSidebarItem) return;
+    if (!chartsPanel || !textSidebarItem) return;
     
-    const sidebarRect = chartsSidebarItem.getBoundingClientRect();
-    const panelHeight = chartsPanel.offsetHeight || 400;
-    const windowHeight = window.innerHeight;
-    const centeredTop = (windowHeight - panelHeight) / 2;
+    const sidebarRect = textSidebarItem.getBoundingClientRect();
     
-    chartsPanel.style.top = `${Math.max(20, centeredTop)}px`;
+    chartsPanel.style.top = `20px`;
     chartsPanel.style.left = `${sidebarRect.right + 12}px`;
   }
 
@@ -3262,14 +3262,52 @@
 
   function positionToolsPanel() {
     if (!toolsPanel || !toolsSidebarItem || typeof window === 'undefined') return;
-    const sidebarRect = toolsSidebarItem.getBoundingClientRect();
     const panelRect = toolsPanel.getBoundingClientRect();
     const panelWidth = panelRect.width || toolsPanel.offsetWidth || 320;
     const panelHeight = panelRect.height || toolsPanel.offsetHeight || 280;
-    const left = Math.min(window.innerWidth - panelWidth - 16, sidebarRect.right + 16);
-    const top = Math.max(16, (window.innerHeight - panelHeight) / 2);
-    toolsPanel.style.left = `${Math.max(16, left)}px`;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    // Position the panel in the center-left (vertically centered, horizontally on the left)
+    const left = Math.max(80, (windowWidth * 0.3) - (panelWidth / 2)); // Position slightly more to the right
+    const top = (windowHeight - panelHeight) / 2; // Vertically centered
+    toolsPanel.style.left = `${left}px`;
     toolsPanel.style.top = `${top}px`;
+  }
+
+  function positionAdPanel() {
+    if (!adPanel || !adSidebarItem || typeof window === 'undefined') return;
+    const panelRect = adPanel.getBoundingClientRect();
+    const panelWidth = panelRect.width || adPanel.offsetWidth || 320;
+    const panelHeight = panelRect.height || adPanel.offsetHeight || 280;
+    const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
+    // Position the panel in the center-left (vertically centered, horizontally on the left)
+    const left = Math.max(80, (windowWidth * 0.3) - (panelWidth / 2)); // Position slightly more to the right
+    const top = (windowHeight - panelHeight) / 2; // Vertically centered
+    adPanel.style.left = `${left}px`;
+    adPanel.style.top = `${top}px`;
+  }
+
+  function insertGraphicDesign(graphicType) {
+    const imagePaths = {
+      'aramco-digital': './pic/aramco-digital.png',
+      'logo': './pic/Logo.png',
+      'ad': './pic/AD.png',
+      'aramco-announcement': './pic/Aramco-annoucement-1.png',
+      'teams': './pic/Microsoft-Teams-Logo.png',
+      'outlook': './pic/Outlook_on_the_web-Logo.wine.png'
+    };
+
+    const imagePath = imagePaths[graphicType];
+    if (!imagePath) return;
+
+    // Use the existing insertImage function
+    insertImage(imagePath, graphicType, 'image');
+    
+    // Hide the AD panel after inserting
+    if (adPanel) {
+      adPanel.classList.add('hidden');
+    }
   }
 
   function notifyComingSoon(message) {
@@ -3315,7 +3353,12 @@
     if (!drawingToolbar || !toolsSidebarItem) return;
     
     const sidebarRect = toolsSidebarItem.getBoundingClientRect();
-    drawingToolbar.style.top = `${sidebarRect.top}px`;
+    const panelHeight = drawingToolbar.offsetHeight || 300;
+    const windowHeight = window.innerHeight;
+    const bottom = 20;
+    const top = windowHeight - panelHeight - bottom;
+    
+    drawingToolbar.style.top = `${Math.max(20, top)}px`;
     drawingToolbar.style.left = `${sidebarRect.right + 12}px`;
   }
 
@@ -3751,11 +3794,40 @@
     });
   }
 
+  if (adSidebarItem && adPanel) {
+    adSidebarItem.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      hideTextPanel();
+      if (toolsPanel) toolsPanel.classList.add('hidden');
+      const isHidden = adPanel.classList.contains('hidden');
+      if (isHidden) {
+        adPanel.classList.remove('hidden');
+        positionAdPanel();
+      } else {
+        adPanel.classList.add('hidden');
+      }
+    });
+
+    // Handle graphic item clicks
+    adGraphicItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const graphicType = item.dataset.graphic;
+        if (graphicType) {
+          insertGraphicDesign(graphicType);
+        }
+      });
+    });
+  }
+
   if (toolsSidebarItem && toolsPanel) {
     toolsSidebarItem.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       hideTextPanel();
+      if (adPanel) adPanel.classList.add('hidden');
       const isHidden = toolsPanel.classList.contains('hidden');
       if (isHidden) {
         showToolsMainView();
@@ -3949,6 +4021,9 @@
     }
     if (toolsPanel && !toolsPanel.classList.contains('hidden')) {
       positionToolsPanel();
+    }
+    if (adPanel && !adPanel.classList.contains('hidden')) {
+      positionAdPanel();
     }
     const drawingToolbar = document.getElementById('drawing-toolbar');
     if (drawingToolbar && !drawingToolbar.classList.contains('hidden')) {
@@ -4238,6 +4313,68 @@
         }
         break;
       }
+      case 'repeat': {
+        const newEl = JSON.parse(JSON.stringify(el));
+        newEl.id = uid();
+        if (el.type === 'line') {
+          newEl.x1 = (newEl.x1 || 200) + 20;
+          newEl.y1 = (newEl.y1 || 200) + 20;
+          newEl.x2 = (newEl.x2 || 400) + 20;
+          newEl.y2 = (newEl.y2 || 200) + 20;
+          if (newEl.midX !== null && newEl.midX !== undefined) {
+            newEl.midX = newEl.midX + 20;
+          }
+          if (newEl.midY !== null && newEl.midY !== undefined) {
+            newEl.midY = newEl.midY + 20;
+          }
+        } else {
+          newEl.x = (newEl.x || 0) + 20;
+          newEl.y = (newEl.y || 0) + 20;
+        }
+        slide.elements.push(newEl);
+        saveState();
+        renderAll();
+        reselectElement(newEl.id);
+        break;
+      }
+      case 'close': {
+        hideContextToolbar();
+        break;
+      }
+      case 'add-link': {
+        const url = prompt('Enter URL:', el.link || '');
+        if (url !== null) {
+          el.link = url;
+          saveState();
+          renderAll();
+          reselectElement(elId);
+        }
+        break;
+      }
+      case 'add-comment': {
+        const comment = prompt('Add a comment:', el.comment || '');
+        if (comment !== null) {
+          el.comment = comment;
+          saveState();
+          renderAll();
+          reselectElement(elId);
+        }
+        break;
+      }
+      case 'translate': {
+        if (el.type === 'text') {
+          const text = el.text || '';
+          if (text) {
+            // Simple translation demo - in real app, this would call a translation API
+            alert(`Translation feature: Would translate "${text.substring(0, 50)}${text.length > 50 ? '...' : ''}"`);
+          } else {
+            alert('No text to translate');
+          }
+        } else {
+          alert('Translation is only available for text elements');
+        }
+        break;
+      }
       default:
         break;
     }
@@ -4336,9 +4473,9 @@
     toolbarMenu?.classList.add('hidden');
   });
 
-  document.getElementById('btn-comment')?.addEventListener('click', () => performAction('comment'));
-  document.getElementById('btn-lock')?.addEventListener('click', () => performAction('lock'));
-  document.getElementById('btn-link')?.addEventListener('click', () => performAction('link'));
+  document.getElementById('btn-comment')?.addEventListener('click', () => performAction('add-comment'));
+  document.getElementById('btn-duplicate')?.addEventListener('click', () => performAction('duplicate'));
+  document.getElementById('btn-delete')?.addEventListener('click', () => performAction('delete'));
 
   textFontFamily?.addEventListener('change', () => {
     const value = textFontFamily.value;

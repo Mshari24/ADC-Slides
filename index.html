@@ -12,6 +12,84 @@
 
 <body>
   <div id="app">
+    <!-- Sidebar (hidden by default, toggled by hamburger menu) -->
+    <aside class="home-sidebar sidebar-overlay" id="main-sidebar" aria-label="Primary navigation">
+      <div class="sidebar-user">
+        <a class="sidebar-avatar-link" href="./profile/index.html" title="User Profile &amp; Settings" aria-label="Open profile page">
+          <div class="sidebar-avatar" aria-hidden="true">AD</div>
+        </a>
+        <span class="sidebar-username" data-sidebar-username>Your Name</span>
+      </div>
+      <a class="sb-item" href="./home.html" title="Home">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <span class="sb-label">Home</span>
+      </a>
+      <div class="sb-item new-entry" role="button" tabindex="0" data-default-href="./index.html" aria-haspopup="true" aria-expanded="false">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </div>
+        <span class="sb-label">New</span>
+        <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
+          <span class="new-menu-heading">CREATE NEW</span>
+          <div class="new-menu-options">
+            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./index.html">
+              <span class="new-menu-icon">＋</span>
+              <span class="new-menu-text">
+                <strong>Blank presentation</strong>
+              </span>
+            </button>
+            <button type="button" class="new-menu-item" data-new-action="template" data-new-href="./index.html?template=ad">
+              <span class="new-menu-icon">✦</span>
+              <span class="new-menu-text">
+                <strong>AD template</strong>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <a class="sb-item" href="./project.html" title="Projects">
+        <div class="sb-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <path d="M12 9v6"></path>
+            <path d="M9 12h6"></path>
+          </svg>
+        </div>
+        <span class="sb-label">Projects</span>
+      </a>
+      <a class="sb-item" href="https://outlook.office.com/mail/" target="_blank" rel="noopener noreferrer" title="Outlook">
+        <div class="sb-icon">
+          <img src="./pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
+        </div>
+        <span class="sb-label">Outlook</span>
+      </a>
+      <a class="sb-item" href="https://teams.microsoft.com/" target="_blank" rel="noopener noreferrer" title="Microsoft Teams">
+        <div class="sb-icon">
+          <img src="./pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
+        </div>
+        <span class="sb-label">Teams</span>
+      </a>
+      <a class="sb-item logout-link" href="./login.html" title="Log out">
+        <div class="sb-icon logout-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </div>
+        <span class="sb-label">Logout</span>
+      </a>
+    </aside>
+    <!-- Sidebar backdrop overlay -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
     <!-- Secondary Bar -->
     <header class="secondary-bar topbar">
       <div class="topbar-left">
@@ -24,45 +102,6 @@
             </svg>
           </button>
 
-          <button id="file-btn" class="top-btn">
-            File
-          </button>
-
-          <div class="edit-mode-wrapper">
-            <button id="edit-mode-btn" class="top-btn edit-mode-btn">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              <span id="edit-mode-label">Editing</span>
-            </button>
-
-          <div id="edit-mode-menu" class="edit-mode-menu hidden">
-            <div class="mode-option active" data-mode="editing">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Editing
-            </div>
-
-            <div class="mode-option" data-mode="commenting">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 11a8.38 8.38 0 01-.9 3.8A8.5 8.5 0 1111 3.5c4.4 0 8 3.1 8 7.5z" />
-                <path d="M3 21l3-3" />
-              </svg>
-              Commenting
-            </div>
-
-            <div class="mode-option" data-mode="viewing">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" />
-              </svg>
-              Viewing
-            </div>
-          </div>
-        </div>
       </div>
 
       <div class="topbar-center">
@@ -77,52 +116,6 @@
           </svg>
           <span>AI Generate</span>
         </button>
-        <div class="export-menu-container">
-          <button class="top-btn icon-btn" id="export-btn" title="Export">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-          </svg>
-        </button>
-          <div id="export-menu" class="export-menu hidden">
-            <button class="export-menu-item" id="export-share-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-        </svg>
-              <span>Share Link</span>
-      </button>
-            <button class="export-menu-item" id="export-pdf">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-        </svg>
-              <span>Save as PDF</span>
-      </button>
-            <button class="export-menu-item" id="export-powerpoint">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-              <span>Save as PowerPoint</span>
-            </button>
-            <button class="export-menu-item" id="export-png">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <polyline points="21 15 16 10 5 21"></polyline>
-        </svg>
-              <span>Save as PNG</span>
-      </button>
-          </div>
-        </div>
         <button class="top-btn icon-btn" id="present-btn" title="Present">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
@@ -135,6 +128,39 @@
 
     <!-- Top Floating Toolbar -->
     <div class="top-toolbar">
+      <div class="edit-mode-wrapper">
+        <button id="edit-mode-btn" class="toolbar-btn edit-mode-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+          </svg>
+          <span id="edit-mode-label">Editing</span>
+        </button>
+        <div id="edit-mode-menu" class="edit-mode-menu hidden">
+          <div class="mode-option active" data-mode="editing">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+            </svg>
+            Edit
+          </div>
+          <div class="mode-option" data-mode="commenting">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11a8.38 8.38 0 01-.9 3.8A8.5 8.5 0 1111 3.5c4.4 0 8 3.1 8 7.5z" />
+              <path d="M3 21l3-3" />
+            </svg>
+            Add Comment
+          </div>
+          <div class="mode-option" data-mode="viewing">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" />
+            </svg>
+            View Only
+          </div>
+        </div>
+      </div>
+      <div class="toolbar-divider"></div>
       <button class="toolbar-btn" id="btnThemes" title="Choose Theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
@@ -158,17 +184,56 @@
         <span>Redo</span>
       </button>
       <div class="toolbar-divider"></div>
-      <div class="save-menu-container">
-      <button class="toolbar-btn toolbar-btn-primary" id="top-toolbar-save" title="Save">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
-        </svg>
-        <span>Save</span>
+      <div class="share-menu-container">
+        <button class="toolbar-btn toolbar-btn-primary" id="share-btn" title="Share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span>Share</span>
         </button>
-        <div id="save-menu" class="save-menu hidden">
-          <button class="save-menu-item" id="save-pdf">
+        <div id="share-menu" class="share-menu hidden">
+          <button class="share-menu-item" id="share-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+            <span>Share as link</span>
+          </button>
+          <button class="share-menu-item" id="share-image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+            <span>Save as image</span>
+          </button>
+          <button class="share-menu-item" id="share-clip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Save as clip</span>
+          </button>
+          <button class="share-menu-item" id="share-teams">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Share to Teams</span>
+          </button>
+          <button class="share-menu-item" id="share-outlook">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <span>Share to Outlook</span>
+          </button>
+          <div class="share-menu-divider"></div>
+          <button class="share-menu-item" id="share-pdf">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -178,7 +243,7 @@
             </svg>
             <span>Save as PDF</span>
           </button>
-          <button class="save-menu-item" id="save-pptx">
+          <button class="share-menu-item" id="share-pptx">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <polyline points="14 2 14 8 20 8"></polyline>
@@ -187,7 +252,7 @@
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
             <span>Save as PPTX</span>
-      </button>
+          </button>
         </div>
       </div>
     </div>
@@ -208,26 +273,6 @@
 
       <!-- Left Sidebar -->
       <aside class="editor-sidebar">
-        <div class="sidebar-item" title="Designer">
-          <div class="sidebar-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <span class="sidebar-label">Designer</span>
-        </div>
-        <div class="sidebar-item" title="Elements">
-          <div class="sidebar-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-          </div>
-          <span class="sidebar-label">Elements</span>
-        </div>
         <div id="shapes-options-panel" class="sidebar-panel hidden">
           <div class="panel-view panel-view-options">
             <button class="text-option-btn" data-shape="rectangle">
@@ -259,9 +304,6 @@
         </div>
         <div id="text-options-panel" class="sidebar-panel hidden">
           <div class="panel-view panel-view-options">
-            <button class="text-option-btn" data-option="title">
-              <span class="text-option-label">Title</span>
-            </button>
             <button class="text-option-btn" data-option="heading">
               <span class="text-option-label">Heading</span>
             </button>
@@ -270,9 +312,6 @@
             </button>
             <button class="text-option-btn" data-option="body">
               <span class="text-option-label">Body</span>
-            </button>
-            <button class="text-option-btn" data-option="caption">
-              <span class="text-option-label">Caption</span>
             </button>
             <button class="text-option-btn" data-option="pagenumber">
               <span class="text-option-label">Page number</span>
@@ -302,6 +341,36 @@
             </svg>
           </div>
           <span class="sidebar-label">AD</span>
+        </div>
+        <div id="ad-panel" class="sidebar-panel ad-panel hidden">
+          <div class="panel-view panel-view-options">
+            <div class="ad-graphics-grid">
+              <button class="ad-graphic-item" data-graphic="aramco-digital">
+                <img src="./pic/aramco-digital.png" alt="Aramco Digital" />
+                <span class="ad-graphic-label">Aramco Digital</span>
+              </button>
+              <button class="ad-graphic-item" data-graphic="logo">
+                <img src="./pic/Logo.png" alt="Logo" />
+                <span class="ad-graphic-label">Logo</span>
+              </button>
+              <button class="ad-graphic-item" data-graphic="ad">
+                <img src="./pic/AD.png" alt="AD" />
+                <span class="ad-graphic-label">AD</span>
+              </button>
+              <button class="ad-graphic-item" data-graphic="aramco-announcement">
+                <img src="./pic/Aramco-annoucement-1.png" alt="Aramco Announcement" />
+                <span class="ad-graphic-label">Aramco Announcement</span>
+              </button>
+              <button class="ad-graphic-item" data-graphic="teams">
+                <img src="./pic/Microsoft-Teams-Logo.png" alt="Microsoft Teams" />
+                <span class="ad-graphic-label">Microsoft Teams</span>
+              </button>
+              <button class="ad-graphic-item" data-graphic="outlook">
+                <img src="./pic/Outlook_on_the_web-Logo.wine.png" alt="Outlook" />
+                <span class="ad-graphic-label">Outlook</span>
+              </button>
+            </div>
+          </div>
         </div>
         <div class="sidebar-item" title="Upload">
           <div class="sidebar-icon">
@@ -761,6 +830,37 @@
           <div id="stage" class="stage" tabindex="0"></div>
         </div>
         
+        <!-- View Only Exit Button -->
+        <button id="view-only-exit" class="view-only-exit hidden" title="Exit View Only">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        
+        <!-- Comment Box Modal -->
+        <div id="comment-modal" class="comment-modal hidden">
+          <div class="comment-modal-backdrop"></div>
+          <div class="comment-modal-content">
+            <div class="comment-modal-header">
+              <h3>Add Comment</h3>
+              <button class="comment-modal-close" id="comment-modal-close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="comment-modal-body">
+              <textarea id="comment-text" class="comment-textarea" placeholder="Write your comment here..." rows="4"></textarea>
+            </div>
+            <div class="comment-modal-footer">
+              <button class="comment-btn comment-btn-cancel" id="comment-cancel">Cancel</button>
+              <button class="comment-btn comment-btn-submit" id="comment-submit">Add Comment</button>
+            </div>
+          </div>
+        </div>
+        
         <!-- Drawing Color Panel (Bottom) -->
         <div id="drawing-color-panel" class="drawing-color-panel hidden">
           <div class="color-panel-section">
@@ -875,21 +975,21 @@
         <!-- Floating Context Toolbar -->
         <div id="floating-toolbar" class="floating-toolbar hidden">
           <div class="floating-toolbar-content">
-            <button class="floating-btn" id="btn-comment" title="Comment">
+            <button class="floating-btn" id="btn-comment" title="Add Comment">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
             </button>
-            <button class="floating-btn" id="btn-lock" title="Lock">
+            <button class="floating-btn" id="btn-duplicate" title="Duplicate">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
             </button>
-            <button class="floating-btn" id="btn-link" title="Link">
+            <button class="floating-btn" id="btn-delete" title="Delete">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
             </button>
             <div class="floating-divider"></div>
@@ -902,17 +1002,66 @@
             </button>
           </div>
           <div id="toolbar-menu" class="toolbar-menu hidden">
-            <button class="toolbar-menu-item" data-action="copy">Copy</button>
-            <button class="toolbar-menu-item" data-action="paste">Paste</button>
-            <button class="toolbar-menu-item" data-action="duplicate">Duplicate</button>
-            <button class="toolbar-menu-item" data-action="delete">Delete</button>
-            <button class="toolbar-menu-item" data-action="lock">Lock / Unlock</button>
-            <button class="toolbar-menu-item" data-action="align">Align</button>
-            <button class="toolbar-menu-item" data-action="to-page">To Page</button>
-            <button class="toolbar-menu-item" data-action="link">Link</button>
-            <button class="toolbar-menu-item" data-action="timing">Timing</button>
-            <button class="toolbar-menu-item" data-action="comment">Comment</button>
-            <button class="toolbar-menu-item" data-action="alt-text">Alt Text</button>
+            <button class="toolbar-menu-item" data-action="copy">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="paste">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+              </svg>
+              <span>Paste</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="delete">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span>Delete</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="repeat">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span>Repeat</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+              <span>Close</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="add-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              <span>Add Link</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="add-comment">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span>Add Comment</span>
+            </button>
+            <button class="toolbar-menu-item" data-action="translate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 8l6 6"></path>
+                <path d="M4 14l6-6 2-3"></path>
+                <path d="M2 5h12"></path>
+                <path d="M7 2h1.586a1 1 0 0 1 .707.293l11.414 11.414a1 1 0 0 1 .293.707V16"></path>
+                <path d="M9 18h6"></path>
+                <path d="M10 22h4"></path>
+              </svg>
+              <span>Translate</span>
+            </button>
           </div>
         </div>
       </section>
@@ -1010,19 +1159,208 @@
   <!-- Top Menu Buttons Script -->
   <script>
     (function(){
-      // Menu button action
+      // Menu button action - toggle sidebar
       const menuBtn = document.getElementById("menu-btn");
+      const sidebar = document.getElementById("main-sidebar");
+      const backdrop = document.getElementById("sidebar-backdrop");
+      
+      const toggleSidebar = () => {
+        if (sidebar && backdrop) {
+          const isOpen = sidebar.classList.contains("sidebar-open");
+          if (isOpen) {
+            sidebar.classList.remove("sidebar-open");
+            backdrop.classList.remove("backdrop-visible");
+          } else {
+            sidebar.classList.add("sidebar-open");
+            backdrop.classList.add("backdrop-visible");
+          }
+        }
+      };
+      
+      const closeSidebar = () => {
+        if (sidebar && backdrop) {
+          sidebar.classList.remove("sidebar-open");
+          backdrop.classList.remove("backdrop-visible");
+        }
+      };
+      
       if (menuBtn) {
-        menuBtn.addEventListener("click", () => {
-          console.log("Menu clicked.");
+        menuBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          toggleSidebar();
         });
       }
+      
+      // Close sidebar when clicking backdrop
+      if (backdrop) {
+        backdrop.addEventListener("click", closeSidebar);
+      }
+      
+      // Close sidebar when pressing Escape
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && sidebar && sidebar.classList.contains("sidebar-open")) {
+          closeSidebar();
+        }
+      });
+      
+      // Load user info into sidebar
+      const storage = window.AccountStorage;
+      if (storage) {
+        const account = storage.getCurrentAccount();
+        if (account) {
+          const profile = account.profile || {};
+          const computeInitials = (value, fallbackEmail) => {
+            const text = (value || '').trim();
+            if (!text && fallbackEmail) {
+              return fallbackEmail.slice(0, 2).toUpperCase();
+            }
+            const segments = text.split(/\s+/).filter(Boolean);
+            if (!segments.length) {
+              return fallbackEmail ? fallbackEmail.slice(0, 2).toUpperCase() : 'AD';
+            }
+            return segments.map(segment => segment.charAt(0).toUpperCase()).join('').slice(0, 2);
+          };
+          
+          const displayName = profile.displayName || profile.formattedName?.replace(/-/g, ' ') || 'User';
+          const initials = profile.initials || computeInitials(displayName, profile.displayEmail);
+          
+          const avatar = document.querySelector('.sidebar-avatar');
+          if (avatar) {
+            avatar.textContent = initials || 'AD';
+          }
+          
+          const sidebarNameEl = document.querySelector('[data-sidebar-username]');
+          if (sidebarNameEl) {
+            sidebarNameEl.textContent = displayName;
+          }
+        }
+      }
+      
+      // Setup sidebar "New" menu (same as home page)
+      const setupSidebarNewMenu = () => {
+        const entry = document.querySelector('.home-sidebar .new-entry');
+        if (!entry) return;
+        const menu = entry.querySelector('[data-new-menu]');
+        if (!menu) return;
 
-      // File button action
-      const fileBtn = document.getElementById("file-btn");
-      if (fileBtn) {
-        fileBtn.addEventListener("click", () => {
-          console.log("File menu clicked.");
+        const menuItems = Array.from(menu.querySelectorAll('[data-new-href]'));
+        const defaultHref = entry.dataset.defaultHref || menuItems[0]?.dataset.newHref || './index.html';
+        let isOpen = false;
+
+        const handleDocumentClick = (event) => {
+          if (!entry.contains(event.target)) {
+            setOpen(false);
+          }
+        };
+
+        const setOpen = (state) => {
+          if (isOpen === state) return;
+          isOpen = state;
+          entry.dataset.open = state ? 'true' : 'false';
+          entry.setAttribute('aria-expanded', state ? 'true' : 'false');
+          menu.classList.toggle('tw-opacity-0', !state);
+          menu.classList.toggle('tw-opacity-100', state);
+          menu.classList.toggle('tw-pointer-events-none', !state);
+          menu.classList.toggle('tw-pointer-events-auto', state);
+
+          if (state) {
+            document.addEventListener('click', handleDocumentClick);
+          } else {
+            document.removeEventListener('click', handleDocumentClick);
+          }
+        };
+
+        entry.addEventListener('click', (event) => {
+          const actionTarget = event.target.closest('[data-new-href]');
+          if (actionTarget) {
+            return;
+          }
+          event.preventDefault();
+          setOpen(true);
+        });
+
+        entry.addEventListener('mouseenter', () => setOpen(true));
+
+        entry.addEventListener('mouseleave', () => {
+          if (isOpen) {
+            setOpen(false);
+          }
+        });
+
+        entry.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setOpen(true);
+          } else if (event.key === 'Escape' && isOpen) {
+            event.preventDefault();
+            setOpen(false);
+            entry.blur();
+          }
+        });
+
+        menu.addEventListener('click', (event) => {
+          event.stopPropagation();
+        });
+
+        menuItems.forEach((button) => {
+          button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            let target = button.dataset.newHref || defaultHref;
+            setOpen(false);
+            if (target) {
+              const url = new URL(target, window.location.href);
+              if (!url.searchParams.has('presentation')) {
+                url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
+              }
+              window.location.href = url.toString();
+            }
+          });
+        });
+      };
+
+      setupSidebarNewMenu();
+      
+      // Close sidebar when clicking navigation links
+      const sidebarLinks = sidebar?.querySelectorAll('.sb-item[href]');
+      if (sidebarLinks) {
+        sidebarLinks.forEach(link => {
+          link.addEventListener('click', () => {
+            setTimeout(closeSidebar, 100);
+          });
+        });
+      }
+      
+      // Handle logout
+      const logoutLink = document.querySelector('.home-sidebar .logout-link');
+      if (logoutLink) {
+        logoutLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          const confirmed = window.confirm('Are you sure you want to log out?');
+          if (!confirmed) return;
+          
+          const clearSessionArtifacts = () => {
+            if (!storage) return;
+            const currentEmail = storage.getCurrentAccountEmail?.();
+            if (currentEmail) {
+              storage.updateAccount(currentEmail, (acc) => {
+                acc.preferences = acc.preferences || {};
+                acc.preferences.rememberLogin = false;
+              });
+            }
+            storage.clearCurrentAccount?.();
+            storage.clearLegacyProfileKeys?.();
+            try { sessionStorage.clear(); } catch (_) {}
+            try {
+              document.cookie.split(';').forEach(cookie => {
+                const eqPos = cookie.indexOf('=');
+                const name = eqPos > -1 ? cookie.slice(0, eqPos) : cookie;
+                document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+              });
+            } catch (_) {}
+          };
+          
+          clearSessionArtifacts();
+          window.location.href = './login.html';
         });
       }
 
@@ -1068,19 +1406,373 @@
 
       // Behavior switching
       function applyMode(mode){
+        const viewOnlyExit = document.getElementById("view-only-exit");
+        
         if(mode === "editing"){
           document.body.dataset.mode = "editing";
+          if (viewOnlyExit) viewOnlyExit.classList.add("hidden");
         }
         else if(mode === "commenting"){
           document.body.dataset.mode = "commenting";
+          if (viewOnlyExit) viewOnlyExit.classList.add("hidden");
         }
         else if(mode === "viewing"){
           document.body.dataset.mode = "viewing";
+          if (viewOnlyExit) viewOnlyExit.classList.remove("hidden");
         }
+      }
+
+      // Exit View Only mode
+      const viewOnlyExit = document.getElementById("view-only-exit");
+      if (viewOnlyExit) {
+        viewOnlyExit.addEventListener("click", () => {
+          // Switch back to editing mode
+          const editOption = document.querySelector('.mode-option[data-mode="editing"]');
+          if (editOption) {
+            editOption.click();
+          } else {
+            // Fallback: directly set to editing mode
+            applyMode("editing");
+            const label = document.getElementById("edit-mode-label");
+            if (label) label.textContent = "Editing";
+            
+            // Update active state
+            document.querySelectorAll(".mode-option").forEach(o => o.classList.remove("active"));
+            const editingOption = document.querySelector('.mode-option[data-mode="editing"]');
+            if (editingOption) editingOption.classList.add("active");
+          }
+        });
       }
 
       // Initialize with editing mode
       applyMode("editing");
+    })();
+
+    // Comment functionality
+    (function() {
+      const stage = document.getElementById("stage");
+      const commentModal = document.getElementById("comment-modal");
+      const commentText = document.getElementById("comment-text");
+      const commentSubmit = document.getElementById("comment-submit");
+      const commentCancel = document.getElementById("comment-cancel");
+      const commentModalClose = document.getElementById("comment-modal-close");
+      let currentCommentPosition = { x: 0, y: 0 };
+      let currentSlideId = "slide-1";
+
+      // Get current slide ID
+      function getCurrentSlideId() {
+        const slideLabel = document.getElementById("stage-label");
+        if (slideLabel) {
+          const match = slideLabel.textContent.match(/Slide (\d+)/);
+          return match ? `slide-${match[1]}` : "slide-1";
+        }
+        return "slide-1";
+      }
+
+      // Load comments for current slide
+      function loadComments() {
+        currentSlideId = getCurrentSlideId();
+        const storage = window.AccountStorage;
+        if (!storage) return;
+
+        const account = storage.getCurrentAccount();
+        if (!account) return;
+
+        const presentationId = new URLSearchParams(window.location.search).get("presentation") || "default";
+        const presentations = account.presentations || {};
+        const presentation = presentations[presentationId] || {};
+        const slides = presentation.slides || {};
+        const slide = slides[currentSlideId] || {};
+        const comments = slide.comments || [];
+
+        // Remove existing comments from stage
+        document.querySelectorAll(".stage-comment").forEach(el => el.remove());
+
+        // Add comments to stage
+        comments.forEach(comment => {
+          addCommentToStage(comment, false);
+        });
+      }
+
+      // Add comment to stage visually
+      function addCommentToStage(comment, animate = true) {
+        const commentEl = document.createElement("div");
+        commentEl.className = "stage-comment";
+        commentEl.style.left = comment.x + "px";
+        commentEl.style.top = comment.y + "px";
+        
+        const author = comment.author || "You";
+        const time = comment.timestamp ? new Date(comment.timestamp).toLocaleString() : "Just now";
+        
+        commentEl.innerHTML = `
+          <div class="stage-comment-header">
+            <span class="stage-comment-author">${author}</span>
+            <button class="stage-comment-delete" data-comment-id="${comment.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+          <div class="stage-comment-text">${comment.text}</div>
+          <div class="stage-comment-time">${time}</div>
+        `;
+
+        if (!animate) {
+          commentEl.style.animation = "none";
+        }
+
+        stage.appendChild(commentEl);
+
+        // Add delete functionality
+        const deleteBtn = commentEl.querySelector(".stage-comment-delete");
+        if (deleteBtn) {
+          deleteBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            deleteComment(comment.id);
+            commentEl.remove();
+          });
+        }
+      }
+
+      // Save comment
+      function saveComment(comment) {
+        const storage = window.AccountStorage;
+        if (!storage) return;
+
+        const account = storage.getCurrentAccount();
+        if (!account) return;
+
+        const presentationId = new URLSearchParams(window.location.search).get("presentation") || "default";
+        
+        storage.updateCurrentAccount((acc) => {
+          if (!acc.presentations) acc.presentations = {};
+          if (!acc.presentations[presentationId]) acc.presentations[presentationId] = {};
+          if (!acc.presentations[presentationId].slides) acc.presentations[presentationId].slides = {};
+          if (!acc.presentations[presentationId].slides[currentSlideId]) {
+            acc.presentations[presentationId].slides[currentSlideId] = {};
+          }
+          if (!acc.presentations[presentationId].slides[currentSlideId].comments) {
+            acc.presentations[presentationId].slides[currentSlideId].comments = [];
+          }
+
+          acc.presentations[presentationId].slides[currentSlideId].comments.push(comment);
+        });
+      }
+
+      // Delete comment
+      function deleteComment(commentId) {
+        const storage = window.AccountStorage;
+        if (!storage) return;
+
+        const account = storage.getCurrentAccount();
+        if (!account) return;
+
+        const presentationId = new URLSearchParams(window.location.search).get("presentation") || "default";
+        
+        storage.updateCurrentAccount((acc) => {
+          if (acc.presentations && acc.presentations[presentationId] && 
+              acc.presentations[presentationId].slides && 
+              acc.presentations[presentationId].slides[currentSlideId] &&
+              acc.presentations[presentationId].slides[currentSlideId].comments) {
+            acc.presentations[presentationId].slides[currentSlideId].comments = 
+              acc.presentations[presentationId].slides[currentSlideId].comments.filter(c => c.id !== commentId);
+          }
+        });
+      }
+
+      // Open comment modal
+      function openCommentModal(x, y) {
+        currentCommentPosition = { x, y };
+        commentModal.classList.remove("hidden");
+        commentText.value = "";
+        commentText.focus();
+      }
+
+      // Close comment modal
+      function closeCommentModal() {
+        commentModal.classList.add("hidden");
+        commentText.value = "";
+      }
+
+      // Handle stage click in commenting mode
+      if (stage) {
+        stage.addEventListener("click", (e) => {
+          if (document.body.dataset.mode === "commenting") {
+            const rect = stage.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            openCommentModal(x, y);
+          }
+        });
+      }
+
+      // Handle comment submission
+      if (commentSubmit) {
+        commentSubmit.addEventListener("click", () => {
+          const text = commentText.value.trim();
+          if (!text) return;
+
+          const comment = {
+            id: "comment-" + Date.now() + "-" + Math.random().toString(36).slice(2, 9),
+            text: text,
+            x: currentCommentPosition.x,
+            y: currentCommentPosition.y,
+            author: "You",
+            timestamp: new Date().toISOString()
+          };
+
+          saveComment(comment);
+          addCommentToStage(comment);
+          closeCommentModal();
+        });
+      }
+
+      // Handle cancel
+      if (commentCancel) {
+        commentCancel.addEventListener("click", closeCommentModal);
+      }
+
+      if (commentModalClose) {
+        commentModalClose.addEventListener("click", closeCommentModal);
+      }
+
+      // Close modal on backdrop click
+      const backdrop = commentModal?.querySelector(".comment-modal-backdrop");
+      if (backdrop) {
+        backdrop.addEventListener("click", closeCommentModal);
+      }
+
+      // Close modal on Escape key
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !commentModal.classList.contains("hidden")) {
+          closeCommentModal();
+        }
+      });
+
+      // Load comments when slide changes
+      const observer = new MutationObserver(() => {
+        loadComments();
+      });
+
+      const stageLabel = document.getElementById("stage-label");
+      if (stageLabel) {
+        observer.observe(stageLabel, { childList: true, characterData: true });
+      }
+
+      // Load comments on page load
+      setTimeout(loadComments, 100);
+    })();
+
+    // Share menu functionality
+    (function() {
+      const shareBtn = document.getElementById("share-btn");
+      const shareMenu = document.getElementById("share-menu");
+
+      if (!shareBtn || !shareMenu) return;
+
+      // Toggle share menu
+      shareBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        shareMenu.classList.toggle("hidden");
+      });
+
+      // Close menu when clicking outside
+      document.addEventListener("click", (e) => {
+        if (!shareBtn.contains(e.target) && !shareMenu.contains(e.target)) {
+          shareMenu.classList.add("hidden");
+        }
+      });
+
+      // Handle menu item clicks
+      const shareLink = document.getElementById("share-link");
+      const shareImage = document.getElementById("share-image");
+      const shareClip = document.getElementById("share-clip");
+      const shareTeams = document.getElementById("share-teams");
+      const shareOutlook = document.getElementById("share-outlook");
+
+      function showToast(message) {
+        const toast = document.createElement("div");
+        toast.textContent = message;
+        toast.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #1e293b;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          z-index: 10000;
+          font-size: 14px;
+          animation: fadeIn 0.2s ease-out;
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+          toast.style.animation = "fadeOut 0.2s ease-out";
+          setTimeout(() => toast.remove(), 200);
+        }, 2000);
+      }
+
+      shareLink?.addEventListener("click", () => {
+        const presentationId = new URLSearchParams(window.location.search).get("presentation") || "default";
+        const link = `${window.location.origin}${window.location.pathname}?presentation=${presentationId}`;
+        
+        // Copy to clipboard
+        navigator.clipboard.writeText(link).then(() => {
+          showToast("Link copied to clipboard!");
+        }).catch(() => {
+          // Fallback
+          const textarea = document.createElement("textarea");
+          textarea.value = link;
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+          showToast("Link copied to clipboard!");
+        });
+        shareMenu.classList.add("hidden");
+      });
+
+      shareImage?.addEventListener("click", () => {
+        showToast("Saving as image...");
+        shareMenu.classList.add("hidden");
+        // TODO: Implement image export
+      });
+
+      shareClip?.addEventListener("click", () => {
+        showToast("Saving as clip...");
+        shareMenu.classList.add("hidden");
+        // TODO: Implement clip export
+      });
+
+      shareTeams?.addEventListener("click", () => {
+        showToast("Opening Teams...");
+        shareMenu.classList.add("hidden");
+        window.open("https://teams.microsoft.com/", "_blank");
+      });
+
+      shareOutlook?.addEventListener("click", () => {
+        showToast("Opening Outlook...");
+        shareMenu.classList.add("hidden");
+        window.open("https://outlook.office.com/mail/", "_blank");
+      });
+
+      const sharePdf = document.getElementById("share-pdf");
+      const sharePptx = document.getElementById("share-pptx");
+
+      sharePdf?.addEventListener("click", () => {
+        showToast("Saving as PDF...");
+        shareMenu.classList.add("hidden");
+        // TODO: Implement PDF export
+      });
+
+      sharePptx?.addEventListener("click", () => {
+        showToast("Saving as PPTX...");
+        shareMenu.classList.add("hidden");
+        // TODO: Implement PPTX export
+      });
     })();
   </script>
 
