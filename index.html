@@ -70,11 +70,12 @@
       </div>
 
       <div class="topbar-right">
-        <button class="top-btn ai-generator-btn" id="ai-generator-btn" title="AI Presentation Generator">
+        <button class="top-btn ai-generate-btn" id="btn-ai-generate" title="AI Generate">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
+          <span>AI Generate</span>
         </button>
         <div class="export-menu-container">
           <button class="top-btn icon-btn" id="export-btn" title="Export">
@@ -134,12 +135,12 @@
 
     <!-- Top Floating Toolbar -->
     <div class="top-toolbar">
-      <button class="toolbar-btn" id="top-toolbar-theme" title="Aramco Theme">
+      <button class="toolbar-btn" id="btnThemes" title="Choose Theme">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
         </svg>
-        <span>Aramco Theme</span>
+        <span>Themes</span>
       </button>
       <div class="toolbar-divider"></div>
       <button class="toolbar-btn" id="top-toolbar-undo" title="Undo">
@@ -979,164 +980,6 @@
           </div>
         </div>
 
-        <!-- AI Presentation Generator -->
-        <div class="right-sidebar-card">
-          <div class="right-sidebar-header">
-            <h3 class="right-sidebar-title">AI Presentation Generator</h3>
-          </div>
-          <div class="ai-sidebar-content">
-            <!-- Workflow Selector -->
-            <div class="ai-workflow-selector">
-              <button class="ai-workflow-btn active" data-workflow="topic" id="ai-workflow-topic">
-                <span class="ai-workflow-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="7"></circle>
-                    <line x1="16" y1="16" x2="21" y2="21"></line>
-                  </svg>
-                </span>
-                <span class="ai-workflow-label">From Topic</span>
-            </button>
-              <button class="ai-workflow-btn" data-workflow="text" id="ai-workflow-text">
-                <span class="ai-workflow-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                  </svg>
-                </span>
-                <span class="ai-workflow-label">From Text</span>
-              </button>
-              <button class="ai-workflow-btn" data-workflow="improve" id="ai-workflow-improve">
-                <span class="ai-workflow-icon">
-                  <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 3v3"></path>
-                    <path d="M12 18v3"></path>
-                    <path d="M3 12h3"></path>
-                    <path d="M18 12h3"></path>
-                    <path d="M5.6 5.6l2.1 2.1"></path>
-                    <path d="M16.3 16.3l2.1 2.1"></path>
-                    <path d="M5.6 18.4l2.1-2.1"></path>
-                    <path d="M16.3 7.7l2.1-2.1"></path>
-                  </svg>
-                </span>
-                <span class="ai-workflow-label">Improve Slides</span>
-              </button>
-              </div>
-
-            <!-- Common Options (shown for topic and text modes) -->
-            <div class="ai-options-section" id="ai-options-section">
-              <div class="ai-option-group">
-                <label class="ai-option-label" for="ai-slide-count">Number of Slides</label>
-                <select id="ai-slide-count" class="ai-select">
-                  <option value="5">5 slides</option>
-                  <option value="8" selected>8 slides</option>
-                  <option value="10">10 slides</option>
-                  <option value="12">12 slides</option>
-                  <option value="15">15 slides</option>
-                  <option value="20">20 slides</option>
-                </select>
-              </div>
-              <div class="ai-option-group">
-                <label class="ai-option-label" for="ai-theme-selector">Theme</label>
-                <select id="ai-theme-selector" class="ai-select">
-                  <option value="aramco" selected>Aramco</option>
-                  <option value="blue">Blue</option>
-                  <option value="modern-minimal">Modern Minimal</option>
-                  <option value="gradient-soft">Gradient Soft</option>
-                  <option value="dark-mode">Dark Mode</option>
-                </select>
-              </div>
-              <div class="ai-option-group">
-                <label class="ai-option-label" for="ai-language-selector">Language</label>
-                <select id="ai-language-selector" class="ai-select">
-                  <option value="en" selected>English</option>
-                  <option value="ar">Arabic</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Topic Workflow -->
-            <div class="ai-workflow-content active" id="ai-content-topic">
-              <div class="ai-input-section">
-                <label class="ai-input-label" for="ai-input">Enter presentation topic</label>
-                <input 
-                  type="text" 
-                  id="ai-input" 
-                  class="ai-input" 
-                  placeholder="e.g., Introduction to Machine Learning"
-                />
-                <div class="ai-info-text">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="12" y1="16" x2="12" y2="12"></line>
-                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                  </svg>
-                  <span>AI will research the web and generate comprehensive content</span>
-                </div>
-                <button class="ai-submit-btn" id="ai-topic-submit">
-                  <span>Generate Presentation</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Text Workflow -->
-            <div class="ai-workflow-content" id="ai-content-text">
-              <div class="ai-input-section">
-                <label class="ai-input-label" for="ai-text-input">Paste your slide content</label>
-                <textarea 
-                  id="ai-text-input" 
-                  class="ai-textarea" 
-                  placeholder="Paste your text here. The AI will organize it into a structured presentation with intelligent layouts, proper formatting, and professional styling."
-                  rows="6"
-                ></textarea>
-                <button class="ai-submit-btn" id="ai-text-submit">
-                  <span>Generate Presentation</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                  </svg>
-            </button>
-              </div>
-            </div>
-
-            <!-- Improve Workflow -->
-            <div class="ai-workflow-content" id="ai-content-improve">
-              <div class="ai-input-section">
-                <div class="ai-improve-info">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                    <path d="M2 17l10 5 10-5"></path>
-                    <path d="M2 12l10 5 10-5"></path>
-                  </svg>
-                  <div>
-                    <h4>Improve Current Slides</h4>
-                    <p>AI will enhance your existing presentation with:</p>
-                    <ul>
-                      <li>Better content structure and flow</li>
-                      <li>Professional formatting and styling</li>
-                      <li>Intelligent layout selection</li>
-                      <li>Enhanced visual design</li>
-                    </ul>
-                  </div>
-                </div>
-                <button class="ai-submit-btn" id="ai-improve-submit">
-                  <span>Improve Presentation</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                  </svg>
-            </button>
-              </div>
-            </div>
-
-            <!-- Loading State -->
-            <div id="ai-loading" class="ai-loading hidden">Generating...</div>
-
-            <!-- Error State -->
-            <div class="ai-error hidden" id="ai-error">
-              <p class="ai-error-text"></p>
-            </div>
-          </div>
-        </div>
-
         <!-- Slide Notes -->
         <div class="right-sidebar-card">
           <div class="right-sidebar-header">
@@ -1240,5 +1083,113 @@
       applyMode("editing");
     })();
   </script>
+
+  <!-- Themes Modal -->
+  <div id="themes-modal" class="themes-modal hidden">
+    <div class="themes-modal-overlay"></div>
+    <div class="themes-modal-content">
+      <div class="themes-modal-header">
+        <h2 class="themes-modal-title">Choose Theme</h2>
+        <button class="themes-modal-close" id="themes-modal-close" aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="themes-modal-body">
+        <div id="themes-grid" class="themes-grid">
+          <!-- Theme cards will be dynamically added here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Generator Full Page View -->
+  <div id="ai-generator-page" class="ai-generator-page hidden">
+    <div class="ai-generator-container">
+      <!-- Left Side: AI Controls -->
+      <div class="ai-generator-left">
+        <div class="ai-generator-content">
+          <h2 class="ai-generator-title">AI Presentation Generator</h2>
+          
+          <!-- Options Section -->
+          <div class="ai-generator-options">
+            <div class="ai-option-group">
+              <label class="ai-option-label" for="ai-slide-count">Number of Slides</label>
+              <select id="ai-slide-count" class="ai-select">
+                <option value="5">5 slides</option>
+                <option value="8" selected>8 slides</option>
+                <option value="10">10 slides</option>
+                <option value="12">12 slides</option>
+                <option value="15">15 slides</option>
+                <option value="20">20 slides</option>
+              </select>
+            </div>
+            <div class="ai-option-group">
+              <label class="ai-option-label" for="ai-language-selector">Language</label>
+              <select id="ai-language-selector" class="ai-select">
+                <option value="en" selected>English</option>
+                <option value="ar">Arabic</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Topic Workflow Content -->
+          <div class="ai-generator-workflow-content active" id="ai-page-content-topic">
+            <div class="ai-input-section">
+              <label class="ai-input-label" for="ai-input">Enter presentation topic</label>
+              <input 
+                type="text" 
+                id="ai-input" 
+                class="ai-input" 
+                placeholder="e.g., Introduction to Machine Learning"
+              />
+            </div>
+          </div>
+
+          <!-- Text Workflow Content -->
+          <div class="ai-generator-workflow-content" id="ai-page-content-text">
+            <div class="ai-input-section">
+              <label class="ai-input-label" for="ai-page-text-input">Paste your slide content</label>
+              <textarea 
+                id="ai-page-text-input" 
+                class="ai-textarea" 
+                placeholder="Paste your text here..."
+                rows="6"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Improve Workflow Content -->
+          <div class="ai-generator-workflow-content" id="ai-page-content-improve">
+            <div class="ai-input-section">
+              <p class="ai-info-text">Improve your existing slides with AI-powered enhancements.</p>
+            </div>
+          </div>
+
+          <!-- Generate Button -->
+          <button class="ai-submit-btn" id="ai-page-generate-btn">
+            <span>Generate Presentation</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right Side: Theme Selection -->
+      <div class="ai-generator-right">
+        <div class="ai-theme-selection-box">
+          <h3 class="ai-theme-selection-title">Choose the themes</h3>
+          <div class="ai-theme-grid">
+            <div class="ai-theme-box" data-theme="T1">T1</div>
+            <div class="ai-theme-box" data-theme="T2">T2</div>
+            <div class="ai-theme-box" data-theme="T3">T3</div>
+            <div class="ai-theme-box" data-theme="T4">T4</div>
+            <div class="ai-theme-box" data-theme="T5">T5</div>
+            <div class="ai-theme-box" data-theme="T6">T6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

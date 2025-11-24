@@ -104,6 +104,7 @@
     title: 'Untitled presentation',
     currentSlideIndex: 0,
     slides: [defaultSlide()],
+    theme: 'aramco' // Default theme
   };
 
   // Drawing mode state
@@ -596,6 +597,17 @@
       slide.elements = [];
     }
     
+    // Apply slide background if specified
+    if (slide.background) {
+      stageEl.style.background = slide.background;
+      if (slide.layout) {
+        stageEl.setAttribute('data-layout', slide.layout);
+      }
+    } else {
+      stageEl.style.background = '#ffffff';
+      stageEl.removeAttribute('data-layout');
+    }
+    
     // Determine if this is a title-only slide
     const isTitleOnlySlide = slide.layout === 'title' || 
                             (slide.elements.length === 1 && slide.elements[0].isTitleOnly);
@@ -642,6 +654,103 @@
             // Apply staggered animation delay
             const delay = 0.15 + (el.bulletIndex !== undefined ? el.bulletIndex : index) * 0.08;
             node.style.animationDelay = `${delay}s`;
+          } else if (el.isTOCHeader) {
+            node.classList.add('toc-header');
+          } else if (el.isTOCSectionTitle) {
+            node.classList.add('toc-section-title');
+          } else if (el.isTOCListItem || el.isTOCNotesItem) {
+            node.classList.add('toc-list-item');
+          } else if (el.isTOCNotesLabel) {
+            node.classList.add('toc-notes-label');
+          } else if (el.isTOCFooter) {
+            node.classList.add('toc-footer');
+            if (el.footerPosition === 'center') {
+              node.style.left = '50%';
+              node.style.transform = 'translateX(-50%)';
+            }
+          } else if (el.isTOCPageNumber) {
+            node.classList.add('toc-page-number');
+          } else if (el.isTitlePageMainTitle) {
+            node.classList.add('title-page-main-title');
+          } else if (el.isTitlePageSector) {
+            node.classList.add('title-page-sector');
+          } else if (el.isTitlePageSubtitle) {
+            node.classList.add('title-page-subtitle');
+          } else if (el.isTitlePageDate) {
+            node.classList.add('title-page-date');
+          } else if (el.isTitlePageLogo) {
+            node.classList.add('title-page-logo');
+          } else if (el.isGanttHeader) {
+            node.classList.add('gantt-header');
+          } else if (el.isGanttMonthHeader) {
+            node.classList.add('gantt-month-header');
+          } else if (el.isGanttSectionLabel) {
+            node.classList.add('gantt-section-label');
+          } else if (el.isGanttBatchLabel) {
+            node.classList.add('gantt-batch-label');
+          } else if (el.isGanttTodayLabel) {
+            node.classList.add('gantt-today-label');
+          } else if (el.isGanttFooter) {
+            node.classList.add('gantt-footer');
+            if (el.footerPosition === 'center') {
+              node.style.left = '50%';
+              node.style.transform = 'translateX(-50%)';
+            }
+          } else if (el.isGanttPageNumber) {
+            node.classList.add('gantt-page-number');
+          } else if (el.isProjectStatusHeader) {
+            node.classList.add('project-status-header');
+          } else if (el.isProjectStatusTag) {
+            node.classList.add('project-status-tag');
+            // Apply background color from element property
+            if (el.statusColor) {
+              node.style.backgroundColor = el.statusColor;
+            }
+            node.style.padding = '10px 20px';
+            node.style.borderRadius = '8px';
+            node.style.display = 'inline-block';
+          } else if (el.isProjectStatusPhaseTitle) {
+            node.classList.add('project-status-phase-title');
+          } else if (el.isProjectStatusIcon) {
+            node.classList.add('project-status-icon');
+          } else if (el.isProjectStatusBullet) {
+            node.classList.add('project-status-bullet');
+            node.style.backgroundColor = '#00FF4A';
+            node.style.padding = '5px 10px';
+            node.style.borderRadius = '4px';
+            node.style.display = 'inline-block';
+            // Add bullet point before text
+            if (!node.textContent.startsWith('•')) {
+              node.textContent = '• ' + (node.textContent || '');
+            }
+          } else if (el.isProjectStatusFooter) {
+            node.classList.add('project-status-footer');
+            if (el.footerPosition === 'center') {
+              node.style.left = '50%';
+              node.style.transform = 'translateX(-50%)';
+            }
+          } else if (el.isProjectStatusPageNumber) {
+            node.classList.add('project-status-page-number');
+          } else if (el.isMatrixHeader) {
+            node.classList.add('matrix-header');
+          } else if (el.isMatrixColumnTitle) {
+            node.classList.add('matrix-column-title');
+          } else if (el.isMatrixSubtext) {
+            node.classList.add('matrix-subtext');
+          } else if (el.isMatrixRowLabel) {
+            node.classList.add('matrix-row-label');
+          } else if (el.isMatrixDate) {
+            node.classList.add('matrix-date');
+          } else if (el.isMatrixButtonText) {
+            node.classList.add('matrix-button-text');
+          } else if (el.isMatrixFooter) {
+            node.classList.add('matrix-footer');
+            if (el.footerPosition === 'center') {
+              node.style.left = '50%';
+              node.style.transform = 'translateX(-50%)';
+            }
+          } else if (el.isMatrixPageNumber) {
+            node.classList.add('matrix-page-number');
           }
         }
         
@@ -1430,7 +1539,53 @@
         node.style.height = (el.height || 100) + 'px';
         node.style.backgroundColor = el.fillColor || '#fff';
         node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || '#000'}`;
-        applyShapeAppearance(node, el.shape);
+        
+        // Handle SVG path for custom shapes (Gantt bars, diamonds, chevrons)
+        if (el.path) {
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', '100%');
+          svg.setAttribute('height', '100%');
+          svg.style.position = 'absolute';
+          svg.style.left = '0';
+          svg.style.top = '0';
+          svg.style.pointerEvents = 'none';
+          
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', el.path);
+          path.setAttribute('fill', el.fillColor || '#fff');
+          path.setAttribute('stroke', el.strokeColor || '#000');
+          path.setAttribute('stroke-width', (el.strokeWidth || 1).toString());
+          svg.appendChild(path);
+          
+          node.style.position = 'relative';
+          node.style.overflow = 'visible';
+          node.appendChild(svg);
+          
+          // Add classes for Project Status chevrons
+          if (el.isProjectStatusChevron) {
+            node.classList.add('project-status-chevron');
+          }
+          
+          // Add classes for Matrix elements
+          if (el.isMatrixCircle) {
+            node.classList.add('matrix-circle');
+            if (el.isFilled) {
+              node.classList.add('matrix-circle-filled');
+            } else {
+              node.classList.add('matrix-circle-empty');
+            }
+          } else if (el.isMatrixButton) {
+            node.classList.add('matrix-button');
+          }
+        } else {
+          applyShapeAppearance(node, el.shape);
+          
+          // Add classes for Matrix buttons (non-SVG shapes)
+          if (el.isMatrixButton) {
+            node.classList.add('matrix-button');
+          }
+        }
+        
         node.classList.toggle('locked', !!el.locked);
         node.style.cursor = el.locked ? 'default' : 'pointer';
         
@@ -1489,15 +1644,25 @@
         container.style.position = 'absolute';
         container.style.left = '0';
         container.style.top = '0';
-        container.style.pointerEvents = 'none';
+        container.style.pointerEvents = el.locked ? 'none' : 'all';
+        
+        // Add classes for title page decorative lines
+        if (el.isTitlePageTopLine) {
+          container.classList.add('title-page-top-line');
+        } else if (el.isTitlePageBottomLine) {
+          container.classList.add('title-page-bottom-line');
+        }
         
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('width', '1280');
-        svg.setAttribute('height', '720');
+        // Use stage dimensions (960x540) instead of fixed 1280x720
+        const stageWidth = stageEl.offsetWidth || 960;
+        const stageHeight = stageEl.offsetHeight || 540;
+        svg.setAttribute('width', stageWidth.toString());
+        svg.setAttribute('height', stageHeight.toString());
         svg.style.position = 'absolute';
         svg.style.left = '0';
         svg.style.top = '0';
-        svg.style.pointerEvents = 'all';
+        svg.style.pointerEvents = el.locked ? 'none' : 'all';
         
         let x1 = el.x1 || 200;
         let y1 = el.y1 || 200;
@@ -1535,7 +1700,22 @@
           path.setAttribute('stroke-width', strokeWidth);
           path.setAttribute('fill', 'none');
           path.setAttribute('stroke-linecap', 'round');
+          
+          // Apply dashed line style if specified
+          if (el.strokeDasharray) {
+            path.setAttribute('stroke-dasharray', el.strokeDasharray);
+          }
+          
           svg.insertBefore(path, svg.firstChild);
+          
+          // Add classes to container for Gantt gridlines, today line, and matrix arrows
+          if (el.isGanttGridline) {
+            container.classList.add('gantt-gridline');
+          } else if (el.isGanttTodayLine) {
+            container.classList.add('gantt-today-line');
+          } else if (el.isMatrixArrow) {
+            container.classList.add('matrix-arrow');
+          }
           
           // Update element data
           el.x1 = x1;
@@ -2566,6 +2746,81 @@
   // Undo/Redo
   document.getElementById('top-toolbar-undo')?.addEventListener('click', undo);
   document.getElementById('top-toolbar-redo')?.addEventListener('click', redo);
+
+  // AI Generate Button - Open Modal
+  function openAIGeneratorModal() {
+    const modal = document.getElementById('ai-generator-page');
+    if (!modal) {
+      console.error('AI generator modal not found');
+      return;
+    }
+    modal.classList.remove('hidden');
+  }
+
+  function closeAIGeneratorModal() {
+    const modal = document.getElementById('ai-generator-page');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  // Expose functions globally
+  window.openAIGenerator = openAIGeneratorModal;
+  window.closeAIGenerator = closeAIGeneratorModal;
+
+  // Attach event listener to AI Generate button
+  function initAIGenerateButton() {
+    const btnAIGenerate = document.getElementById('btn-ai-generate');
+    if (btnAIGenerate) {
+      // Remove any existing listeners by cloning
+      const newBtn = btnAIGenerate.cloneNode(true);
+      btnAIGenerate.parentNode.replaceChild(newBtn, btnAIGenerate);
+      
+      // Add fresh event listener
+      document.getElementById('btn-ai-generate').addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        openAIGeneratorModal();
+      });
+      console.log('AI Generate button connected successfully');
+    } else {
+      console.warn('AI Generate button (btn-ai-generate) not found, retrying...');
+      setTimeout(initAIGenerateButton, 100);
+    }
+  }
+
+  // Initialize button connection
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAIGenerateButton);
+  } else {
+    initAIGenerateButton();
+  }
+
+  // Also try after a delay as backup
+  setTimeout(initAIGenerateButton, 200);
+
+  // Close modal when clicking outside (on the backdrop)
+  const aiGeneratorPage = document.getElementById('ai-generator-page');
+  if (aiGeneratorPage) {
+    aiGeneratorPage.addEventListener('click', function(e) {
+      // If clicking on the backdrop (the page itself, not the container)
+      if (e.target === aiGeneratorPage) {
+        closeAIGeneratorModal();
+      }
+    });
+  }
+
+  // Add close button functionality if close button exists
+  setTimeout(function() {
+    const closeBtn = document.querySelector('#ai-generator-page .ai-modal-close, #ai-generator-page [data-close], #ai-generator-page .close-btn');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAIGeneratorModal();
+      });
+    }
+  }, 300);
 
   // Toolbar controls
   ['font-family', 'font-size', 'font-color', 'fill-color', 'stroke-color', 'stroke-width', 'stroke-dash'].forEach(id => {
@@ -6428,11 +6683,163 @@
     }
   });
 
+  // ============================================
+  //  Themes Modal Functionality
+  // ============================================
+  
+  // Define available themes
+  const availableThemes = [
+    { id: 'aramco', name: 'Aramco', colors: { primary: '#024c3a', secondary: '#00aae7', background: '#ffffff' } },
+    { id: 'blue', name: 'Blue', colors: { primary: '#0066cc', secondary: '#3399ff', background: '#ffffff' } },
+    { id: 'modern-minimal', name: 'Modern Minimal', colors: { primary: '#1a1a1a', secondary: '#666666', background: '#ffffff' } },
+    { id: 'gradient-soft', name: 'Gradient Soft', colors: { primary: '#667eea', secondary: '#764ba2', background: '#f5f5f5' } },
+    { id: 'dark-mode', name: 'Dark Mode', colors: { primary: '#ffffff', secondary: '#00aae7', background: '#1a1a1a' } }
+  ];
+
+  // Current theme state
+  let currentTheme = 'aramco';
+
+  // Initialize themes modal
+  function initializeThemesModal() {
+    const themesBtn = document.getElementById('btnThemes');
+    const themesModal = document.getElementById('themes-modal');
+    const themesModalClose = document.getElementById('themes-modal-close');
+    const themesGrid = document.getElementById('themes-grid');
+
+    if (!themesBtn || !themesModal || !themesGrid) {
+      console.warn('Themes modal elements not found');
+      return;
+    }
+
+    // Load themes into grid
+    // IMPORTANT: All theme cards must have IDENTICAL structure, dimensions, borders, shadows, padding, etc.
+    // ONLY the gradient background color changes per theme (via CSS data-theme-id selector)
+    function loadThemes() {
+      themesGrid.innerHTML = '';
+      
+      availableThemes.forEach(theme => {
+        // Create card container - identical for all themes
+        const themeCard = document.createElement('div');
+        themeCard.className = `theme-card ${theme.id === currentTheme ? 'active' : ''}`;
+        themeCard.dataset.themeId = theme.id; // This attribute controls gradient color via CSS
+        
+        // Top gradient section with letter - identical structure for all themes
+        const gradientSection = document.createElement('div');
+        gradientSection.className = 'theme-card-gradient';
+        
+        const letter = document.createElement('div');
+        letter.className = 'theme-card-letter';
+        letter.textContent = theme.name.charAt(0).toUpperCase(); // First letter of theme name
+        gradientSection.appendChild(letter);
+        
+        // Bottom bar with theme name - identical structure for all themes
+        const bottomBar = document.createElement('div');
+        bottomBar.className = 'theme-card-bottom';
+        
+        const label = document.createElement('div');
+        label.className = 'theme-card-label';
+        label.textContent = theme.name;
+        bottomBar.appendChild(label);
+        
+        // Assemble card - same order for all themes
+        themeCard.appendChild(gradientSection);
+        themeCard.appendChild(bottomBar);
+        
+        themesGrid.appendChild(themeCard);
+
+        // Click handler
+        themeCard.addEventListener('click', () => {
+          loadTheme(theme.id);
+          themesModal.classList.add('hidden');
+        });
+      });
+    }
+
+    // Open modal
+    themesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadThemes();
+      themesModal.classList.remove('hidden');
+    });
+
+    // Close modal
+    themesModalClose.addEventListener('click', () => {
+      themesModal.classList.add('hidden');
+    });
+
+    // Close on overlay click
+    themesModal.querySelector('.themes-modal-overlay').addEventListener('click', () => {
+      themesModal.classList.add('hidden');
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !themesModal.classList.contains('hidden')) {
+        themesModal.classList.add('hidden');
+      }
+    });
+
+    // Initial load
+    loadThemes();
+  }
+
+  // Load and apply theme
+  function loadTheme(themeId) {
+    const theme = availableThemes.find(t => t.id === themeId);
+    if (!theme) {
+      console.warn('Theme not found:', themeId);
+      return;
+    }
+
+    currentTheme = themeId;
+    
+    // Save theme to state
+    if (!state.theme) {
+      state.theme = themeId;
+    } else {
+      state.theme = themeId;
+    }
+    saveState();
+
+    // Apply theme CSS variables (if you want to use CSS custom properties)
+    document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
+    document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
+    document.documentElement.style.setProperty('--theme-background', theme.colors.background);
+
+    // Update active theme card
+    document.querySelectorAll('.theme-card').forEach(card => {
+      card.classList.toggle('active', card.dataset.themeId === themeId);
+    });
+
+    // Update theme selector in AI generator if it exists
+    const aiThemeSelector = document.getElementById('ai-theme-selector');
+    if (aiThemeSelector) {
+      aiThemeSelector.value = themeId;
+    }
+
+    console.log('Theme loaded:', theme.name);
+  }
+
+  // Load saved theme on initialization
+  function loadSavedTheme() {
+    const saved = loadPresentationSnapshot();
+    if (saved && saved.theme) {
+      currentTheme = saved.theme;
+      loadTheme(saved.theme);
+    }
+  }
+
   // Start initialization - scripts are loaded at bottom of HTML so DOM should be ready
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeApp);
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeApp();
+      initializeThemesModal();
+      loadSavedTheme();
+    });
   } else {
     initializeApp();
+    initializeThemesModal();
+    loadSavedTheme();
   }
 })();
 
