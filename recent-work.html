@@ -123,6 +123,7 @@
             </div>
           </div>
           <div class="recent-table" id="recent-list">
+            <!-- Recent work entries will be loaded here -->
           </div>
         </div>
       </section>
@@ -303,6 +304,112 @@
       };
 
       setupSidebarNewMenu();
+      
+      // Load and display recent work entries
+      function loadRecentWork() {
+        const storage = window.AccountStorage;
+        if (!storage) return;
+        
+        const account = storage.getCurrentAccount();
+        if (!account || !account.recentWork) return;
+        
+        const recentList = document.getElementById('recent-list');
+        if (!recentList) return;
+        
+        recentList.innerHTML = '';
+        
+        if (account.recentWork.length === 0) {
+          recentList.innerHTML = '<div style="padding: 40px; text-align: center; color: #666;">No recent presentations yet.</div>';
+          return;
+        }
+        
+        account.recentWork.forEach((entry) => {
+          const row = document.createElement('div');
+          row.className = 'recent-row';
+          row.style.cssText = 'display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.2s;';
+          row.style.cssText += 'hover: background: #f9fafb;';
+          
+          row.addEventListener('mouseenter', () => {
+            row.style.background = '#f9fafb';
+          });
+          row.addEventListener('mouseleave', () => {
+            row.style.background = '';
+          });
+          
+          // Thumbnail
+          const thumbnail = document.createElement('div');
+          thumbnail.style.cssText = 'width: 120px; height: 68px; margin-right: 16px; flex-shrink: 0; background: #f3f4f6; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;';
+          
+          if (entry.thumbnail) {
+            const img = document.createElement('img');
+            img.src = entry.thumbnail;
+            img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+            img.alt = entry.title;
+            thumbnail.appendChild(img);
+          } else {
+            thumbnail.innerHTML = '<div style="color: #9ca3af; font-size: 12px;">No preview</div>';
+          }
+          
+          // Content
+          const content = document.createElement('div');
+          content.style.cssText = 'flex: 1; min-width: 0;';
+          
+          const title = document.createElement('div');
+          title.textContent = entry.title || 'Untitled presentation';
+          title.style.cssText = 'font-weight: 600; font-size: 14px; color: #111827; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
+          
+          const date = document.createElement('div');
+          const createdDate = new Date(entry.createdAt);
+          date.textContent = createdDate.toLocaleString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          date.style.cssText = 'font-size: 12px; color: #6b7280;';
+          
+          content.appendChild(title);
+          content.appendChild(date);
+          
+          // Open button
+          const openBtn = document.createElement('button');
+          openBtn.textContent = 'Open';
+          openBtn.style.cssText = 'padding: 6px 16px; background: #00aae7; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-left: 16px; transition: background 0.2s;';
+          openBtn.addEventListener('mouseenter', () => {
+            openBtn.style.background = '#0088c0';
+          });
+          openBtn.addEventListener('mouseleave', () => {
+            openBtn.style.background = '#00aae7';
+          });
+          openBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (entry.url) {
+              window.location.href = entry.url;
+            }
+          });
+          
+          row.appendChild(thumbnail);
+          row.appendChild(content);
+          row.appendChild(openBtn);
+          
+          row.addEventListener('click', () => {
+            if (entry.url) {
+              window.location.href = entry.url;
+            }
+          });
+          
+          recentList.appendChild(row);
+        });
+      }
+      
+      // Load recent work on page load
+      loadRecentWork();
+      
+      // Listen for updates
+      window.addEventListener('recent-work-updated', () => {
+        loadRecentWork();
+      });
     })();
   </script>
 </body>

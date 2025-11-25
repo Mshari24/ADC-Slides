@@ -56,7 +56,8 @@
       },
       notifications: [],
       notificationsReadAt: null,
-      projects: []
+      projects: [],
+      recentWork: []
     };
   };
 
@@ -68,7 +69,8 @@
       presentations: { ...defaults.presentations, ...(account.presentations || {}) },
       notifications: Array.isArray(account.notifications) ? account.notifications : [],
       notificationsReadAt: account.notificationsReadAt || null,
-      projects: Array.isArray(account.projects) ? account.projects : []
+      projects: Array.isArray(account.projects) ? account.projects : [],
+      recentWork: Array.isArray(account.recentWork) ? account.recentWork : []
     };
     return normalized;
   };

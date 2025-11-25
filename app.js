@@ -8,6 +8,18 @@
     if (AccountStorage && AccountStorage.getCurrentAccount()) {
       AccountStorage.updateCurrentAccount((account) => {
         account.presentations = account.presentations || {};
+        
+        // Get presentation ID from URL or state
+        const urlParams = new URLSearchParams(window.location.search);
+        const presentationId = urlParams.get('presentation') || snapshot.presentationId;
+        
+        if (presentationId) {
+          // Save by presentation ID for specific presentations
+          account.presentations[presentationId] = snapshot;
+          snapshot.presentationId = presentationId; // Store ID in snapshot
+        }
+        
+        // Also save as autosave for backward compatibility
         account.presentations.autosave = snapshot;
       });
     } else if (typeof localStorage !== 'undefined') {
@@ -19,11 +31,18 @@
     }
   };
 
-  const loadPresentationSnapshot = () => {
+  const loadPresentationSnapshot = (presentationId = null) => {
     if (AccountStorage) {
       const account = AccountStorage.getCurrentAccount();
-      if (account && account.presentations && account.presentations.autosave) {
-        return account.presentations.autosave;
+      if (account && account.presentations) {
+        // If presentation ID is provided, try to load that specific presentation
+        if (presentationId && account.presentations[presentationId]) {
+          return account.presentations[presentationId];
+        }
+        // Otherwise, load autosave
+        if (account.presentations.autosave) {
+          return account.presentations.autosave;
+        }
       }
     }
     if (typeof localStorage === 'undefined') return null;
@@ -54,8 +73,8 @@
     savePresentationSnapshot(snapshot);
   }
 
-  function loadPersistedState() {
-    const persisted = loadPresentationSnapshot();
+  function loadPersistedState(presentationId = null) {
+    const persisted = loadPresentationSnapshot(presentationId);
     if (!persisted || !Array.isArray(persisted.slides)) return null;
     return persisted;
   }
@@ -184,6 +203,15 @@
     
     node.addEventListener('mousedown', startDrag);
     
+    // Debounced save function for smooth dragging
+    let dragSaveTimeout = null;
+    const debouncedSave = () => {
+      if (dragSaveTimeout) clearTimeout(dragSaveTimeout);
+      dragSaveTimeout = setTimeout(() => {
+        saveState(); // Use saveState instead of persistState for full save
+      }, 100); // Save every 100ms during drag
+    };
+    
     const handleMouseMove = (e) => {
       if (globalDragState.activeElement !== el || globalDragState.activeNode !== node) return;
       if (!globalDragState.isDragging) return; // Only apply movement when isDragging = true
@@ -198,7 +226,7 @@
       el.y = Math.max(0, Math.min(720 - (el.height || defaultHeight), newY));
       node.style.left = el.x + 'px';
       node.style.top = el.y + 'px';
-      persistState();
+      debouncedSave(); // Use debounced save for smooth dragging
     };
     
     // Mouseup is handled by document-level handler - no individual handler needed
@@ -243,17 +271,38 @@
   // Check if we're on blank-presentation.html
   const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
   
-  // Only load autosave if there's NO presentation ID in URL and NOT on blank-presentation.html
-  // If there's a presentation ID or we're on blank-presentation.html, create a fresh presentation
-  const persisted = (!presentationId && !isBlankPresentation) ? loadPersistedState() : null;
+  // Load saved presentation if it exists, otherwise create new
+  let persisted = null;
+  
+  if (presentationId) {
+    // Try to load specific presentation by ID
+    persisted = loadPersistedState(presentationId);
+    if (!persisted) {
+      // Presentation doesn't exist yet, will be created fresh
+      persisted = null;
+    }
+  } else if (!isBlankPresentation) {
+    // No presentation ID and not blank presentation - load autosave
+    persisted = loadPersistedState();
+  }
   
   if (persisted) {
+    // Load existing presentation
     Object.assign(state, persisted);
+    // Ensure presentation ID is set in state
+    if (presentationId) {
+      state.presentationId = presentationId;
+    }
   } else {
     // Create fresh state for new presentation
     state.title = 'Untitled presentation';
     state.currentSlideIndex = 0;
     state.slides = [defaultSlide()];
+    
+    // Set presentation ID if provided
+    if (presentationId) {
+      state.presentationId = presentationId;
+    }
     
     // If on blank-presentation.html, ensure blank theme and blank slide
     if (isBlankPresentation) {
@@ -591,6 +640,7 @@
       thumb.addEventListener('click', (e) => {
         if (e.target.closest('.context-menu')) return;
         state.currentSlideIndex = idx;
+        saveState(); // Auto-save on slide switch
         renderAll();
       });
 
@@ -1062,6 +1112,15 @@
           enterTextEditing(node, el);
         });
 
+        // Debounced save for text element drag/resize
+        let textDragSaveTimeout = null;
+        const debouncedTextSave = () => {
+          if (textDragSaveTimeout) clearTimeout(textDragSaveTimeout);
+          textDragSaveTimeout = setTimeout(() => {
+            saveState(); // Use saveState for full save
+          }, 100); // Save every 100ms during drag/resize
+        };
+        
         const handleMouseMove = (e) => {
           if (resizing) {
             const dx = e.clientX - dragStartPos.x;
@@ -1072,7 +1131,7 @@
             el.scale = factor;
             updateTransform();
             showDragInfo(); // Show coordinates when resizing
-            persistState();
+            debouncedTextSave(); // Use debounced save for smooth resizing
             return;
           }
           if (dragStartTime === 0 || (editingElementId === el.id && !dragFromIcon)) return;
@@ -1092,7 +1151,7 @@
           node.style.cursor = 'move';
           node.style.userSelect = 'none';
           showDragInfo();
-          persistState();
+          debouncedTextSave(); // Use debounced save for smooth dragging
         };
 
         // Resizing has its own mouseup handler (not part of global drag state)
@@ -1288,6 +1347,15 @@
           }
         });
         
+        // Debounced save for sticky note drag
+        let stickyDragSaveTimeout = null;
+        const debouncedStickySave = () => {
+          if (stickyDragSaveTimeout) clearTimeout(stickyDragSaveTimeout);
+          stickyDragSaveTimeout = setTimeout(() => {
+            saveState(); // Use saveState for full save
+          }, 100); // Save every 100ms during drag
+        };
+        
         const handleMouseMove = (e) => {
           if (globalDragState.activeElement !== el || globalDragState.activeNode !== node) return;
           if (!globalDragState.isDragging) return;
@@ -1304,7 +1372,7 @@
           node.style.left = el.x + 'px';
           node.style.top = el.y + 'px';
           node.style.userSelect = 'none';
-          persistState();
+          debouncedStickySave(); // Use debounced save for smooth dragging
         };
         
         // Mouseup is handled by document-level handler - no individual handler needed
@@ -2875,6 +2943,7 @@
 
   deckTitleEl?.addEventListener('input', () => {
     state.title = deckTitleEl.textContent || 'Untitled presentation';
+    saveState(); // Auto-save on title change
   });
 
   sidebarEl?.addEventListener('click', (e) => {
@@ -6887,6 +6956,13 @@
     normalizeState(state);
     renderAll();
     saveState();
+    
+    // Auto-save to recent work for AI-generated presentations
+    setTimeout(() => {
+      if (window.saveToRecentWork) {
+        window.saveToRecentWork();
+      }
+    }, 500);
   };
 
   // Listen for AI slides event
@@ -7736,6 +7812,10 @@
       }
       normalizeState(state);
       renderAll();
+      // Auto-save to recent work for new presentations
+      if (isNewPresentation) {
+        setTimeout(() => saveToRecentWork(), 500);
+      }
     } else if (themeId === 'aramco') {
       if (isNewPresentation) {
         // Aramco theme: create Aramco template slides
@@ -7749,6 +7829,10 @@
       }
       normalizeState(state);
       renderAll();
+      // Auto-save to recent work for new presentations
+      if (isNewPresentation) {
+        setTimeout(() => saveToRecentWork(), 500);
+      }
     } else if (themeId === 'dark-aramco') {
       if (isNewPresentation) {
         // Dark Aramco theme: create dark variant template slides
@@ -7762,6 +7846,10 @@
       }
       normalizeState(state);
       renderAll();
+      // Auto-save to recent work for new presentations
+      if (isNewPresentation) {
+        setTimeout(() => saveToRecentWork(), 500);
+      }
     } else if (themeId === 'blue-aramco') {
       if (isNewPresentation) {
         // Blue Aramco theme: create blue variant template slides
@@ -7775,6 +7863,10 @@
       }
       normalizeState(state);
       renderAll();
+      // Auto-save to recent work for new presentations
+      if (isNewPresentation) {
+        setTimeout(() => saveToRecentWork(), 500);
+      }
     } else if (isNewPresentation) {
       // Fallback: create blank slide
       state.slides = [defaultSlide()];
@@ -7858,17 +7950,170 @@
     }
   }
 
+  // ============================================
+  //  Recent Work Auto-Save Functionality
+  // ============================================
+  
+  // Generate thumbnail from first slide
+  async function generateThumbnail() {
+    if (!stageEl || !state.slides || state.slides.length === 0) {
+      return null;
+    }
+    
+    // Save current slide index
+    const originalIndex = state.currentSlideIndex;
+    
+    // Temporarily switch to first slide
+    state.currentSlideIndex = 0;
+    renderAll();
+    
+    // Wait for render to complete
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    try {
+      // Hide UI overlays
+      const overlays = document.querySelectorAll('.floating-toolbar, .context-menu, .text-control-bar, .resize-handle');
+      const originalDisplay = [];
+      overlays.forEach(overlay => {
+        originalDisplay.push(overlay.style.display);
+        overlay.style.display = 'none';
+      });
+      
+      // Capture thumbnail using html2canvas
+      if (typeof html2canvas !== 'undefined') {
+        const canvas = await html2canvas(stageEl, {
+          width: 320,
+          height: 180,
+          scale: 0.25,
+          useCORS: true,
+          logging: false,
+          backgroundColor: state.slides[0]?.background || '#ffffff'
+        });
+        
+        // Restore overlays
+        overlays.forEach((overlay, i) => {
+          overlay.style.display = originalDisplay[i] || '';
+        });
+        
+        // Restore original slide index
+        state.currentSlideIndex = originalIndex;
+        renderAll();
+        
+        return canvas.toDataURL('image/png');
+      }
+    } catch (error) {
+      console.warn('Failed to generate thumbnail:', error);
+    }
+    
+    // Restore original slide index
+    state.currentSlideIndex = originalIndex;
+    renderAll();
+    
+    return null;
+  }
+  
+  // Save presentation to recent work
+  async function saveToRecentWork() {
+    if (!AccountStorage) return;
+    
+    const account = AccountStorage.getCurrentAccount();
+    if (!account) return;
+    
+    // Get presentation ID from URL or generate one
+    const urlParams = new URLSearchParams(window.location.search);
+    let presentationId = urlParams.get('presentation');
+    
+    if (!presentationId) {
+      // Generate a new ID for this presentation
+      presentationId = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      // Update URL without reload
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('presentation', presentationId);
+      window.history.replaceState({}, '', newUrl);
+    }
+    
+    // Check if this presentation already exists in recent work
+    const existingIndex = account.recentWork?.findIndex(item => item.id === presentationId);
+    
+    // Generate thumbnail
+    const thumbnail = await generateThumbnail();
+    
+    // Create recent work entry
+    const recentEntry = {
+      id: presentationId,
+      title: state.title || 'Untitled presentation',
+      thumbnail: thumbnail,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      url: window.location.href,
+      theme: state.theme || 'blank',
+      slideCount: state.slides?.length || 0
+    };
+    
+    // Update account with new entry
+    AccountStorage.updateCurrentAccount((acc) => {
+      if (!acc.recentWork) {
+        acc.recentWork = [];
+      }
+      
+      // Remove existing entry if it exists
+      if (existingIndex >= 0) {
+        acc.recentWork.splice(existingIndex, 1);
+      }
+      
+      // Add new entry at the beginning (most recent first)
+      acc.recentWork.unshift(recentEntry);
+      
+      // Limit to 50 most recent entries
+      if (acc.recentWork.length > 50) {
+        acc.recentWork = acc.recentWork.slice(0, 50);
+      }
+    });
+    
+    // Trigger event to update recent-work.html if it's open
+    window.dispatchEvent(new CustomEvent('recent-work-updated'));
+  }
+  
+  // Auto-save to recent work when presentation is created or first rendered
+  let hasSavedToRecentWork = false;
+  
+  // Save to recent work after initial render
+  function autoSaveToRecentWork() {
+    if (hasSavedToRecentWork) return;
+    
+    // Only save if this is a new presentation (has presentation ID or is blank presentation)
+    const urlParams = new URLSearchParams(window.location.search);
+    const presentationId = urlParams.get('presentation');
+    const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
+    
+    if (presentationId || isBlankPresentation || isNewPresentation) {
+      // Wait a bit for the slide to render, then save
+      setTimeout(() => {
+        saveToRecentWork().then(() => {
+          hasSavedToRecentWork = true;
+        }).catch(err => {
+          console.warn('Failed to save to recent work:', err);
+        });
+      }, 500);
+    }
+  }
+  
+  // Expose saveToRecentWork globally
+  window.saveToRecentWork = saveToRecentWork;
+
   // Start initialization - scripts are loaded at bottom of HTML so DOM should be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       initializeApp();
       initializeThemesModal();
       loadSavedTheme();
+      autoSaveToRecentWork();
     });
   } else {
     initializeApp();
     initializeThemesModal();
     loadSavedTheme();
+    autoSaveToRecentWork();
   }
 })();
 
