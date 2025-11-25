@@ -1639,9 +1639,9 @@
     card.appendChild(checkIcon);
   }
 
-  // Theme selection function - receives theme identifier directly
+  // Theme selection function - receives theme name or identifier
   function selectTheme(themeIdentifier) {
-    // themeIdentifier should be: "Aramco", "Blue", "Dark", "Blank"
+    // themeIdentifier can be: "AD Theme 1", "AD Theme 2", "AD Dark Theme", "Blank Theme", or theme ID
     
     // Ensure themeIdentifier is a valid string (never undefined or null)
     if (!themeIdentifier || typeof themeIdentifier !== 'string') {
@@ -1654,23 +1654,23 @@
     window.selectedTheme = validTheme;
     selectedTheme = validTheme;
     
-    // Update visual state for all theme cards (using same structure as main theme modal)
-    // Scope to AI generator theme grid only
-    const themeBoxes = document.querySelectorAll('#ai-generator-page .ai-theme-grid .theme-box, .ai-generator-page .ai-theme-grid .theme-box');
-    themeBoxes.forEach(box => {
-      box.classList.remove('active');
-      box.classList.remove('selected');
-    });
-    
-    // Find and activate the selected theme box by identifier
-    // Only one card should be active at a time
-    themeBoxes.forEach(box => {
-      const boxIdentifier = box.dataset.themeIdentifier;
-      if (boxIdentifier === validTheme) {
-        box.classList.add('active');
-        box.classList.add('selected');
-      }
-    });
+    // Update visual state for all theme cards in AI generator theme grid
+    const aiThemesGrid = document.querySelector('#ai-themes-grid');
+    if (aiThemesGrid) {
+      const themeBoxes = aiThemesGrid.querySelectorAll('.theme-box');
+      themeBoxes.forEach(box => {
+        box.classList.remove('active');
+        box.classList.remove('selected');
+        
+        // Match by theme name (label text) or theme ID
+        const boxLabel = box.querySelector('.theme-box-label');
+        const boxThemeId = box.dataset.themeId;
+        if (boxLabel && (boxLabel.textContent === validTheme || boxThemeId === validTheme)) {
+          box.classList.add('active');
+          box.classList.add('selected');
+        }
+      });
+    }
     
     console.log('Selected theme:', themeIdentifier);
   }
@@ -2137,23 +2137,17 @@
       // Use the EXACT same availableThemes array from app.js (exposed via window)
       const themesToUse = window.availableThemes || [];
       
-      // Map theme IDs to identifiers for AI generator compatibility
-      const themeIdentifierMap = {
-        'blank': 'Blank',
-        'aramco': 'Aramco',
-        'dark-aramco': 'Dark',
-        'blue-aramco': 'Blue'
-      };
-      
       aiThemesGrid.innerHTML = '';
+      
+      // Get current theme from app.js to show active state
+      const currentTheme = window.currentTheme || 'blank';
       
       // Create theme boxes using EXACT same structure as main theme modal
       themesToUse.forEach(theme => {
         // Create simple box container (EXACT same as main theme modal)
         const themeBox = document.createElement('div');
-        themeBox.className = 'theme-box';
+        themeBox.className = `theme-box ${theme.id === currentTheme ? 'active' : ''}`;
         themeBox.dataset.themeId = theme.id;
-        themeBox.dataset.themeIdentifier = themeIdentifierMap[theme.id] || theme.id;
         
         // Create color preview swatch (EXACT same as main theme modal)
         const colorSwatch = document.createElement('div');
@@ -2184,15 +2178,32 @@
         themeBox.appendChild(colorSwatch);
         themeBox.appendChild(label);
         
-        // Attach click handler - calls selectTheme() with theme identifier
+        // Attach click handler - calls loadTheme() with theme ID to apply the theme
         themeBox.addEventListener('click', () => {
-          selectTheme(themeIdentifierMap[theme.id] || theme.id);
+          if (window.loadTheme) {
+            window.loadTheme(theme.id);
+          }
+          // Also update visual state for AI generator
+          selectTheme(theme.name);
         });
         
         aiThemesGrid.appendChild(themeBox);
       });
     }
 
+    // Listen for theme changes from main themes panel to keep AI generator in sync
+    window.addEventListener('theme-changed', (e) => {
+      if (e.detail && e.detail.themeId) {
+        // Update active state in AI generator theme grid
+        const aiThemesGrid = aiPage.querySelector('#ai-themes-grid');
+        if (aiThemesGrid) {
+          aiThemesGrid.querySelectorAll('.theme-box').forEach(box => {
+            box.classList.toggle('active', box.dataset.themeId === e.detail.themeId);
+          });
+        }
+      }
+    });
+    
     // Restore selected theme state if one was previously selected
     const currentSelectedTheme = window.selectedTheme || selectedTheme;
     if (currentSelectedTheme && typeof currentSelectedTheme === 'string' && currentSelectedTheme.trim() !== '') {

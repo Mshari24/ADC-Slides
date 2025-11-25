@@ -6910,9 +6910,15 @@
   
   // Expose availableThemes globally for AI generator to use
   window.availableThemes = availableThemes;
+  
+  // Expose loadTheme globally for AI generator to use
+  window.loadTheme = loadTheme;
 
   // Current theme state - default to blank
   let currentTheme = 'blank';
+  
+  // Expose currentTheme globally for AI generator to use
+  window.currentTheme = currentTheme;
 
   // Initialize themes modal
   function initializeThemesModal() {
@@ -7699,6 +7705,9 @@
 
     currentTheme = themeId;
     
+    // Update global currentTheme for AI generator
+    window.currentTheme = currentTheme;
+    
     // Save theme to state
     if (!state.theme) {
       state.theme = themeId;
@@ -7789,10 +7798,18 @@
       document.documentElement.style.setProperty('--theme-background', theme.colors.background);
     }
 
-    // Update active theme box
+    // Update active theme box in main themes modal
     document.querySelectorAll('.theme-box').forEach(box => {
       box.classList.toggle('active', box.dataset.themeId === themeId);
     });
+    
+    // Update active theme box in AI generator themes grid
+    document.querySelectorAll('#ai-themes-grid .theme-box').forEach(box => {
+      box.classList.toggle('active', box.dataset.themeId === themeId);
+    });
+    
+    // Trigger custom event to notify AI generator of theme change
+    window.dispatchEvent(new CustomEvent('theme-changed', { detail: { themeId } }));
 
     // Theme selection is now only through theme cards - no dropdown selectors
 
