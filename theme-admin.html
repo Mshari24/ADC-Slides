@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Theme Admin - Extract Themes from PowerPoint</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      padding: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      font-size: 32px;
+      margin-bottom: 10px;
+      color: #003e6a;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+
+    .upload-area {
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 30px;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .upload-area:hover {
+      border-color: #003e6a;
+      background: #f8f9fa;
+    }
+
+    .upload-area.dragover {
+      border-color: #00aae7;
+      background: #e8f4f8;
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .upload-text {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .upload-hint {
+      font-size: 14px;
+      color: #999;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .btn {
+      background: #003e6a;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn:hover {
+      background: #005a9e;
+    }
+
+    .btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+
+    .file-list {
+      margin-top: 20px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .file-name {
+      flex: 1;
+      font-weight: 500;
+    }
+
+    .file-status {
+      margin-left: 12px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-processing {
+      background: #cfe2ff;
+      color: #084298;
+    }
+
+    .status-success {
+      background: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .status-error {
+      background: #f8d7da;
+      color: #842029;
+    }
+
+    .results {
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid #eee;
+    }
+
+    .theme-preview {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .theme-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .theme-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #003e6a;
+    }
+
+    .theme-id {
+      font-size: 14px;
+      color: #666;
+      font-family: monospace;
+    }
+
+    .color-palette {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .color-swatch {
+      flex: 1;
+      height: 60px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .theme-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .info-label {
+      color: #666;
+    }
+
+    .info-value {
+      font-weight: 500;
+    }
+
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+    }
+
+    .json-output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #003e6a;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #333;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
+      animation: slideIn 0.3s;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Theme Extractor</h1>
+    <p class="subtitle">Upload PowerPoint files to extract theme information and convert them into usable themes</p>
+
+    <div class="upload-area" id="upload-area">
+      <div class="upload-icon">📄</div>
+      <div class="upload-text">Drop PowerPoint files here or click to browse</div>
+      <div class="upload-hint">Supports .pptx and .ppt files (up to 50MB each)</div>
+      <input type="file" id="file-input" multiple accept=".pptx,.ppt">
+    </div>
+
+    <div class="file-list" id="file-list"></div>
+
+    <div class="results" id="results" style="display: none;">
+      <h2>Extracted Themes</h2>
+      <div id="themes-container"></div>
+      <div class="actions">
+        <button class="btn" id="btn-download-json">Download JSON</button>
+        <button class="btn btn-secondary" id="btn-copy-json">Copy JSON</button>
+      </div>
+      <div class="json-output" id="json-output"></div>
+    </div>
+  </div>
+
+  <script>
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const results = document.getElementById('results');
+    const themesContainer = document.getElementById('themes-container');
+    const jsonOutput = document.getElementById('json-output');
+    const btnDownloadJson = document.getElementById('btn-download-json');
+    const btnCopyJson = document.getElementById('btn-copy-json');
+
+    let extractedThemes = [];
+
+    // Upload area click
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const files = Array.from(e.dataTransfer.files).filter(f => 
+        f.name.endsWith('.pptx') || f.name.endsWith('.ppt')
+      );
+      handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(Array.from(e.target.files));
+    });
+
+    function handleFiles(files) {
+      files.forEach(file => {
+        addFileToQueue(file);
+        processFile(file);
+      });
+    }
+
+    function addFileToQueue(file) {
+      const fileItem = document.createElement('div');
+      fileItem.className = 'file-item';
+      fileItem.id = `file-${file.name}`;
+      fileItem.innerHTML = `
+        <span class="file-name">${file.name}</span>
+        <span class="file-status status-pending">Pending</span>
+      `;
+      fileList.appendChild(fileItem);
+    }
+
+    function updateFileStatus(fileName, status, message) {
+      const fileItem = document.getElementById(`file-${fileName}`);
+      if (fileItem) {
+        const statusEl = fileItem.querySelector('.file-status');
+        statusEl.className = `file-status status-${status}`;
+        statusEl.textContent = message;
+      }
+    }
+
+    async function processFile(file) {
+      updateFileStatus(file.name, 'processing', 'Processing...');
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const response = await fetch('/api/themes/extract', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          updateFileStatus(file.name, 'success', 'Extracted');
+          extractedThemes.push(data.theme);
+          displayResults();
+        } else {
+          updateFileStatus(file.name, 'error', data.error || 'Failed');
+          showToast('Error: ' + (data.error || 'Failed to extract theme'));
+        }
+      } catch (error) {
+        updateFileStatus(file.name, 'error', 'Error');
+        showToast('Error: ' + error.message);
+      }
+    }
+
+    function displayResults() {
+      if (extractedThemes.length === 0) return;
+
+      results.style.display = 'block';
+      themesContainer.innerHTML = '';
+      jsonOutput.textContent = JSON.stringify(extractedThemes, null, 2);
+
+      extractedThemes.forEach(theme => {
+        const preview = document.createElement('div');
+        preview.className = 'theme-preview';
+        preview.innerHTML = `
+          <div class="theme-header">
+            <div>
+              <div class="theme-name">${theme.name}</div>
+              <div class="theme-id">ID: ${theme.id}</div>
+            </div>
+          </div>
+          <div class="color-palette">
+            <div class="color-swatch" style="background: ${theme.colors.primary}">
+              Primary
+            </div>
+            <div class="color-swatch" style="background: ${theme.colors.secondary}">
+              Secondary
+            </div>
+            <div class="color-swatch" style="background: ${theme.colors.accent}">
+              Accent
+            </div>
+            <div class="color-swatch" style="background: ${theme.colors.background}; color: ${theme.colors.text}; border: 1px solid #ddd;">
+              Background
+            </div>
+          </div>
+          <div class="theme-info">
+            <div class="info-item">
+              <span class="info-label">Font:</span>
+              <span class="info-value">${theme.fonts.family}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Layout Style:</span>
+              <span class="info-value">${theme.layoutStyle}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Title Align:</span>
+              <span class="info-value">${theme.titleAlign}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Font Weight:</span>
+              <span class="info-value">${theme.fontWeight}</span>
+            </div>
+          </div>
+        `;
+        themesContainer.appendChild(preview);
+      });
+    }
+
+    btnDownloadJson.addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(extractedThemes, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'extracted-themes.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('JSON file downloaded');
+    });
+
+    btnCopyJson.addEventListener('click', () => {
+      navigator.clipboard.writeText(JSON.stringify(extractedThemes, null, 2));
+      showToast('JSON copied to clipboard');
+    });
+
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  </script>
+</body>
+</html>
+
