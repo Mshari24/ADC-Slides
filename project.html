@@ -35,7 +35,7 @@
         <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
           <span class="new-menu-heading">CREATE NEW</span>
           <div class="new-menu-options">
-            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./index.html">
+            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./blank-presentation.html">
               <span class="new-menu-icon">＋</span>
               <span class="new-menu-text">
                 <strong>Blank presentation</strong>
@@ -474,9 +474,9 @@
             let target = button.dataset.newHref || defaultHref;
             setOpen(false);
             if (target) {
-              // Add unique presentation ID
               const url = new URL(target, window.location.href);
-              if (!url.searchParams.has('presentation')) {
+              // Don't add presentation ID for blank-presentation.html
+              if (!url.pathname.includes('blank-presentation.html') && !url.searchParams.has('presentation')) {
                 url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
               }
               window.location.href = url.toString();

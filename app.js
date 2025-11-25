@@ -121,12 +121,27 @@
       // Reset cursor
       document.body.style.cursor = '';
       
-      // Reset cursor on all elements
+      // Hide drag indicator (coordinates)
+      const dragIndicator = document.querySelector('.drag-indicator');
+      if (dragIndicator) {
+        dragIndicator.classList.add('hidden');
+      }
+      
+      // Reset cursor on all elements and hide controls if not hovering
       document.querySelectorAll('.el').forEach(element => {
         if (!element.classList.contains('locked')) {
           if (element.classList.contains('text')) {
             element.style.cursor = 'text';
             element.style.userSelect = 'text';
+            // Hide controls if element is not being hovered
+            const moveHandle = element.querySelector('.text-move-handle');
+            const resizeHandle = element.querySelector('.resize-handle');
+            if (moveHandle && !element.matches(':hover')) {
+              moveHandle.style.display = 'none';
+            }
+            if (resizeHandle && !element.matches(':hover')) {
+              resizeHandle.style.display = 'none';
+            }
           } else {
             element.style.cursor = 'move';
             element.style.userSelect = '';
@@ -207,7 +222,7 @@
     title: 'Untitled presentation',
     currentSlideIndex: 0,
     slides: [defaultSlide()],
-    theme: 'aramco' // Default theme
+    theme: 'blank' // Default to blank theme
   };
 
   // Drawing mode state
@@ -225,9 +240,12 @@
   const projectId = urlParams.get('project');
   const isNewPresentation = !!presentationId; // If there's a presentation ID, it's a new one (not autosave)
   
-  // Only load autosave if there's NO presentation ID in URL
-  // If there's a presentation ID, create a fresh presentation
-  const persisted = !presentationId ? loadPersistedState() : null;
+  // Check if we're on blank-presentation.html
+  const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
+  
+  // Only load autosave if there's NO presentation ID in URL and NOT on blank-presentation.html
+  // If there's a presentation ID or we're on blank-presentation.html, create a fresh presentation
+  const persisted = (!presentationId && !isBlankPresentation) ? loadPersistedState() : null;
   
   if (persisted) {
     Object.assign(state, persisted);
@@ -236,6 +254,13 @@
     state.title = 'Untitled presentation';
     state.currentSlideIndex = 0;
     state.slides = [defaultSlide()];
+    
+    // If on blank-presentation.html, ensure blank theme and blank slide
+    if (isBlankPresentation) {
+      state.theme = 'blank'; // Set to blank theme
+      // Ensure slide has no background
+      state.slides[0].background = undefined;
+    }
   }
   
   normalizeState(state);
@@ -702,12 +727,18 @@
     
     // Apply slide background if specified
     if (slide.background) {
-      stageEl.style.background = slide.background;
+      // Set CSS variable and data attribute to allow background override
+      stageEl.style.setProperty('--slide-background', slide.background);
+      stageEl.setAttribute('data-has-background', 'true');
+      // Also set directly as fallback
+      stageEl.style.setProperty('background', slide.background, 'important');
       if (slide.layout) {
         stageEl.setAttribute('data-layout', slide.layout);
       }
     } else {
-      stageEl.style.background = '#ffffff';
+      stageEl.removeAttribute('data-has-background');
+      stageEl.style.removeProperty('--slide-background');
+      stageEl.style.setProperty('background', '#ffffff', 'important');
       stageEl.removeAttribute('data-layout');
     }
     
@@ -868,8 +899,26 @@
         node.style.textAlign = el.textAlign || 'left';
         node.style.lineHeight = el.lineHeight ? String(el.lineHeight) : '1.2';
         node.style.backgroundColor = el.fillColor || 'transparent';
-        node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || 'transparent'}`;
-        node.innerHTML = el.content || el.text || 'Double-click to edit';
+        // Remove border if strokeWidth is 0 (for Aramco template text without borders)
+        if (el.strokeWidth === 0) {
+          node.style.border = 'none';
+        } else {
+          node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || 'transparent'}`;
+        }
+        // Handle bullet points: main bullets use dots, sub-bullets use dashes
+        let displayText = el.content || el.text || 'Double-click to edit';
+        if (el.listType === 'bullet') {
+          // Main bullet - use dot
+          if (!displayText.startsWith('• ') && !displayText.startsWith('· ')) {
+            displayText = '• ' + displayText;
+          }
+        } else if (el.listType === 'sub-bullet') {
+          // Sub bullet - use dash
+          if (!displayText.startsWith('- ')) {
+            displayText = '- ' + displayText;
+          }
+        }
+        node.innerHTML = displayText;
         node.classList.toggle('locked', !!el.locked);
         node.style.cursor = el.locked ? 'default' : 'text';
 
@@ -897,11 +946,38 @@
         moveHandle.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="5 9 2 12 5 15"></polyline><polyline points="19 9 22 12 19 15"></polyline><line x1="2" y1="12" x2="22" y2="12"></line></svg>';
         moveHandle.setAttribute('contenteditable', 'false');
         moveHandle.type = 'button';
+        moveHandle.style.display = 'none'; // Hidden by default
         node.appendChild(moveHandle);
         const resizeHandle = document.createElement('div');
         resizeHandle.className = 'resize-handle se';
         resizeHandle.setAttribute('contenteditable', 'false');
+        resizeHandle.style.display = 'none'; // Hidden by default
         node.appendChild(resizeHandle);
+        
+        // Show controls on hover, hide on mouse leave
+        let isHovering = false;
+        node.addEventListener('mouseenter', () => {
+          if (!el.locked) {
+            isHovering = true;
+            moveHandle.style.display = 'inline-flex';
+            resizeHandle.style.display = 'block';
+          }
+        });
+        node.addEventListener('mouseleave', () => {
+          isHovering = false;
+          if (!dragging && !resizing) {
+            moveHandle.style.display = 'none';
+            resizeHandle.style.display = 'none';
+          }
+        });
+        // Hide controls when mouse is released (if not hovering)
+        const handleMouseUp = () => {
+          if (!isHovering && !dragging && !resizing) {
+            moveHandle.style.display = 'none';
+            resizeHandle.style.display = 'none';
+          }
+        };
+        document.addEventListener('mouseup', handleMouseUp);
 
         const showDragInfo = () => {
           if (!dragIndicator || !stageWrap) return;
@@ -988,6 +1064,7 @@
             const factor = Math.max(0.2, startScale + delta / base);
             el.scale = factor;
             updateTransform();
+            showDragInfo(); // Show coordinates when resizing
             persistState();
             return;
           }
@@ -1016,9 +1093,15 @@
           if (resizing) {
             resizing = false;
             document.body.style.cursor = '';
+            hideDragInfo(); // Hide coordinates after resizing
             saveState();
             renderSidebar();
             if (editingElementId === el.id) enterTextEditing(node, el);
+            // Hide controls after resize if not hovering
+            if (!isHovering) {
+              moveHandle.style.display = 'none';
+              resizeHandle.style.display = 'none';
+            }
           }
         };
 
@@ -6041,14 +6124,31 @@
     presentationMode.classList.remove('hidden');
     renderPresentationSlide();
     updatePresentationInfo();
-    // Prevent body scroll
+    // Prevent body scroll and add class to body for CSS targeting
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('in-presentation-mode');
+    // Hide all text controls and UI elements during presentation
+    const textControlBar = document.getElementById('text-control-bar');
+    if (textControlBar) {
+      textControlBar.classList.add('hidden');
+    }
+    // Hide any other control elements
+    const controlElements = document.querySelectorAll('.text-control-bar, .text-control-icons, .resize-handle, .text-move-handle');
+    controlElements.forEach(el => {
+      if (el) el.style.display = 'none';
+    });
   }
 
   function exitPresentationMode() {
     if (!presentationMode) return;
     presentationMode.classList.add('hidden');
     document.body.style.overflow = '';
+    document.body.classList.remove('in-presentation-mode');
+    // Restore text controls when exiting presentation mode
+    const controlElements = document.querySelectorAll('.text-control-bar, .text-control-icons, .resize-handle, .text-move-handle');
+    controlElements.forEach(el => {
+      if (el) el.style.display = '';
+    });
   }
 
   function renderPresentationSlide() {
@@ -6687,10 +6787,29 @@
   // Initial render and state save
   function initializeApp() {
     try {
+      // Check if we're on blank-presentation.html
+      const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
+      
       // Ensure state is valid
       if (!state || !Array.isArray(state.slides) || state.slides.length === 0) {
         state.slides = [defaultSlide()];
         state.currentSlideIndex = 0;
+      }
+      
+      // If on blank-presentation.html, ensure blank state
+      if (isBlankPresentation) {
+        // Set to blank theme
+        state.theme = 'blank';
+        // Ensure all slides are blank with no background
+        state.slides.forEach(slide => {
+          if (slide) {
+            slide.background = undefined;
+            // Clear any elements that might have been added
+            if (Array.isArray(slide.elements)) {
+              slide.elements = [];
+            }
+          }
+        });
       }
       
       // Ensure all slides have elements array
@@ -6774,17 +6893,16 @@
   //  Themes Modal Functionality
   // ============================================
   
-  // Define available themes
+  // Define available themes - exactly 4 themes
   const availableThemes = [
-    { id: 'aramco', name: 'Aramco', colors: { primary: '#024c3a', secondary: '#00aae7', background: '#ffffff' } },
-    { id: 'blue', name: 'Blue', colors: { primary: '#0066cc', secondary: '#3399ff', background: '#ffffff' } },
-    { id: 'modern-minimal', name: 'Modern Minimal', colors: { primary: '#1a1a1a', secondary: '#666666', background: '#ffffff' } },
-    { id: 'gradient-soft', name: 'Gradient Soft', colors: { primary: '#667eea', secondary: '#764ba2', background: '#f5f5f5' } },
-    { id: 'dark-mode', name: 'Dark Mode', colors: { primary: '#ffffff', secondary: '#00aae7', background: '#1a1a1a' } }
+    { id: 'blank', name: 'Blank Theme', colors: { primary: '#ffffff', secondary: '#ffffff', background: '#ffffff' } },
+    { id: 'aramco', name: 'Aramco Theme', colors: { primary: '#024c3a', secondary: '#00aae7', background: '#ffffff' } },
+    { id: 'dark-aramco', name: 'Dark Aramco Theme', colors: { primary: '#00aae7', secondary: '#024c3a', background: '#1a1a1a' } },
+    { id: 'blue-aramco', name: 'Blue Aramco Theme', colors: { primary: '#00aae7', secondary: '#006c35', background: '#ffffff' } }
   ];
 
-  // Current theme state
-  let currentTheme = 'aramco';
+  // Current theme state - default to blank
+  let currentTheme = 'blank';
 
   // Initialize themes modal
   function initializeThemesModal() {
@@ -6798,44 +6916,40 @@
       return;
     }
 
-    // Load themes into grid
-    // IMPORTANT: All theme cards must have IDENTICAL structure, dimensions, borders, shadows, padding, etc.
-    // ONLY the gradient background color changes per theme (via CSS data-theme-id selector)
+    // Load themes into grid - simple small boxes
     function loadThemes() {
       themesGrid.innerHTML = '';
       
       availableThemes.forEach(theme => {
-        // Create card container - identical for all themes
-        const themeCard = document.createElement('div');
-        themeCard.className = `theme-card ${theme.id === currentTheme ? 'active' : ''}`;
-        themeCard.dataset.themeId = theme.id; // This attribute controls gradient color via CSS
+        // Create simple box container
+        const themeBox = document.createElement('div');
+        themeBox.className = `theme-box ${theme.id === currentTheme ? 'active' : ''}`;
+        themeBox.dataset.themeId = theme.id;
         
-        // Top gradient section with letter - identical structure for all themes
-        const gradientSection = document.createElement('div');
-        gradientSection.className = 'theme-card-gradient';
+        // Create color preview swatch
+        const colorSwatch = document.createElement('div');
+        colorSwatch.className = 'theme-box-swatch';
+        if (theme.id === 'blank') {
+          // Blank theme: show white with border to make it visible
+          colorSwatch.style.backgroundColor = '#ffffff';
+          colorSwatch.style.border = '1px solid #e5e7eb';
+        } else {
+          colorSwatch.style.backgroundColor = theme.colors.primary;
+        }
         
-        const letter = document.createElement('div');
-        letter.className = 'theme-card-letter';
-        letter.textContent = theme.name.charAt(0).toUpperCase(); // First letter of theme name
-        gradientSection.appendChild(letter);
-        
-        // Bottom bar with theme name - identical structure for all themes
-        const bottomBar = document.createElement('div');
-        bottomBar.className = 'theme-card-bottom';
-        
+        // Create theme name label
         const label = document.createElement('div');
-        label.className = 'theme-card-label';
+        label.className = 'theme-box-label';
         label.textContent = theme.name;
-        bottomBar.appendChild(label);
         
-        // Assemble card - same order for all themes
-        themeCard.appendChild(gradientSection);
-        themeCard.appendChild(bottomBar);
+        // Assemble box
+        themeBox.appendChild(colorSwatch);
+        themeBox.appendChild(label);
         
-        themesGrid.appendChild(themeCard);
+        themesGrid.appendChild(themeBox);
 
         // Click handler
-        themeCard.addEventListener('click', () => {
+        themeBox.addEventListener('click', () => {
           loadTheme(theme.id);
           themesModal.classList.add('hidden');
         });
@@ -6870,6 +6984,505 @@
     loadThemes();
   }
 
+  // Helper function to create text element without borders for Aramco template
+  function createAramcoTextElement(text, x, y, options = {}) {
+    return {
+      id: uid(),
+      type: 'text',
+      x: x,
+      y: y,
+      text: text,
+      content: text,
+      fontSize: options.fontSize || 18,
+      color: options.color || '#333333',
+      fontFamily: options.fontFamily || 'Inter, system-ui, sans-serif',
+      fontWeight: options.fontWeight || 'normal',
+      fontStyle: options.fontStyle || 'normal',
+      textAlign: options.textAlign || 'left',
+      underline: options.underline || false,
+      lineHeight: options.lineHeight || 1.2,
+      listType: options.listType || null,
+      strokeColor: 'transparent', // Remove border
+      strokeWidth: 0, // Remove border
+      fillColor: options.fillColor || 'transparent',
+      isAramcoTemplate: true // Flag to identify Aramco template elements
+    };
+  }
+
+  // Helper function to add footer to slide (page number, Date, Copyright)
+  function addAramcoFooter(slide, pageNumber, textColor = '#333333', lineColor = '#006c35') {
+    // Dark green horizontal line
+    slide.elements.push({
+      id: uid(),
+      type: 'shape',
+      x: 0,
+      y: 500,
+      width: 960,
+      height: 2,
+      shapeType: 'line',
+      strokeColor: lineColor,
+      strokeWidth: 2
+    });
+    // Page number at bottom-left
+    slide.elements.push(createAramcoTextElement(String(pageNumber), 56, 520, {
+      fontSize: 12,
+      color: textColor,
+      textAlign: 'left'
+    }));
+    // Date text (slightly above and to the right of page number)
+    slide.elements.push(createAramcoTextElement('Date', 100, 510, {
+      fontSize: 12,
+      color: textColor,
+      fontWeight: 'bold',
+      textAlign: 'left'
+    }));
+    // Copyright note text below Date
+    slide.elements.push(createAramcoTextElement('Copyright note text (8pt)', 100, 530, {
+      fontSize: 8,
+      color: textColor,
+      textAlign: 'left'
+    }));
+  }
+
+  // Create Aramco template slides
+  function createAramcoTemplateSlides() {
+    const slides = [];
+    
+    // Slide 1: Title slide with project title and decorative band
+    const slide1 = defaultSlide();
+    slide1.background = '#ffffff';
+    // Position text elements based on the image layout
+    slide1.elements.push(createAramcoTextElement('project title (50pt)', 56, 80, {
+      fontSize: 50,
+      color: '#333333',
+      fontWeight: 'bold'
+    }));
+    slide1.elements.push(createAramcoTextElement('Presentation descriptor (12pt)', 56, 150, {
+      fontSize: 12,
+      color: '#333333'
+    }));
+    slide1.elements.push(createAramcoTextElement('Date', 56, 180, {
+      fontSize: 12,
+      color: '#333333'
+    }));
+    // Decorative band at bottom with green and blue stripes
+    // Green stripes (4-5 lines)
+    for (let i = 0; i < 5; i++) {
+      slide1.elements.push({
+        id: uid(),
+        type: 'shape',
+        x: 0,
+        y: 500 + (i * 4),
+        width: 960,
+        height: 2,
+        shapeType: 'line',
+        strokeColor: '#006c35',
+        strokeWidth: 2,
+        fillColor: 'transparent'
+      });
+    }
+    // Blue stripes (3-4 lines)
+    for (let i = 0; i < 4; i++) {
+      slide1.elements.push({
+        id: uid(),
+        type: 'shape',
+        x: 0,
+        y: 520 + (i * 4),
+        width: 960,
+        height: 2,
+        shapeType: 'line',
+        strokeColor: '#00aae7',
+        strokeWidth: 2,
+        fillColor: 'transparent'
+      });
+    }
+    // Footer
+    addAramcoFooter(slide1, 1, '#333333', '#006c35');
+    slides.push(slide1);
+
+    // Slide 2: Content slide with title, subtitle, subheader, body, bullets
+    const slide2 = defaultSlide();
+    slide2.background = '#ffffff';
+    slide2.elements.push(createAramcoTextElement('Page title (24pt)', 56, 80, {
+      fontSize: 24,
+      color: '#00aae7',
+      fontWeight: 'bold',
+      textAlign: 'left'
+    }));
+    slide2.elements.push(createAramcoTextElement('Page subtitle (24pt)', 56, 120, {
+      fontSize: 24,
+      color: '#333333',
+      textAlign: 'left'
+    }));
+    slide2.elements.push(createAramcoTextElement('Subheader (16pt)', 56, 180, {
+      fontSize: 16,
+      color: '#00aae7',
+      fontWeight: 'bold',
+      underline: true,
+      textAlign: 'left'
+    }));
+    slide2.elements.push(createAramcoTextElement('This is Body Copy (16pt).', 56, 220, {
+      fontSize: 16,
+      color: '#333333',
+      textAlign: 'left'
+    }));
+    slide2.elements.push(createAramcoTextElement('This is Body Bullet 1st Paragraph:', 56, 260, {
+      fontSize: 16,
+      color: '#333333',
+      textAlign: 'left'
+    }));
+    // Bullet points - main bullets use dots, sub bullets use dashes
+    // First main bullet
+    slide2.elements.push(createAramcoTextElement('Bullet Points', 80, 300, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet', // Main bullet - uses dot
+      textAlign: 'left'
+    }));
+    // Sub bullets (with dashes)
+    slide2.elements.push(createAramcoTextElement('Sub Bullet', 100, 330, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'sub-bullet', // Sub bullet - uses dash
+      textAlign: 'left'
+    }));
+    slide2.elements.push(createAramcoTextElement('Sub Bullet', 100, 360, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'sub-bullet', // Sub bullet - uses dash
+      textAlign: 'left'
+    }));
+    // Second main bullet
+    slide2.elements.push(createAramcoTextElement('Bullet Points', 80, 390, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet', // Main bullet - uses dot
+      textAlign: 'left'
+    }));
+    // Third main bullet
+    slide2.elements.push(createAramcoTextElement('Bullet Points End Paragraph', 80, 420, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet', // Main bullet - uses dot
+      textAlign: 'left'
+    }));
+    slide2.elements.push(createAramcoTextElement('This is Body Copy', 56, 480, {
+      fontSize: 16,
+      color: '#333333',
+      textAlign: 'left'
+    }));
+    // Footer
+    addAramcoFooter(slide2, 2, '#333333', '#006c35');
+    slides.push(slide2);
+
+    // Slide 3: Two-column content slide
+    const slide3 = defaultSlide();
+    slide3.background = '#ffffff';
+    // Header
+    slide3.elements.push(createAramcoTextElement('Page title (24pt)', 56, 80, {
+      fontSize: 24,
+      color: '#00aae7',
+      fontWeight: 'bold'
+    }));
+    slide3.elements.push(createAramcoTextElement('Page subtitle (24pt)', 56, 120, {
+      fontSize: 24,
+      color: '#666666'
+    }));
+    
+    // Left column content
+    slide3.elements.push(createAramcoTextElement('Subheader (16pt)', 56, 180, {
+      fontSize: 16,
+      color: '#00aae7',
+      fontWeight: 'bold',
+      underline: true
+    }));
+    slide3.elements.push(createAramcoTextElement('This is Body Copy (16pt).', 56, 220, {
+      fontSize: 16,
+      color: '#333333'
+    }));
+    slide3.elements.push(createAramcoTextElement('This is Body Bullet 1st Paragraph:', 56, 260, {
+      fontSize: 16,
+      color: '#333333'
+    }));
+    // Left column bullets
+    slide3.elements.push(createAramcoTextElement('Bullet Points', 80, 300, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet' // Main bullet - uses dot
+    }));
+    slide3.elements.push(createAramcoTextElement('Sub Bullet', 100, 330, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'sub-bullet' // Sub bullet - uses dash
+    }));
+    slide3.elements.push(createAramcoTextElement('Sub Bullet', 100, 360, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'sub-bullet' // Sub bullet - uses dash
+    }));
+    slide3.elements.push(createAramcoTextElement('Bullet Points', 80, 390, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet' // Main bullet - uses dot
+    }));
+    slide3.elements.push(createAramcoTextElement('Bullet Points End Paragraph', 80, 420, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet' // Main bullet - uses dot
+    }));
+    slide3.elements.push(createAramcoTextElement('This is Body Copy', 56, 480, {
+      fontSize: 16,
+      color: '#333333'
+    }));
+    
+    // Right column content (mirrored)
+    slide3.elements.push(createAramcoTextElement('Subheader (16pt)', 520, 180, {
+      fontSize: 16,
+      color: '#00aae7',
+      fontWeight: 'bold',
+      underline: true
+    }));
+    slide3.elements.push(createAramcoTextElement('This is Body Copy (16pt).', 520, 220, {
+      fontSize: 16,
+      color: '#333333'
+    }));
+    slide3.elements.push(createAramcoTextElement('This is Body Bullet 1st Paragraph:', 520, 260, {
+      fontSize: 16,
+      color: '#333333'
+    }));
+    // Right column bullets
+    slide3.elements.push(createAramcoTextElement('Bullet Points', 544, 300, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet' // Main bullet - uses dot
+    }));
+    slide3.elements.push(createAramcoTextElement('Sub Bullet', 564, 330, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'sub-bullet' // Sub bullet - uses dash
+    }));
+    slide3.elements.push(createAramcoTextElement('Sub Bullet', 564, 360, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'sub-bullet' // Sub bullet - uses dash
+    }));
+    slide3.elements.push(createAramcoTextElement('Bullet Points', 544, 390, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet' // Main bullet - uses dot
+    }));
+    slide3.elements.push(createAramcoTextElement('Bullet Points End Paragraph', 544, 420, {
+      fontSize: 16,
+      color: '#333333',
+      listType: 'bullet' // Main bullet - uses dot
+    }));
+    slide3.elements.push(createAramcoTextElement('This is Body Copy', 520, 480, {
+      fontSize: 16,
+      color: '#333333'
+    }));
+    
+    // Footer
+    addAramcoFooter(slide3, 3, '#333333', '#006c35');
+    slides.push(slide3);
+
+    // Slide 4: Three-column content slide
+    const slide4 = defaultSlide();
+    slide4.background = '#ffffff';
+    // Header
+    slide4.elements.push(createAramcoTextElement('Page title (24pt)', 56, 80, {
+      fontSize: 24,
+      color: '#00aae7',
+      fontWeight: 'bold'
+    }));
+    slide4.elements.push(createAramcoTextElement('Page subtitle (24pt)', 56, 120, {
+      fontSize: 24,
+      color: '#666666'
+    }));
+    
+    // Three columns with identical content
+    const columnXPositions = [56, 360, 664];
+    columnXPositions.forEach((colX) => {
+      // Subheader
+      slide4.elements.push(createAramcoTextElement('Subheader (16pt)', colX, 180, {
+        fontSize: 16,
+        color: '#00aae7',
+        fontWeight: 'bold',
+        underline: true
+      }));
+      // Body Copy
+      slide4.elements.push(createAramcoTextElement('This is Body Copy (16pt).', colX, 220, {
+        fontSize: 16,
+        color: '#333333'
+      }));
+      // Body Bullet paragraph
+      slide4.elements.push(createAramcoTextElement('This is Body Bullet 1st Paragraph:', colX, 260, {
+        fontSize: 16,
+        color: '#333333'
+      }));
+      // Bullets
+      slide4.elements.push(createAramcoTextElement('Bullet Points', colX + 24, 300, {
+        fontSize: 16,
+        color: '#333333',
+        listType: 'bullet' // Main bullet - uses dot
+      }));
+      slide4.elements.push(createAramcoTextElement('Sub Bullet', colX + 44, 330, {
+        fontSize: 16,
+        color: '#333333',
+        listType: 'sub-bullet' // Sub bullet - uses dash
+      }));
+      slide4.elements.push(createAramcoTextElement('Sub Bullet', colX + 44, 360, {
+        fontSize: 16,
+        color: '#333333',
+        listType: 'sub-bullet' // Sub bullet - uses dash
+      }));
+      slide4.elements.push(createAramcoTextElement('Bullet Points', colX + 24, 390, {
+        fontSize: 16,
+        color: '#333333',
+        listType: 'bullet' // Main bullet - uses dot
+      }));
+      slide4.elements.push(createAramcoTextElement('Bullet Points End Paragraph', colX + 24, 420, {
+        fontSize: 16,
+        color: '#333333',
+        listType: 'bullet' // Main bullet - uses dot
+      }));
+      // Concluding Body Copy
+      slide4.elements.push(createAramcoTextElement('This is Body Copy', colX, 480, {
+        fontSize: 16,
+        color: '#333333'
+      }));
+    });
+    
+    // Footer
+    addAramcoFooter(slide4, 4, '#333333', '#006c35');
+    slides.push(slide4);
+
+    // Slide 5: Agenda slide with dark gray background
+    const slide5 = defaultSlide();
+    slide5.background = '#36393F';
+    slide5.elements.push(createAramcoTextElement('Agenda header (38pt)', 56, 80, {
+      fontSize: 38,
+      color: '#ffffff',
+      fontWeight: 'bold',
+      textAlign: 'left'
+    }));
+    slide5.elements.push(createAramcoTextElement('1. Agenda Body (20pt).', 56, 180, {
+      fontSize: 20,
+      color: '#ffffff',
+      textAlign: 'left'
+    }));
+    // Footer (white text and line for dark background)
+    addAramcoFooter(slide5, 5, '#ffffff', '#ffffff');
+    slides.push(slide5);
+
+    // Slides 6-10: Section break slides with different colored backgrounds
+    const sectionBreakColors = ['#0097D6', '#006c35', '#808080', '#006c35', '#002b49'];
+    for (let i = 0; i < 5; i++) {
+      const slide = defaultSlide();
+      slide.background = sectionBreakColors[i]; // Keep existing colors
+      // Header at top left
+      slide.elements.push(createAramcoTextElement('Section break header (38pt)', 56, 81, {
+        fontSize: 38,
+        color: '#ffffff',
+        fontWeight: 'bold',
+        textAlign: 'left'
+      }));
+      // Subtitle below header
+      slide.elements.push(createAramcoTextElement('click to edit master text styles', 56, 140, {
+        fontSize: 14,
+        color: '#ffffff',
+        textAlign: 'left'
+      }));
+      // Large hash symbol in center left (vertically centered)
+      slide.elements.push(createAramcoTextElement('#', 56, 300, {
+        fontSize: 200,
+        color: '#ffffff',
+        fontWeight: 'bold',
+        textAlign: 'left'
+      }));
+      // Footer (white text and line for colored backgrounds)
+      addAramcoFooter(slide, 6 + i, '#ffffff', '#ffffff');
+      slides.push(slide);
+    }
+
+    // Slide 11: High impact section divider with gradient
+    const slide11 = defaultSlide();
+    slide11.background = 'linear-gradient(180deg, #6BB6FF 0%, #006c35 100%)';
+    slide11.elements.push(createAramcoTextElement('this is a high impact\nin section divider page,\nwe only use this selectively\nand short', 56, 200, {
+      fontSize: 32,
+      color: '#ffffff',
+      fontWeight: 'bold',
+      lineHeight: 1.4
+    }));
+    // Footer (white text and line for gradient background)
+    addAramcoFooter(slide11, 11, '#ffffff', '#ffffff');
+    slides.push(slide11);
+
+    return slides;
+  }
+
+  // Create Dark Aramco template slides (dark variant of Aramco theme)
+  function createDarkAramcoTemplateSlides() {
+    const slides = createAramcoTemplateSlides();
+    // Convert to dark theme by adjusting colors
+    slides.forEach(slide => {
+      // Change white backgrounds to dark
+      if (slide.background === '#ffffff') {
+        slide.background = '#1a1a1a';
+      } else if (slide.background && slide.background !== 'linear-gradient(180deg, #6BB6FF 0%, #006c35 100%)') {
+        // Keep gradient backgrounds but darken solid colors
+        slide.background = '#1a1a1a';
+      }
+      // Update text colors to light colors for dark backgrounds
+      slide.elements.forEach(el => {
+        if (el.type === 'text') {
+          // Change dark text to light text
+          if (el.color === '#333333') {
+            el.color = '#ffffff';
+          } else if (el.color === '#666666') {
+            el.color = '#cccccc';
+          }
+          // Keep blue (#00aae7) and white colors as they work on dark backgrounds
+        } else if (el.type === 'shape') {
+          // Update line colors for dark backgrounds
+          if (el.strokeColor === '#006c35') {
+            el.strokeColor = '#00aae7'; // Use blue instead of green on dark
+          } else if (el.strokeColor === '#ffffff') {
+            el.strokeColor = '#ffffff'; // Keep white lines
+          }
+        }
+      });
+    });
+    return slides;
+  }
+
+  // Create Blue Aramco template slides (blue variant of Aramco theme)
+  function createBlueAramcoTemplateSlides() {
+    const slides = createAramcoTemplateSlides();
+    // Convert to blue theme by adjusting colors - replace green with blue
+    slides.forEach(slide => {
+      // Update text colors to blue theme
+      slide.elements.forEach(el => {
+        if (el.type === 'text') {
+          // Change green primary color (#024c3a) to blue (#00aae7)
+          if (el.color === '#024c3a') {
+            el.color = '#00aae7'; // Change green to blue
+          }
+          // Keep existing blue colors
+          // Change green stroke colors to blue
+          if (el.strokeColor === '#006c35') {
+            el.strokeColor = '#00aae7';
+          }
+        } else if (el.type === 'shape') {
+          // Change green lines to blue
+          if (el.strokeColor === '#006c35') {
+            el.strokeColor = '#00aae7';
+          }
+        }
+      });
+    });
+    return slides;
+  }
+
   // Load and apply theme
   function loadTheme(themeId) {
     const theme = availableThemes.find(t => t.id === themeId);
@@ -6886,16 +7499,85 @@
     } else {
       state.theme = themeId;
     }
+    
+    // If theme is selected and this is a new/empty presentation, create template slides
+    // Only create if slides are empty or just one default empty slide
+    const isNewPresentation = state.slides.length === 0 || 
+                             (state.slides.length === 1 && 
+                              state.slides[0].elements && 
+                              state.slides[0].elements.length === 0);
+    
+    // Handle Blank Theme - apply immediately for both new and existing presentations
+    if (themeId === 'blank') {
+      if (isNewPresentation) {
+        // Blank theme: create single blank white slide
+        state.slides = [defaultSlide()];
+        state.currentSlideIndex = 0;
+        state.slides[0].background = undefined; // No background (will render as white)
+      } else {
+        // Existing presentation: clear all backgrounds, gradients, and remove theme-specific styling
+        state.slides.forEach(slide => {
+          if (slide) {
+            // Clear background - remove gradients, colors, templates (set to undefined for pure white)
+            slide.background = undefined;
+            // Remove any theme-specific layout attributes
+            if (slide.layout) {
+              slide.layout = undefined;
+            }
+            // Keep elements (text boxes, shapes) but remove theme-specific styling
+            // Elements will keep their content but render with default styling
+          }
+        });
+      }
+      normalizeState(state);
+      renderAll();
+    } else if (themeId === 'aramco' && isNewPresentation) {
+      // Aramco theme: create Aramco template slides
+      const templateSlides = createAramcoTemplateSlides();
+      state.slides = templateSlides;
+      state.currentSlideIndex = 0;
+      normalizeState(state);
+      renderAll();
+    } else if (themeId === 'dark-aramco' && isNewPresentation) {
+      // Dark Aramco theme: create dark variant template slides
+      const templateSlides = createDarkAramcoTemplateSlides();
+      state.slides = templateSlides;
+      state.currentSlideIndex = 0;
+      normalizeState(state);
+      renderAll();
+    } else if (themeId === 'blue-aramco' && isNewPresentation) {
+      // Blue Aramco theme: create blue variant template slides
+      const templateSlides = createBlueAramcoTemplateSlides();
+      state.slides = templateSlides;
+      state.currentSlideIndex = 0;
+      normalizeState(state);
+      renderAll();
+    } else if (isNewPresentation) {
+      // Fallback: create blank slide
+      state.slides = [defaultSlide()];
+      state.currentSlideIndex = 0;
+      state.slides[0].background = undefined;
+      normalizeState(state);
+      renderAll();
+    }
+    
     saveState();
 
     // Apply theme CSS variables (if you want to use CSS custom properties)
-    document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
-    document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
-    document.documentElement.style.setProperty('--theme-background', theme.colors.background);
+    if (themeId === 'blank') {
+      // Clear theme CSS variables for blank theme
+      document.documentElement.style.removeProperty('--theme-primary');
+      document.documentElement.style.removeProperty('--theme-secondary');
+      document.documentElement.style.removeProperty('--theme-background');
+    } else {
+      document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
+      document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
+      document.documentElement.style.setProperty('--theme-background', theme.colors.background);
+    }
 
-    // Update active theme card
-    document.querySelectorAll('.theme-card').forEach(card => {
-      card.classList.toggle('active', card.dataset.themeId === themeId);
+    // Update active theme box
+    document.querySelectorAll('.theme-box').forEach(box => {
+      box.classList.toggle('active', box.dataset.themeId === themeId);
     });
 
     // Theme selection is now only through theme cards - no dropdown selectors
@@ -6905,10 +7587,43 @@
 
   // Load saved theme on initialization
   function loadSavedTheme() {
+    // Check if we're on blank-presentation.html - if so, load Blank Theme
+    const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
+    if (isBlankPresentation) {
+      // Auto-select Blank Theme for blank presentation page
+      currentTheme = 'blank';
+      loadTheme('blank');
+      return;
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const templateParam = urlParams.get('template');
+    const presentationId = urlParams.get('presentation');
+    
+    // If this is a new presentation (has presentation ID in URL)
+    if (presentationId) {
+      // Load theme based on template parameter
+      if (templateParam === 'ad') {
+        // Load Aramco theme when template=ad is in URL
+        currentTheme = 'aramco';
+        loadTheme('aramco');
+      } else {
+        // No template param means blank presentation - load Blank Theme
+        currentTheme = 'blank';
+        loadTheme('blank');
+      }
+      return;
+    }
+    
+    // If this is an autosave (no presentation ID), load saved theme if exists
     const saved = loadPresentationSnapshot();
     if (saved && saved.theme) {
       currentTheme = saved.theme;
       loadTheme(saved.theme);
+    } else {
+      // Default to blank theme if no saved theme
+      currentTheme = 'blank';
+      loadTheme('blank');
     }
   }
 
