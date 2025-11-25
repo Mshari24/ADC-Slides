@@ -6903,9 +6903,9 @@
   // Define available themes - exactly 4 themes
   const availableThemes = [
     { id: 'blank', name: 'Blank Theme', colors: { primary: '#ffffff', secondary: '#ffffff', background: '#ffffff' } },
-    { id: 'aramco', name: 'Aramco Theme', colors: { primary: '#024c3a', secondary: '#00aae7', background: '#ffffff' } },
-    { id: 'dark-aramco', name: 'Dark Aramco Theme', colors: { primary: '#00aae7', secondary: '#024c3a', background: '#1a1a1a' } },
-    { id: 'blue-aramco', name: 'Blue Aramco Theme', colors: { primary: '#00aae7', secondary: '#006c35', background: '#ffffff' } }
+    { id: 'blue-aramco', name: 'AD Theme 1', colors: { primary: '#00aae7', secondary: '#006c35', background: '#ffffff' } },
+    { id: 'dark-aramco', name: 'AD Dark Theme', colors: { primary: '#00aae7', secondary: '#024c3a', background: '#1a1a1a' } },
+    { id: 'aramco', name: 'AD Theme 2', colors: { primary: '#024c3a', secondary: '#00aae7', background: '#ffffff' } }
   ];
 
   // Current theme state - default to blank
@@ -7544,6 +7544,139 @@
     return slides;
   }
 
+  // Helper function to clear all previous theme styles from slides
+  function clearPreviousThemeStyles() {
+    state.slides.forEach(slide => {
+      if (slide) {
+        // Remove theme-specific attributes
+        if (slide.isBlueAramcoTitle) {
+          delete slide.isBlueAramcoTitle;
+        }
+        if (slide.layout) {
+          slide.layout = undefined;
+        }
+      }
+    });
+  }
+
+  // Helper function to apply theme styles to existing presentation
+  function applyThemeToExistingPresentation(themeId) {
+    if (!state.slides || state.slides.length === 0) {
+      return;
+    }
+
+    state.slides.forEach((slide, slideIndex) => {
+      if (!slide) return;
+
+      // Clear previous theme-specific attributes first
+      if (slide.isBlueAramcoTitle) {
+        delete slide.isBlueAramcoTitle;
+      }
+
+      if (themeId === 'blank') {
+        // Blank Theme: white backgrounds, no special styling
+        slide.background = undefined;
+        // Reset text colors to default dark colors if they were light (from dark theme)
+        if (slide.elements) {
+          slide.elements.forEach(el => {
+            if (el.type === 'text') {
+              // If text is white (from dark theme), change to dark
+              if (el.color === '#ffffff' || el.color === '#cccccc') {
+                el.color = '#333333';
+              }
+            } else if (el.type === 'shape') {
+              // Reset shape colors to default
+              if (el.strokeColor === '#00aae7' && slide.background !== '#1a1a1a') {
+                el.strokeColor = '#006c35';
+              }
+            }
+          });
+        }
+      } else if (themeId === 'aramco') {
+        // Aramco Theme: white backgrounds for most slides
+        // First slide gets white background, others keep their backgrounds or get white
+        if (slideIndex === 0) {
+          slide.background = '#ffffff';
+        } else if (!slide.background || slide.background === '#1a1a1a') {
+          // If slide has dark background or no background, make it white
+          slide.background = '#ffffff';
+        }
+        // Keep existing colored backgrounds (like section breaks) but ensure text is readable
+        // Reset text colors: if white (from dark theme), change to dark
+        if (slide.elements && (slide.background === '#ffffff' || !slide.background)) {
+          slide.elements.forEach(el => {
+            if (el.type === 'text') {
+              // Change white text to dark for white backgrounds
+              if (el.color === '#ffffff' || el.color === '#cccccc') {
+                el.color = '#333333';
+              }
+            } else if (el.type === 'shape') {
+              // Reset green lines if they were changed to blue
+              if (el.strokeColor === '#00aae7' && slide.background === '#ffffff') {
+                el.strokeColor = '#006c35';
+              }
+            }
+          });
+        }
+      } else if (themeId === 'dark-aramco') {
+        // Dark Aramco Theme: dark backgrounds, light text
+        if (slide.background === '#ffffff' || !slide.background) {
+          slide.background = '#1a1a1a';
+        } else if (slide.background && !slide.background.includes('gradient') && slide.background !== '#36393F' && slide.background !== '#1a1a1a') {
+          // Convert other solid colors to dark, but keep gradients and existing dark colors
+          slide.background = '#1a1a1a';
+        }
+        // Update text colors for dark backgrounds
+        if (slide.elements) {
+          slide.elements.forEach(el => {
+            if (el.type === 'text') {
+              // Change dark text to light text for dark backgrounds
+              if (el.color === '#333333' || el.color === '#666666' || el.color === '#024c3a') {
+                el.color = '#ffffff';
+              }
+              // Keep blue (#00aae7) and white colors as they work on dark backgrounds
+            } else if (el.type === 'shape') {
+              // Update line colors for dark backgrounds - use blue instead of green
+              if (el.strokeColor === '#006c35') {
+                el.strokeColor = '#00aae7'; // Use blue instead of green on dark
+              }
+            }
+          });
+        }
+      } else if (themeId === 'blue-aramco') {
+        // Blue Aramco Theme: similar to Aramco but with blue accents
+        // First slide gets special gradient background
+        if (slideIndex === 0) {
+          slide.background = 'linear-gradient(135deg, #004C45 0%, #006c35 50%, #0097D6 100%)';
+          slide.isBlueAramcoTitle = true;
+        } else if (!slide.background || slide.background === '#1a1a1a') {
+          // Other slides get white background
+          slide.background = '#ffffff';
+        }
+        // Update green colors to blue in elements
+        if (slide.elements) {
+          slide.elements.forEach(el => {
+            if (el.type === 'text') {
+              // Change green primary color to blue
+              if (el.color === '#024c3a') {
+                el.color = '#00aae7';
+              }
+              // Reset white text to dark for white backgrounds
+              if ((slide.background === '#ffffff' || !slide.background) && (el.color === '#ffffff' || el.color === '#cccccc')) {
+                el.color = '#333333';
+              }
+            } else if (el.type === 'shape') {
+              // Change green lines to blue
+              if (el.strokeColor === '#006c35') {
+                el.strokeColor = '#00aae7';
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+
   // Load and apply theme
   function loadTheme(themeId) {
     const theme = availableThemes.find(t => t.id === themeId);
@@ -7577,40 +7710,48 @@
         state.slides[0].background = undefined; // No background (will render as white)
       } else {
         // Existing presentation: clear all backgrounds, gradients, and remove theme-specific styling
-        state.slides.forEach(slide => {
-          if (slide) {
-            // Clear background - remove gradients, colors, templates (set to undefined for pure white)
-            slide.background = undefined;
-            // Remove any theme-specific layout attributes
-            if (slide.layout) {
-              slide.layout = undefined;
-            }
-            // Keep elements (text boxes, shapes) but remove theme-specific styling
-            // Elements will keep their content but render with default styling
-          }
-        });
+        clearPreviousThemeStyles();
+        applyThemeToExistingPresentation('blank');
       }
       normalizeState(state);
       renderAll();
-    } else if (themeId === 'aramco' && isNewPresentation) {
-      // Aramco theme: create Aramco template slides
-      const templateSlides = createAramcoTemplateSlides();
-      state.slides = templateSlides;
-      state.currentSlideIndex = 0;
+    } else if (themeId === 'aramco') {
+      if (isNewPresentation) {
+        // Aramco theme: create Aramco template slides
+        const templateSlides = createAramcoTemplateSlides();
+        state.slides = templateSlides;
+        state.currentSlideIndex = 0;
+      } else {
+        // Existing presentation: apply Aramco theme styles
+        clearPreviousThemeStyles();
+        applyThemeToExistingPresentation('aramco');
+      }
       normalizeState(state);
       renderAll();
-    } else if (themeId === 'dark-aramco' && isNewPresentation) {
-      // Dark Aramco theme: create dark variant template slides
-      const templateSlides = createDarkAramcoTemplateSlides();
-      state.slides = templateSlides;
-      state.currentSlideIndex = 0;
+    } else if (themeId === 'dark-aramco') {
+      if (isNewPresentation) {
+        // Dark Aramco theme: create dark variant template slides
+        const templateSlides = createDarkAramcoTemplateSlides();
+        state.slides = templateSlides;
+        state.currentSlideIndex = 0;
+      } else {
+        // Existing presentation: apply Dark Aramco theme styles
+        clearPreviousThemeStyles();
+        applyThemeToExistingPresentation('dark-aramco');
+      }
       normalizeState(state);
       renderAll();
-    } else if (themeId === 'blue-aramco' && isNewPresentation) {
-      // Blue Aramco theme: create blue variant template slides
-      const templateSlides = createBlueAramcoTemplateSlides();
-      state.slides = templateSlides;
-      state.currentSlideIndex = 0;
+    } else if (themeId === 'blue-aramco') {
+      if (isNewPresentation) {
+        // Blue Aramco theme: create blue variant template slides
+        const templateSlides = createBlueAramcoTemplateSlides();
+        state.slides = templateSlides;
+        state.currentSlideIndex = 0;
+      } else {
+        // Existing presentation: apply Blue Aramco theme styles
+        clearPreviousThemeStyles();
+        applyThemeToExistingPresentation('blue-aramco');
+      }
       normalizeState(state);
       renderAll();
     } else if (isNewPresentation) {
