@@ -735,11 +735,18 @@
       if (slide.layout) {
         stageEl.setAttribute('data-layout', slide.layout);
       }
+      // Add data attribute for Blue Aramco title slide pattern overlay
+      if (slide.isBlueAramcoTitle) {
+        stageEl.setAttribute('data-blue-aramco-title', 'true');
+      } else {
+        stageEl.removeAttribute('data-blue-aramco-title');
+      }
     } else {
       stageEl.removeAttribute('data-has-background');
       stageEl.style.removeProperty('--slide-background');
       stageEl.style.setProperty('background', '#ffffff', 'important');
       stageEl.removeAttribute('data-layout');
+      stageEl.removeAttribute('data-blue-aramco-title');
     }
     
     // Determine if this is a title-only slide
@@ -7469,10 +7476,62 @@
 
   // Create Blue Aramco template slides (blue variant of Aramco theme)
   function createBlueAramcoTemplateSlides() {
-    const slides = createAramcoTemplateSlides();
-    // Convert to blue theme by adjusting colors - replace green with blue
-    slides.forEach(slide => {
-      // Update text colors to blue theme
+    const slides = [];
+    
+    // Slide 1: Title slide with dark blue-to-green gradient background, logo, and text layout
+    const slide1 = defaultSlide();
+    // Dark teal to green gradient background - pattern overlay will be added via CSS
+    slide1.background = 'linear-gradient(135deg, #004C45 0%, #006c35 50%, #0097D6 100%)';
+    // Mark this slide as Blue Aramco title slide for CSS pattern overlay
+    slide1.isBlueAramcoTitle = true;
+    
+    // Add Aramco digital logo in top-right corner
+    // Slide is 960px wide with 56px padding, so content area is 848px
+    // Logo width is 180px, position at right edge: 960 - 56 - 180 = 724px
+    slide1.elements.push({
+      id: uid(),
+      type: 'image',
+      x: 724, // Right side accounting for padding
+      y: 20,  // Top margin
+      width: 180,
+      height: 60,
+      src: './pic/aramco-digital.png',
+      fileName: 'aramco-digital.png',
+      fileType: 'image',
+      locked: false
+    });
+    
+    // Text layout on left side - all in white
+    // Large title: "project title (60pt)"
+    slide1.elements.push(createAramcoTextElement('project title (60pt)', 56, 80, {
+      fontSize: 60,
+      color: '#ffffff',
+      fontWeight: 'bold',
+      textAlign: 'left'
+    }));
+    
+    // Presentation descriptor: "Presentation descriptor (12pt)"
+    slide1.elements.push(createAramcoTextElement('Presentation descriptor (12pt)', 56, 160, {
+      fontSize: 12,
+      color: '#ffffff',
+      textAlign: 'left'
+    }));
+    
+    // Date: "Date"
+    slide1.elements.push(createAramcoTextElement('Date', 56, 190, {
+      fontSize: 12,
+      color: '#ffffff',
+      textAlign: 'left'
+    }));
+    
+    slides.push(slide1);
+    
+    // Get the rest of the slides from the original template (starting from slide 2)
+    const originalSlides = createAramcoTemplateSlides();
+    // Skip the first slide and add the rest
+    for (let i = 1; i < originalSlides.length; i++) {
+      const slide = originalSlides[i];
+      // Convert to blue theme by adjusting colors - replace green with blue
       slide.elements.forEach(el => {
         if (el.type === 'text') {
           // Change green primary color (#024c3a) to blue (#00aae7)
@@ -7491,7 +7550,9 @@
           }
         }
       });
-    });
+      slides.push(slide);
+    }
+    
     return slides;
   }
 
