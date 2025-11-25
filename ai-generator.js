@@ -1641,7 +1641,7 @@
 
   // Theme selection function - receives theme identifier directly
   function selectTheme(themeIdentifier) {
-    // themeIdentifier should be: "Aramco", "Blue", "Modern", "Gradient", "Dark"
+    // themeIdentifier should be: "Aramco", "Blue", "Dark", "Blank"
     
     // Ensure themeIdentifier is a valid string (never undefined or null)
     if (!themeIdentifier || typeof themeIdentifier !== 'string') {
@@ -1654,33 +1654,21 @@
     window.selectedTheme = validTheme;
     selectedTheme = validTheme;
     
-    // Update visual state for all theme cards
-    const themeBoxes = document.querySelectorAll('.ai-theme-box');
+    // Update visual state for all theme cards (using same structure as main theme modal)
+    // Scope to AI generator theme grid only
+    const themeBoxes = document.querySelectorAll('#ai-generator-page .ai-theme-grid .theme-box, .ai-generator-page .ai-theme-grid .theme-box');
     themeBoxes.forEach(box => {
       box.classList.remove('active');
       box.classList.remove('selected');
-      // Remove check icon from all cards
-      removeCheckIcon(box);
     });
     
-    // Map identifier to display name for card matching
-    const identifierToNameMap = {
-      'Aramco': 'Aramco',
-      'Blue': 'Blue',
-      'Modern': 'Modern Minimal',
-      'Gradient': 'Gradient Soft',
-      'Dark': 'Dark Mode'
-    };
-    
-    const displayName = identifierToNameMap[themeIdentifier] || themeIdentifier;
-    
+    // Find and activate the selected theme box by identifier
+    // Only one card should be active at a time
     themeBoxes.forEach(box => {
-      const boxLabel = box.querySelector('.ai-theme-label');
-      if (boxLabel && boxLabel.textContent === displayName) {
+      const boxIdentifier = box.dataset.themeIdentifier;
+      if (boxIdentifier === validTheme) {
         box.classList.add('active');
         box.classList.add('selected');
-        // Add check icon to selected card
-        addCheckIcon(box);
       }
     });
     
@@ -1712,6 +1700,12 @@
 
     // Always convert to integer using parseInt
     const slideCount = parseInt(slideCountInput, 10);
+
+    // Validate slide count range (1-50)
+    if (isNaN(slideCount) || slideCount < 1 || slideCount > 50) {
+      alert('Slide count must be between 1 and 50.');
+      return;
+    }
 
     // Validate theme selection - ensure selectedTheme is NOT undefined, null, or empty
     if (!selectedTheme || selectedTheme === null || selectedTheme === undefined || selectedTheme === '') {
@@ -1809,9 +1803,9 @@
       // Always convert to integer using parseInt
       const selectedSlideCount = parseInt(slideCountInput, 10);
 
-      // Validate slideCount is a valid number
-      if (isNaN(selectedSlideCount) || selectedSlideCount < 1) {
-        alert('Please enter a valid number of slides.');
+      // Validate slide count range (1-50)
+      if (isNaN(selectedSlideCount) || selectedSlideCount < 1 || selectedSlideCount > 50) {
+        alert('Slide count must be between 1 and 50.');
         stopLoading();
         return;
       }
@@ -2018,11 +2012,7 @@
     }
     console.log('Showing AI page');
     page.classList.remove('hidden');
-    // Hide workspace content
-    const stageWrap = document.querySelector('.stage-wrap');
-    const sidebar = document.getElementById('slides-sidebar');
-    if (stageWrap) stageWrap.style.display = 'none';
-    if (sidebar) sidebar.style.display = 'none';
+    // Modal overlay - workspace content remains visible behind backdrop
     isAIPageVisible = true;
   }
 
@@ -2031,11 +2021,7 @@
     if (!page) return;
     console.log('Hiding AI page');
     page.classList.add('hidden');
-    // Show workspace content
-    const stageWrap = document.querySelector('.stage-wrap');
-    const sidebar = document.getElementById('slides-sidebar');
-    if (stageWrap) stageWrap.style.display = '';
-    if (sidebar) sidebar.style.display = '';
+    // Modal overlay - workspace content remains visible
     isAIPageVisible = false;
   }
 
@@ -2105,56 +2091,107 @@
     if (topicContent) {
       topicContent.classList.add('active');
     }
+
+    // Workflow tab switching
+    const workflowTabs = aiPage.querySelectorAll('.ai-workflow-tab');
+    workflowTabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const workflow = this.dataset.workflow;
+        
+        // Update tab active state
+        workflowTabs.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Update workflow content visibility
+        document.querySelectorAll('.ai-generator-workflow-content').forEach(content => {
+          content.classList.remove('active');
+        });
+        
+        let activeContent = null;
+        if (workflow === 'topic') {
+          activeContent = document.getElementById('ai-page-content-topic');
+        } else if (workflow === 'text') {
+          activeContent = document.getElementById('ai-page-content-text');
+        } else if (workflow === 'improve') {
+          activeContent = document.getElementById('ai-page-content-improve');
+        }
+        
+        if (activeContent) {
+          activeContent.classList.add('active');
+        }
+        
+        // Show/hide options section (hide for improve workflow)
+        const optionsSection = aiPage.querySelector('.ai-generator-options');
+        if (optionsSection) {
+          optionsSection.style.display = workflow === 'improve' ? 'none' : 'flex';
+        }
+      });
+    });
     
-    // Theme box selection - Create proper theme cards
-    const themeBoxes = aiPage.querySelectorAll('.ai-theme-box');
-    const themeMap = {
-      'T1': { id: 'aramco', name: 'Aramco', identifier: 'Aramco', letter: 'A' },
-      'T2': { id: 'blue', name: 'Blue', identifier: 'Blue', letter: 'B' },
-      'T3': { id: 'modern-minimal', name: 'Modern Minimal', identifier: 'Modern', letter: 'M' },
-      'T4': { id: 'gradient-soft', name: 'Gradient Soft', identifier: 'Gradient', letter: 'G' },
-      'T5': { id: 'dark-mode', name: 'Dark Mode', identifier: 'Dark', letter: 'D' },
-      'T6': { id: 'aramco', name: 'Aramco', identifier: 'Aramco', letter: 'A' }
-    };
-    
-    themeBoxes.forEach(box => {
-      const themeData = themeMap[box.dataset.theme];
-      if (themeData) {
-        // Create gradient section with theme-specific gradient
-        const gradientSection = document.createElement('div');
-        gradientSection.className = 'ai-theme-gradient';
-        gradientSection.style.cssText = 'flex: 1; min-height: 110px; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box;';
+    // Theme box selection - Use EXACT same structure and logic as main theme modal
+    const aiThemesGrid = aiPage.querySelector('#ai-themes-grid');
+    if (aiThemesGrid) {
+      // Use the EXACT same availableThemes array from app.js (exposed via window)
+      const themesToUse = window.availableThemes || [];
+      
+      // Map theme IDs to identifiers for AI generator compatibility
+      const themeIdentifierMap = {
+        'blank': 'Blank',
+        'aramco': 'Aramco',
+        'dark-aramco': 'Dark',
+        'blue-aramco': 'Blue'
+      };
+      
+      aiThemesGrid.innerHTML = '';
+      
+      // Create theme boxes using EXACT same structure as main theme modal
+      themesToUse.forEach(theme => {
+        // Create simple box container (EXACT same as main theme modal)
+        const themeBox = document.createElement('div');
+        themeBox.className = 'theme-box';
+        themeBox.dataset.themeId = theme.id;
+        themeBox.dataset.themeIdentifier = themeIdentifierMap[theme.id] || theme.id;
         
-        const letter = document.createElement('div');
-        letter.className = 'ai-theme-letter';
-        letter.textContent = themeData.letter;
-        letter.style.cssText = 'font-size: 64px; font-weight: 700; color: #ffffff; font-family: Inter, system-ui, sans-serif; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); line-height: 1;';
-        gradientSection.appendChild(letter);
+        // Create color preview swatch (EXACT same as main theme modal)
+        const colorSwatch = document.createElement('div');
+        colorSwatch.className = 'theme-box-swatch';
         
-        // Create bottom bar with white background
-        const bottomBar = document.createElement('div');
-        bottomBar.className = 'ai-theme-bottom';
-        bottomBar.style.cssText = 'height: 70px; width: 100%; background: #ffffff; border-top: 1px solid rgba(0, 0, 0, 0.06); display: flex; align-items: center; justify-content: center; padding: 0 24px; flex-shrink: 0; box-sizing: border-box;';
+        // Set specific colors for each theme (EXACT same as main theme modal)
+        const themeSwatchColors = {
+          'blank': '#FFFFFF',
+          'aramco': '#004F44',
+          'dark-aramco': '#2E7BA6',
+          'blue-aramco': '#58A9E0'
+        };
         
+        const swatchColor = themeSwatchColors[theme.id] || theme.colors.primary;
+        colorSwatch.style.backgroundColor = swatchColor;
+        
+        // Blank theme: add border to make white swatch visible (EXACT same as main theme modal)
+        if (theme.id === 'blank') {
+          colorSwatch.style.border = '1px solid #e5e7eb';
+        }
+        
+        // Create theme name label (EXACT same as main theme modal)
         const label = document.createElement('div');
-        label.className = 'ai-theme-label';
-        label.textContent = themeData.name;
-        label.style.cssText = 'font-size: 16px; font-weight: 700; color: #1A76A6; font-family: Inter, system-ui, sans-serif; text-align: center; width: 100%; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.5;';
-        bottomBar.appendChild(label);
+        label.className = 'theme-box-label';
+        label.textContent = theme.name;
         
-        // Clear box and add new structure with wide landscape presentation-style aspect ratio (400px × 180px)
-        box.innerHTML = '';
-        box.style.cssText = 'width: 100%; max-width: 400px; height: 180px; background: #ffffff; border: 2px solid #0097D6; border-radius: 12px; cursor: pointer; display: flex; flex-direction: column; transition: all 0.2s ease; position: relative; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);';
-        box.appendChild(gradientSection);
-        box.appendChild(bottomBar);
-        box.dataset.themeId = themeData.id;
+        // Assemble box (EXACT same as main theme modal)
+        themeBox.appendChild(colorSwatch);
+        themeBox.appendChild(label);
         
         // Attach click handler - calls selectTheme() with theme identifier
-        box.addEventListener('click', () => {
-          selectTheme(themeData.identifier);
+        themeBox.addEventListener('click', () => {
+          selectTheme(themeIdentifierMap[theme.id] || theme.id);
         });
-      }
-    });
+        
+        aiThemesGrid.appendChild(themeBox);
+      });
+    }
 
     // Restore selected theme state if one was previously selected
     const currentSelectedTheme = window.selectedTheme || selectedTheme;
@@ -2199,6 +2236,33 @@
     }
 
     syncInputs();
+
+    // Add close button handler - use existing window.closeAIGenerator function
+    const closeBtn = aiPage.querySelector('.ai-generator-close');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.closeAIGenerator === 'function') {
+          window.closeAIGenerator();
+        } else {
+          hideAIPage(); // Fallback if function doesn't exist
+        }
+      });
+    }
+
+    // Add backdrop click handler - only close if clicking directly on backdrop
+    const backdrop = aiPage.querySelector('.ai-generator-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', function(e) {
+        // Only close if clicking directly on backdrop, not on modal content
+        if (e.target === backdrop) {
+          e.preventDefault();
+          e.stopPropagation();
+          hideAIPage();
+        }
+      });
+    }
 
     // Hide AI page when clicking on slides or navigating
     window.addEventListener('click', (e) => {

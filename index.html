@@ -40,7 +40,7 @@
         <div class="new-menu tw-transition-all tw-duration-200 tw-ease-out tw-opacity-0 tw-pointer-events-none" role="menu" aria-label="Create presentation options" data-new-menu>
           <span class="new-menu-heading">CREATE NEW</span>
           <div class="new-menu-options">
-            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./blank-presentation.html">
+            <button type="button" class="new-menu-item" data-new-action="blank" data-new-href="./index.html">
               <span class="new-menu-icon">＋</span>
               <span class="new-menu-text">
                 <strong>Blank presentation</strong>
@@ -109,7 +109,7 @@
       </div>
 
       <div class="topbar-right">
-        <button class="top-btn ai-generate-btn" id="btn-ai-generate" title="AI Generate">
+        <button class="top-btn ai-generate-btn" id="ai-generate-btn" title="AI Generate">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
@@ -1309,8 +1309,7 @@
             setOpen(false);
             if (target) {
               const url = new URL(target, window.location.href);
-              // Don't add presentation ID for blank-presentation.html
-              if (!url.pathname.includes('blank-presentation.html') && !url.searchParams.has('presentation')) {
+              if (!url.searchParams.has('presentation')) {
                 url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
               }
               window.location.href = url.toString();
@@ -1800,88 +1799,141 @@
 
   <!-- AI Generator Full Page View -->
   <div id="ai-generator-page" class="ai-generator-page hidden">
+    <div class="ai-generator-backdrop"></div>
     <div class="ai-generator-container">
-      <!-- Left Side: AI Controls -->
-      <div class="ai-generator-left">
-        <div class="ai-generator-content">
-          <h2 class="ai-generator-title">AI Presentation Generator</h2>
-          
-          <!-- Options Section -->
-          <div class="ai-generator-options">
-            <div class="ai-option-group">
-              <label class="ai-option-label" for="ai-slide-count">Number of Slides</label>
-              <select id="ai-slide-count" class="ai-select">
-                <option value="5">5 slides</option>
-                <option value="8" selected>8 slides</option>
-                <option value="10">10 slides</option>
-                <option value="12">12 slides</option>
-                <option value="15">15 slides</option>
-                <option value="20">20 slides</option>
-              </select>
+      <!-- Modal Header -->
+      <div class="ai-generator-header">
+        <h2 class="ai-generator-title">AI Presentation Generator</h2>
+        <button class="ai-generator-close" aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="ai-generator-body">
+        <!-- Left Side: AI Controls -->
+        <div class="ai-generator-left">
+          <div class="ai-generator-content">
+            <!-- Workflow Tabs -->
+            <div class="ai-workflow-tabs">
+              <button class="ai-workflow-tab active" data-workflow="topic" id="ai-workflow-tab-topic">
+                <span>Topic</span>
+              </button>
+              <button class="ai-workflow-tab" data-workflow="text" id="ai-workflow-tab-text">
+                <span>From Text</span>
+              </button>
+              <button class="ai-workflow-tab" data-workflow="improve" id="ai-workflow-tab-improve">
+                <span>Improve Slides</span>
+              </button>
             </div>
-            <div class="ai-option-group">
-              <label class="ai-option-label" for="ai-language-selector">Language</label>
-              <select id="ai-language-selector" class="ai-select">
-                <option value="en" selected>English</option>
-                <option value="ar">Arabic</option>
-              </select>
+
+            <!-- Options Section -->
+            <div class="ai-generator-options">
+              <div class="ai-option-group">
+                <label class="ai-option-label" for="number-of-slides">Number of Slides</label>
+                <input
+                  type="number"
+                  id="number-of-slides"
+                  class="ai-select"
+                  min="1"
+                  max="50"
+                  value="8"
+                  placeholder="Enter slide count"
+                />
+              </div>
+              <div class="ai-option-group">
+                <label class="ai-option-label" for="ai-language-selector">Language</label>
+                <select id="ai-language-selector" class="ai-select">
+                  <option value="en" selected>English</option>
+                  <option value="ar">Arabic</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Topic Workflow Content -->
+            <div class="ai-generator-workflow-content active" id="ai-page-content-topic">
+              <div class="ai-input-section">
+                <label class="ai-input-label" for="ai-input">Enter presentation topic</label>
+                <input 
+                  type="text" 
+                  id="ai-input" 
+                  class="ai-input" 
+                  placeholder="e.g., Introduction to Machine Learning"
+                />
+              </div>
+            </div>
+
+            <!-- Text Workflow Content -->
+            <div class="ai-generator-workflow-content" id="ai-page-content-text">
+              <div class="ai-input-section">
+                <label class="ai-input-label" for="ai-page-text-input">Paste your slide content</label>
+                <textarea 
+                  id="ai-page-text-input" 
+                  class="ai-textarea" 
+                  placeholder="Paste your text here..."
+                  rows="6"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Improve Workflow Content -->
+            <div class="ai-generator-workflow-content" id="ai-page-content-improve">
+              <div class="ai-input-section">
+                <p class="ai-info-text">Improve your existing slides with AI-powered enhancements.</p>
+              </div>
+            </div>
+
+            <!-- Generate Button -->
+            <button class="ai-submit-btn" id="ai-page-generate-btn">
+              <span>Generate Presentation</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Side: Theme Selection -->
+        <div class="ai-generator-right">
+          <div class="ai-right-content">
+            <!-- Theme Selection Box -->
+            <div class="ai-theme-selection-box">
+              <h3 class="ai-theme-selection-title">Choose the themes</h3>
+              <div class="ai-theme-grid" id="ai-themes-grid">
+                <!-- Theme boxes will be dynamically created here -->
+              </div>
+            </div>
+
+            <!-- AI Style Recommendation Panel -->
+            <div class="ai-panel ai-style-recommendation">
+              <h4 class="ai-panel-title">AI Style Recommendation</h4>
+              <p class="ai-panel-text">AI can suggest fonts, accent colors, and layout. (Coming soon or already wired.)</p>
+            </div>
+
+            <!-- AI Options Summary Panel -->
+            <div class="ai-panel ai-options-summary">
+              <h4 class="ai-panel-title">AI Options Summary</h4>
+              <ul class="ai-panel-list">
+                <li>Auto theme suggestion</li>
+                <li>Slide structure suggestion</li>
+                <li>Layout & style recommendations</li>
+                <li>Smart length control</li>
+              </ul>
             </div>
           </div>
-
-          <!-- Topic Workflow Content -->
-          <div class="ai-generator-workflow-content active" id="ai-page-content-topic">
-            <div class="ai-input-section">
-              <label class="ai-input-label" for="ai-input">Enter presentation topic</label>
-              <input 
-                type="text" 
-                id="ai-input" 
-                class="ai-input" 
-                placeholder="e.g., Introduction to Machine Learning"
-              />
-            </div>
-          </div>
-
-          <!-- Text Workflow Content -->
-          <div class="ai-generator-workflow-content" id="ai-page-content-text">
-            <div class="ai-input-section">
-              <label class="ai-input-label" for="ai-page-text-input">Paste your slide content</label>
-              <textarea 
-                id="ai-page-text-input" 
-                class="ai-textarea" 
-                placeholder="Paste your text here..."
-                rows="6"
-              ></textarea>
-            </div>
-          </div>
-
-          <!-- Improve Workflow Content -->
-          <div class="ai-generator-workflow-content" id="ai-page-content-improve">
-            <div class="ai-input-section">
-              <p class="ai-info-text">Improve your existing slides with AI-powered enhancements.</p>
-            </div>
-          </div>
-
-          <!-- Generate Button -->
-          <button class="ai-submit-btn" id="ai-page-generate-btn">
-            <span>Generate Presentation</span>
-          </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Right Side: Theme Selection -->
-      <div class="ai-generator-right">
-        <div class="ai-theme-selection-box">
-          <h3 class="ai-theme-selection-title">Choose the themes</h3>
-          <div class="ai-theme-grid">
-            <div class="ai-theme-box" data-theme="T1">T1</div>
-            <div class="ai-theme-box" data-theme="T2">T2</div>
-            <div class="ai-theme-box" data-theme="T3">T3</div>
-            <div class="ai-theme-box" data-theme="T4">T4</div>
-            <div class="ai-theme-box" data-theme="T5">T5</div>
-            <div class="ai-theme-box" data-theme="T6">T6</div>
-          </div>
-        </div>
-      </div>
+  <!-- FIXED AI PANEL (working version) -->
+  <div id="ai-panel" class="ai-panel hidden">
+    <div class="ai-panel-header">
+      <h2>AI Generator</h2>
+      <button id="ai-close-btn">×</button>
+    </div>
+
+    <div class="ai-panel-body">
+      <p>AI tools will appear here...</p>
     </div>
   </div>
 </body>
