@@ -6907,6 +6907,9 @@
     { id: 'dark-aramco', name: 'AD Dark Theme', colors: { primary: '#00aae7', secondary: '#024c3a', background: '#1a1a1a' } },
     { id: 'aramco', name: 'AD Theme 2', colors: { primary: '#024c3a', secondary: '#00aae7', background: '#ffffff' } }
   ];
+  
+  // Expose availableThemes globally for AI generator to use
+  window.availableThemes = availableThemes;
 
   // Current theme state - default to blank
   let currentTheme = 'blank';
@@ -6936,12 +6939,21 @@
         // Create color preview swatch
         const colorSwatch = document.createElement('div');
         colorSwatch.className = 'theme-box-swatch';
+        
+        // Set specific colors for each theme
+        const themeSwatchColors = {
+          'blank': '#FFFFFF',
+          'aramco': '#004F44',
+          'dark-aramco': '#2E7BA6',
+          'blue-aramco': '#58A9E0'
+        };
+        
+        const swatchColor = themeSwatchColors[theme.id] || theme.colors.primary;
+        colorSwatch.style.backgroundColor = swatchColor;
+        
+        // Blank theme: add border to make white swatch visible
         if (theme.id === 'blank') {
-          // Blank theme: show white with border to make it visible
-          colorSwatch.style.backgroundColor = '#ffffff';
           colorSwatch.style.border = '1px solid #e5e7eb';
-        } else {
-          colorSwatch.style.backgroundColor = theme.colors.primary;
         }
         
         // Create theme name label
