@@ -6,7 +6,7 @@
 (function() {
   'use strict';
 
-  // Global variable to store selected theme name
+  // Global variable to store selected theme ID (e.g., "blank", "aramco", "blue-aramco", "dark-aramco")
   let selectedTheme = null;
   
   // Expose selectedTheme globally for external access
@@ -21,14 +21,44 @@
   //  Loading Indicator Functions
   // ----------------------
 
+  /**
+   * Show clear loading state during AI generation
+   * Provides visual feedback that generation is in progress
+   */
   function showLoading() {
     const loader = document.getElementById("ai-loading");
-    if (loader) loader.classList.remove("hidden");
+    if (loader) {
+      loader.classList.remove("hidden");
+      loader.setAttribute('aria-busy', 'true');
+      console.log('[Loading] AI generation started - showing loading indicator');
+    }
+    
+    // Also disable generate button to prevent multiple clicks
+    const generateBtn = document.getElementById('ai-page-generate-btn');
+    if (generateBtn) {
+      generateBtn.disabled = true;
+      generateBtn.setAttribute('aria-busy', 'true');
+    }
   }
 
+  /**
+   * Hide loading state after AI generation completes
+   * Called on both success and error
+   */
   function hideLoading() {
     const loader = document.getElementById("ai-loading");
-    if (loader) loader.classList.add("hidden");
+    if (loader) {
+      loader.classList.add("hidden");
+      loader.removeAttribute('aria-busy');
+      console.log('[Loading] AI generation completed - hiding loading indicator');
+    }
+    
+    // Re-enable generate button
+    const generateBtn = document.getElementById('ai-page-generate-btn');
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.removeAttribute('aria-busy');
+    }
   }
 
   // ----------------------
@@ -72,83 +102,421 @@
   //  AI Slide Generation Helper
   // ----------------------
 
-  function createAramcoSlide(slideData, index) {
-    // Detect title-only slides (only title, no bullets)
-    const isTitleSlide = !slideData.bullets || slideData.bullets.length === 0;
+  // Helper function to convert theme name to theme ID
+  function getThemeIdFromName(themeName) {
+    if (!themeName) return 'aramco'; // Default
+    
+    const themeNameMap = {
+      'Blank Theme': 'blank',
+      'AD Theme 1': 'blue-aramco',
+      'AD Dark Theme': 'dark-aramco',
+      'AD Theme 2': 'aramco'
+    };
+    
+    // If it's already an ID, return it
+    if (['blank', 'aramco', 'dark-aramco', 'blue-aramco'].includes(themeName)) {
+      return themeName;
+    }
+    
+    // Otherwise, try to map from name
+    return themeNameMap[themeName] || 'aramco';
+  }
 
-    // Create slide object matching defaultSlide() structure exactly: { id: uid(), elements: [] }
+  // Complete theme definition with colors, fonts, spacing, and layout rules
+  function getThemeDefinition(themeId) {
+    // Map theme IDs/names to complete theme definitions
+    const themeDefinitions = {
+      'blank': {
+        colors: {
+          primary: '#333333',
+          secondary: '#666666',
+          background: '#ffffff',
+          text: '#333333',
+          accent: '#666666'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,      // Centered vertically for title slides
+          contentTop: 80,      // Top margin for content slides
+          bulletSpacing: 12,   // Space between bullets
+          leftMargin: 112,     // Left margin for content
+          rightMargin: 112     // Right margin for content
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      },
+      'aramco': {
+        colors: {
+          primary: '#024c3a',
+          secondary: '#00aae7',
+          background: '#ffffff',
+          text: '#024c3a',
+          accent: '#024c3a'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,
+          contentTop: 80,
+          bulletSpacing: 12,
+          leftMargin: 112,
+          rightMargin: 112
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      },
+      'AD Theme 2': {
+        colors: {
+          primary: '#024c3a',
+          secondary: '#00aae7',
+          background: '#ffffff',
+          text: '#024c3a',
+          accent: '#024c3a'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,
+          contentTop: 80,
+          bulletSpacing: 12,
+          leftMargin: 112,
+          rightMargin: 112
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      },
+      'dark-aramco': {
+        colors: {
+          primary: '#00aae7',
+          secondary: '#024c3a',
+          background: '#1a1a1a',
+          text: '#ffffff',
+          accent: '#00aae7'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,
+          contentTop: 80,
+          bulletSpacing: 12,
+          leftMargin: 112,
+          rightMargin: 112
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: '#1a1a1a',
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#1a1a1a',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      },
+      'AD Dark Theme': {
+        colors: {
+          primary: '#00aae7',
+          secondary: '#024c3a',
+          background: '#1a1a1a',
+          text: '#ffffff',
+          accent: '#00aae7'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,
+          contentTop: 80,
+          bulletSpacing: 12,
+          leftMargin: 112,
+          rightMargin: 112
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: '#1a1a1a',
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#1a1a1a',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      },
+      'blue-aramco': {
+        colors: {
+          primary: '#00aae7',
+          secondary: '#006c35',
+          background: '#ffffff',
+          text: '#00aae7',
+          accent: '#00aae7'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,
+          contentTop: 80,
+          bulletSpacing: 12,
+          leftMargin: 112,
+          rightMargin: 112
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: 'linear-gradient(135deg, #004C45 0%, #006c35 50%, #0097D6 100%)', // Special gradient for first slide
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      },
+      'AD Theme 1': {
+        colors: {
+          primary: '#00aae7',
+          secondary: '#006c35',
+          background: '#ffffff',
+          text: '#00aae7',
+          accent: '#00aae7'
+        },
+        fonts: {
+          family: 'Inter, system-ui, sans-serif',
+          titleSize: 58,
+          bodySize: 20,
+          titleWeight: '800',
+          bodyWeight: 'normal'
+        },
+        spacing: {
+          titleTop: 270,
+          contentTop: 80,
+          bulletSpacing: 12,
+          leftMargin: 112,
+          rightMargin: 112
+        },
+        alignment: {
+          title: 'center',
+          body: 'left'
+        },
+        layouts: {
+          titleSlide: {
+            background: 'linear-gradient(135deg, #004C45 0%, #006c35 50%, #0097D6 100%)',
+            titlePosition: { x: 480, y: 270 }
+          },
+          contentSlide: {
+            background: '#ffffff',
+            titlePosition: { x: 480, y: 80 },
+            bulletStartY: 170
+          }
+        }
+      }
+    };
+
+    // Try to find theme by ID first, then by name
+    const theme = themeDefinitions[themeId] || themeDefinitions['aramco']; // Default to aramco
+    return theme;
+  }
+
+  // Legacy function for backward compatibility
+  function getThemeColors(themeId) {
+    const theme = getThemeDefinition(themeId);
+    return {
+      primary: theme.colors.primary,
+      secondary: theme.colors.secondary,
+      background: theme.colors.background,
+      text: theme.colors.text
+    };
+  }
+
+  /**
+   * Create a slide with theme applied at content creation step
+   * This is Step 5 of the clean pipeline: Apply theme + layout to each slide
+   * 
+   * @param {Object} slideData - Normalized slide data from AI (Step 4 output)
+   *   Can be either: { title, bullets } or { title, bulletPoints, layoutType }
+   * @param {number} index - Slide index (0-based)
+   * @param {string} themeId - Theme ID to apply
+   * @returns {Object} Slide object with theme applied
+   */
+  function createAramcoSlide(slideData, index, themeId) {
+    // Get complete theme definition (colors, fonts, spacing, layouts)
+    const theme = getThemeDefinition(themeId || 'aramco');
+    
+    // Handle both old format (bullets) and new format (bulletPoints)
+    const bullets = slideData.bullets || slideData.bulletPoints || [];
+    
+    // Detect layout type: title-only slides vs content slides
+    const isTitleSlide = bullets.length === 0 || slideData.layoutType === 'title';
+    const layoutType = isTitleSlide ? 'titleSlide' : 'contentSlide';
+    
+    // Get layout-specific settings from theme
+    const layout = theme.layouts[layoutType];
+    const backgroundColor = (themeId === 'blue-aramco' && index === 0) 
+      ? theme.layouts.titleSlide.background 
+      : layout.background;
+
+    // Create slide object with theme background applied
     const slideObj = {
       id: generateId(),
       elements: [],
-      layout: isTitleSlide ? 'title' : 'content' // Add layout property
+      layout: isTitleSlide ? 'title' : 'content',
+      background: backgroundColor
     };
 
+    // Mark first slide for blue-aramco theme (for special rendering)
+    if (themeId === 'blue-aramco' && index === 0) {
+      slideObj.isBlueAramcoTitle = true;
+    }
+
     if (isTitleSlide) {
-      // Title-only slide: centered title element
-      // Stage is 960px wide, 540px tall with 40px padding top/bottom, 56px left/right
-      // Content area: 848px wide (960 - 112), 460px tall (540 - 80)
-      // Center: x = 56 + 424 = 480px, y = 40 + 230 = 270px
+      // Title slide: Apply theme typography, spacing, and alignment
+      const titlePos = layout.titlePosition;
       const titleElement = createTextElement(
         slideData.title || '',
-        480, // Center horizontally (960px / 2)
-        270, // Center vertically (540px / 2)
+        titlePos.x,
+        titlePos.y,
         {
-          fontSize: 58,
-          fontWeight: '800',
-          color: '#024c3a',
-          textAlign: 'center',
-          fontFamily: 'Inter, system-ui, sans-serif'
+          fontSize: theme.fonts.titleSize,
+          fontWeight: theme.fonts.titleWeight,
+          color: theme.colors.text,
+          textAlign: theme.alignment.title,
+          fontFamily: theme.fonts.family
         }
       );
       
-      // Mark as title-only slide title
       titleElement.isTitleOnly = true;
       slideObj.elements.push(titleElement);
     } else {
-      // Content slide: title at top, then bullet points
-      // Stage is 960px wide with 56px padding, so center is at 480px
-      // Title starts at top padding (40px) + some margin = ~80px
+      // Content slide: Apply theme typography, spacing, and alignment
+      const contentLayout = theme.layouts.contentSlide;
+      const titlePos = contentLayout.titlePosition;
+      
+      // Title element with theme styling
       const titleElement = createTextElement(
         slideData.title || '',
-        480, // Center horizontally (960px / 2)
-        80, // Top position (after 40px padding + margin)
+        titlePos.x,
+        titlePos.y,
         {
-          fontSize: 42,
+          fontSize: theme.fonts.titleSize * 0.72, // Slightly smaller for content titles (42px)
           fontWeight: '700',
-          color: '#024c3a',
-          textAlign: 'center',
-          fontFamily: 'Inter, system-ui, sans-serif'
+          color: theme.colors.text,
+          textAlign: theme.alignment.title,
+          fontFamily: theme.fonts.family
         }
       );
       titleElement.isContentTitle = true;
       slideObj.elements.push(titleElement);
 
-      // Add bullet points as text elements
-      // Start below title: 80px (title top) + ~50px (title height) + 40px (spacing) = ~170px
-      const bullets = Array.isArray(slideData.bullets) ? slideData.bullets : [];
-      let yPosition = 170; // Start below title with 40px spacing
+      // Bullet points with theme styling
+      // Handle both old format (bullets) and new format (bulletPoints)
+      const bulletPoints = Array.isArray(bullets) ? bullets : [];
+      let yPosition = contentLayout.bulletStartY;
       
-      bullets.forEach((bullet, bulletIndex) => {
+      bulletPoints.forEach((bullet, bulletIndex) => {
         const bulletElement = createTextElement(
           bullet,
-          112, // Left margin (56px padding + 56px for centering content area)
+          theme.spacing.leftMargin,
           yPosition,
           {
-            fontSize: 20,
-            color: '#024c3a',
-            textAlign: 'left',
-            fontFamily: 'Inter, system-ui, sans-serif',
+            fontSize: theme.fonts.bodySize,
+            fontWeight: theme.fonts.bodyWeight,
+            color: theme.colors.text,
+            textAlign: theme.alignment.body,
+            fontFamily: theme.fonts.family,
             lineHeight: 1.6
           }
         );
         bulletElement.isBullet = true;
-        bulletElement.bulletIndex = bulletIndex; // Store index for animation delay
+        bulletElement.bulletIndex = bulletIndex;
         slideObj.elements.push(bulletElement);
-        yPosition += Math.ceil(20 * 1.6) + 12; // Line height + spacing between bullets
+        
+        // Calculate next bullet position using theme spacing
+        yPosition += Math.ceil(theme.fonts.bodySize * 1.6) + theme.spacing.bulletSpacing;
       });
     }
 
-    // Return slide object matching defaultSlide() structure exactly
     return slideObj;
   }
 
@@ -1525,8 +1893,17 @@
   //  AI Presentation Logic
   // ----------------------
 
+  /**
+   * Step 3: Build clean prompt and call AI API
+   * Single API call with all necessary information
+   * 
+   * LOADING STATE: Shows clear loading indicator during generation
+   */
   async function generateSlidesFromAI(topic, slideCount, language, selectedTheme) {
+    // Show clear loading state
     showLoading();
+    console.log(`[AI Generation] Starting generation: topic="${topic}", count=${slideCount}, theme="${selectedTheme}", lang="${language}"`);
+    
     try {
         const response = await fetch('http://localhost:3000/api/ai/generate-slides', {
             method: 'POST',
@@ -1573,10 +1950,10 @@
     const activeContent = document.getElementById(`ai-content-${workflow}`);
     if (activeContent) activeContent.classList.add('active');
 
-    // Show/hide options section (hide for improve workflow)
+    // Options section is always visible for topic and text workflows
     const optionsSection = document.getElementById('ai-options-section');
     if (optionsSection) {
-      optionsSection.style.display = workflow === 'improve' ? 'none' : 'flex';
+      optionsSection.style.display = 'flex';
     }
   }
 
@@ -1641,7 +2018,8 @@
 
   // Theme selection function - receives theme name or identifier
   function selectTheme(themeIdentifier) {
-    // themeIdentifier can be: "AD Theme 1", "AD Theme 2", "AD Dark Theme", "Blank Theme", or theme ID
+    // themeIdentifier can be: theme ID ("blank", "aramco", etc.) or theme name ("Blank Theme", "AD Theme 1", etc.)
+    // Always stores theme ID in selectedTheme
     
     // Ensure themeIdentifier is a valid string (never undefined or null)
     if (!themeIdentifier || typeof themeIdentifier !== 'string') {
@@ -1649,30 +2027,31 @@
       return;
     }
     
-    // Update selected theme globally - always store as string
     const validTheme = String(themeIdentifier).trim();
-    window.selectedTheme = validTheme;
-    selectedTheme = validTheme;
+    
+    // Convert to theme ID if it's a name, otherwise use as-is
+    const themeId = getThemeIdFromName(validTheme);
+    
+    // Store theme ID in selectedTheme (not name)
+    window.selectedTheme = themeId;
+    selectedTheme = themeId;
     
     // Update visual state for all theme cards in AI generator theme grid
     const aiThemesGrid = document.querySelector('#ai-themes-grid');
     if (aiThemesGrid) {
       const themeBoxes = aiThemesGrid.querySelectorAll('.theme-box');
       themeBoxes.forEach(box => {
-        box.classList.remove('active');
-        box.classList.remove('selected');
+        box.classList.remove('active', 'selected');
         
-        // Match by theme name (label text) or theme ID
-        const boxLabel = box.querySelector('.theme-box-label');
+        // Match by theme ID (stored in dataset)
         const boxThemeId = box.dataset.themeId;
-        if (boxLabel && (boxLabel.textContent === validTheme || boxThemeId === validTheme)) {
-          box.classList.add('active');
-          box.classList.add('selected');
+        if (boxThemeId === themeId) {
+          box.classList.add('active', 'selected');
         }
       });
     }
     
-    console.log('Selected theme:', themeIdentifier);
+    console.log('Selected theme ID:', themeId);
   }
 
   // Expose selectTheme globally for external access
@@ -1680,7 +2059,17 @@
 
   // Text workflow handler - defined at module scope
   async function handleTextSubmit() {
+    // Prevent multiple simultaneous generation requests
+    if (isGenerating) {
+      console.warn('Generation already in progress, ignoring duplicate request');
+      return;
+    }
+    
     console.log('AI text button clicked');
+    
+    // Set flag to prevent duplicates
+    isGenerating = true;
+    
     const textInput = document.getElementById('ai-text-input');
     const text = textInput?.value.trim();
     const slideCountInput = document.getElementById('number-of-slides')?.value;
@@ -1689,12 +2078,14 @@
 
     if (!text) {
         alert('Please enter some text.');
+        isGenerating = false; // Reset flag
         return;
     }
 
     // Validate slide count - if empty, treat as null and stop
     if (!slideCountInput || slideCountInput.trim() === '') {
       alert('Please enter the number of slides.');
+      isGenerating = false; // Reset flag
       return;
     }
 
@@ -1704,12 +2095,14 @@
     // Validate slide count range (1-50)
     if (isNaN(slideCount) || slideCount < 1 || slideCount > 50) {
       alert('Slide count must be between 1 and 50.');
+      isGenerating = false; // Reset flag
       return;
     }
 
     // Validate theme selection - ensure selectedTheme is NOT undefined, null, or empty
     if (!selectedTheme || selectedTheme === null || selectedTheme === undefined || selectedTheme === '') {
       alert('Please select a theme.');
+      isGenerating = false; // Reset flag
       return;
     }
 
@@ -1721,30 +2114,116 @@
       if (result.error) {
           alert(result.error);
           hideLoading();
+          isGenerating = false; // Reset flag
           return;
       }
 
       if (!result.slides) {
           alert('No slides returned.');
           hideLoading();
+          isGenerating = false; // Reset flag
           return;
       }
 
-      // Ensure we only generate the exact number of slides requested
-      const slidesToGenerate = result.slides.slice(0, slideCount);
+      // Step 4: Parse AI response into normalized slide data structure
+      // DEFENSIVE CHECK: Handle malformed response gracefully
+      if (!result || typeof result !== 'object') {
+        console.error('[Safety] Invalid response: not an object');
+        alert('Invalid response from server. Please try again.');
+        hideLoading();
+        isGenerating = false;
+        return;
+      }
+      
+      if (result.error) {
+        console.error('[Safety] Server error:', result.error);
+        alert(result.error || 'Error generating slides. Please try again.');
+        hideLoading();
+        isGenerating = false;
+        return;
+      }
+      
+      if (!result.slides || !Array.isArray(result.slides)) {
+        console.error('[Safety] Invalid response: missing or invalid slides array');
+        alert('Invalid response: no slides returned. Please try again.');
+        hideLoading();
+        isGenerating = false;
+        return;
+      }
+      
+      if (result.slides.length === 0) {
+        console.error('[Safety] Invalid response: empty slides array');
+        alert('No slides were generated. Please try again.');
+        hideLoading();
+        isGenerating = false;
+        return;
+      }
 
-      // Create slide objects matching defaultSlide() structure exactly
+      // DEFENSIVE CHECK: Ensure we don't exceed requested count
+      const MAX_SLIDES = 50;
+      const clampedSlideCount = Math.min(slideCount, MAX_SLIDES, result.slides.length);
+      const slidesToGenerate = result.slides.slice(0, clampedSlideCount);
+      
+      // MINIMAL LOG: Slide count requested vs produced
+      if (slidesToGenerate.length !== slideCount) {
+        console.log(`[Slide Count] Requested: ${slideCount}, Using: ${slidesToGenerate.length}`);
+      }
+
+      // selectedTheme already contains theme ID (e.g., "blank", "aramco", "blue-aramco")
+      const themeId = selectedTheme || 'aramco'; // Fallback to 'aramco' if somehow undefined
+      
+      // MINIMAL LOG: Theme applied
+      console.log(`[Theme] Applying theme: ${themeId}`);
+
+      // Step 5: For each slide - Apply theme + layout
+      // Theme is applied at content creation step (not after, not separately)
+      // DEFENSIVE CHECK: Validate each slide data before creating
       const slideObjects = slidesToGenerate.map((slideData, index) => {
-        return createAramcoSlide(slideData, index);
-      });
+        // DEFENSIVE CHECK: Handle malformed slide data
+        if (!slideData || typeof slideData !== 'object') {
+          console.warn(`[Safety] Invalid slide data at index ${index}, using defaults`);
+          slideData = { title: `Slide ${index + 1}`, bullets: [] };
+        }
+        
+        // Normalize slide data structure with defensive checks
+        const normalizedSlideData = {
+          id: `slide-${index}`,
+          title: (slideData.title && typeof slideData.title === 'string') ? slideData.title.trim() : `Slide ${index + 1}`,
+          bulletPoints: Array.isArray(slideData.bullets) ? slideData.bullets : [],
+          notes: (slideData.notes && typeof slideData.notes === 'string') ? slideData.notes : '',
+          layoutType: (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content'
+        };
+        
+        // Ensure title is not empty
+        if (!normalizedSlideData.title || normalizedSlideData.title.length === 0) {
+          normalizedSlideData.title = `Slide ${index + 1}`;
+        }
+        
+        // Apply theme + layout during creation (not after)
+        return createAramcoSlide(normalizedSlideData, index, themeId);
+      }).filter(slide => slide !== null && slide !== undefined); // Remove any null/undefined slides
+      
+      // DEFENSIVE CHECK: Final validation - ensure exact count
+      if (slideObjects.length !== clampedSlideCount) {
+        console.warn(`[Safety] Created ${slideObjects.length} slides, expected ${clampedSlideCount}`);
+        // Trim to exact count if we somehow got more
+        if (slideObjects.length > clampedSlideCount) {
+          slideObjects.splice(clampedSlideCount);
+        }
+      }
+      
+      // MINIMAL LOG: Final slide count
+      console.log(`[Final] Created ${slideObjects.length} slides with theme ${themeId}`);
 
-      // Add slides to state through window.addAISlides (exposed by app.js)
+      // Step 6: Save slides and render once
+      // Theme colors are already applied during slide creation (Step 5)
+      // No separate theme deck is created - slides are created WITH theme applied
       if (typeof window !== 'undefined' && window.addAISlides) {
-        window.addAISlides(slideObjects);
+        window.addAISlides(slideObjects, themeId);
       } else {
         // Fallback: dispatch event that app.js listens to
         const event = new CustomEvent('ai-slides-generated', { 
-          detail: { slides: slideObjects },
+          detail: { slides: slideObjects, themeId: themeId },
           bubbles: true
         });
         window.dispatchEvent(event);
@@ -1760,13 +2239,8 @@
       alert(`Error generating slides: ${err.message || 'Unknown error'}`);
     } finally {
       hideLoading();
+      isGenerating = false; // Reset flag
     }
-  }
-
-  function handleImproveSubmit() {
-    console.log('AI improve button clicked');
-    alert('Improve functionality coming soon!');
-    // TODO: Implement improve slides functionality
   }
 
   // End of clean AI system
@@ -1775,8 +2249,20 @@
   //  Generate Slides Functions
   // ----------------------
 
+  // Flag to prevent multiple simultaneous generation requests
+  let isGenerating = false;
+
   async function generateSlidesRequest() {
+    // Prevent multiple simultaneous generation requests
+    if (isGenerating) {
+      console.warn('Generation already in progress, ignoring duplicate request');
+      return;
+    }
+    
     console.log('AI topic button clicked');
+    
+    // Set flag to prevent duplicates
+    isGenerating = true;
     
     // Start loading immediately
     startLoading();
@@ -1823,10 +2309,11 @@
         : 'en';
 
       // Ensure all values are defined before sending
+      // selectedTheme contains theme ID (e.g., "blank", "aramco", "blue-aramco", "dark-aramco")
       const requestBody = {
         slideCount: selectedSlideCount,  // Always a number
-        theme: selectedTheme,            // Always a string (validated above)
-        topic: selectedTopic,            // Always a string (validated above)
+        theme: selectedTheme,            // Theme ID (validated above)
+        topic: selectedTopic,           // Always a string (validated above)
         language: finalLanguage          // Always a string (defaults to 'en')
       };
 
@@ -1868,20 +2355,76 @@
         return;
       }
 
+      // Server already handles deduplication and exact count, but add safety check
+      if (!data.slides || !Array.isArray(data.slides)) {
+        alert('Invalid response: no slides array');
+        stopLoading();
+        return;
+      }
+
+      // Ensure we don't exceed requested count (server should handle this, but double-check)
       const slidesToGenerate = data.slides.slice(0, selectedSlideCount);
 
-      // Create slide objects matching defaultSlide() structure exactly
-      const slideObjects = slidesToGenerate.map((slideData, index) => {
-        return createAramcoSlide(slideData, index);
-      });
+      if (slidesToGenerate.length !== selectedSlideCount) {
+        console.warn(`Slide count mismatch: requested ${selectedSlideCount}, received ${slidesToGenerate.length}`);
+      }
 
-      // Add slides to state through window.addAISlides (exposed by app.js)
+      // Step 4: Parse AI response into normalized slide data structure
+      // selectedTheme already contains theme ID (e.g., "blank", "aramco", "blue-aramco")
+      const themeId = selectedTheme || 'aramco'; // Fallback to 'aramco' if somehow undefined
+      
+      // MINIMAL LOG: Theme applied
+      console.log(`[Theme] Applying theme: ${themeId}`);
+
+      // Step 5: For each slide - Apply theme + layout
+      // Theme is applied at content creation step (not after, not separately)
+      // DEFENSIVE CHECK: Validate each slide data before creating
+      const slideObjects = slidesToGenerate.map((slideData, index) => {
+        // DEFENSIVE CHECK: Handle malformed slide data
+        if (!slideData || typeof slideData !== 'object') {
+          console.warn(`[Safety] Invalid slide data at index ${index}, using defaults`);
+          slideData = { title: `Slide ${index + 1}`, bullets: [] };
+        }
+        
+        // Normalize slide data structure with defensive checks
+        const normalizedSlideData = {
+          id: `slide-${index}`,
+          title: (slideData.title && typeof slideData.title === 'string') ? slideData.title.trim() : `Slide ${index + 1}`,
+          bulletPoints: Array.isArray(slideData.bullets) ? slideData.bullets : [],
+          notes: (slideData.notes && typeof slideData.notes === 'string') ? slideData.notes : '',
+          layoutType: (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content'
+        };
+        
+        // Ensure title is not empty
+        if (!normalizedSlideData.title || normalizedSlideData.title.length === 0) {
+          normalizedSlideData.title = `Slide ${index + 1}`;
+        }
+        
+        // Apply theme + layout during creation (not after)
+        return createAramcoSlide(normalizedSlideData, index, themeId);
+      }).filter(slide => slide !== null && slide !== undefined); // Remove any null/undefined slides
+      
+      // DEFENSIVE CHECK: Final validation - ensure exact count
+      if (slideObjects.length !== clampedSlideCount) {
+        console.warn(`[Safety] Created ${slideObjects.length} slides, expected ${clampedSlideCount}`);
+        // Trim to exact count if we somehow got more
+        if (slideObjects.length > clampedSlideCount) {
+          slideObjects.splice(clampedSlideCount);
+        }
+      }
+      
+      // MINIMAL LOG: Final slide count
+      console.log(`[Final] Created ${slideObjects.length} slides with theme ${themeId}`);
+
+      // Step 6: Save slides and render once
+      // Theme colors are already applied during slide creation (Step 5)
+      // No separate theme deck is created - slides are created WITH theme applied
       if (typeof window !== 'undefined' && window.addAISlides) {
-        window.addAISlides(slideObjects);
+        window.addAISlides(slideObjects, themeId);
         } else {
         // Fallback: dispatch event that app.js listens to
         const event = new CustomEvent('ai-slides-generated', { 
-          detail: { slides: slideObjects },
+          detail: { slides: slideObjects, themeId: themeId },
           bubbles: true
         });
         window.dispatchEvent(event);
@@ -1896,12 +2439,21 @@
       console.error('Error in generateSlidesRequest:', error);
       alert('Failed to fetch');
     } finally {
-      // Always stop loading, even if there's an error
+      // Always stop loading and reset flag, even if there's an error
       stopLoading();
+      isGenerating = false;
     }
   }
 
-  // Single unified generate handler function
+  /**
+   * Single unified generate handler function
+   * Handles both initial generation and regeneration
+   * 
+   * REGENERATION BEHAVIOR:
+   * - Always replaces existing slides (never appends)
+   * - Shows clear loading state
+   * - Shows exactly one presentation after success
+   */
   async function handleGenerate() {
     // Validate theme selection before proceeding
     const currentTheme = window.selectedTheme || selectedTheme;
@@ -1910,9 +2462,17 @@
       return;
     }
     
+    console.log('[Generate] User clicked Generate button - starting generation/regeneration');
+    
     try {
-      // generateSlidesRequest() handles loading state internally
+      // generateSlidesRequest() handles:
+      // - Loading state (showLoading/stopLoading)
+      // - Clearing existing slides (regeneration behavior)
+      // - Creating slides with theme applied
+      // - Adding slides to state (single presentation, never appended)
       await generateSlidesRequest();
+      
+      console.log('[Generate] Generation completed successfully - showing single presentation');
       
       // Close AI page after successful generation (if it's open)
       if (typeof hideAIPage === 'function' && isAIPageVisible) {
@@ -1920,9 +2480,12 @@
         isAIPageVisible = false;
       }
     } catch (e) {
-      console.error('Generate slides error:', e);
+      console.error('[Generate] Error during generation:', e);
       const errorMessage = e.message || 'An unexpected error occurred while generating slides.';
       alert(`Error generating slides: ${errorMessage}`);
+      // Ensure loading state is cleared on error
+      hideLoading();
+      stopLoading();
     }
     // Note: generateSlidesRequest() handles stopLoading() in its finally block
   }
@@ -2115,18 +2678,16 @@
           activeContent = document.getElementById('ai-page-content-topic');
         } else if (workflow === 'text') {
           activeContent = document.getElementById('ai-page-content-text');
-        } else if (workflow === 'improve') {
-          activeContent = document.getElementById('ai-page-content-improve');
         }
         
         if (activeContent) {
           activeContent.classList.add('active');
         }
         
-        // Show/hide options section (hide for improve workflow)
+        // Options section is always visible for topic and text workflows
         const optionsSection = aiPage.querySelector('.ai-generator-options');
         if (optionsSection) {
-          optionsSection.style.display = workflow === 'improve' ? 'none' : 'flex';
+          optionsSection.style.display = 'flex';
         }
       });
     });
@@ -2139,14 +2700,16 @@
       
       aiThemesGrid.innerHTML = '';
       
-      // Get current theme from app.js to show active state
-      const currentTheme = window.currentTheme || 'blank';
+      // Get current theme from app.js or previously selected theme (now stores theme ID)
+      const currentThemeId = window.currentTheme || window.selectedTheme || 'blank';
       
       // Create theme boxes using EXACT same structure as main theme modal
       themesToUse.forEach(theme => {
-        // Create simple box container (EXACT same as main theme modal)
+        // Create simple box container
         const themeBox = document.createElement('div');
-        themeBox.className = `theme-box ${theme.id === currentTheme ? 'active' : ''}`;
+        // Check if this theme matches the current selection (by ID)
+        const isSelected = theme.id === currentThemeId;
+        themeBox.className = `theme-box ${isSelected ? 'active selected' : ''}`;
         themeBox.dataset.themeId = theme.id;
         
         // Create color preview swatch (EXACT same as main theme modal)
@@ -2162,12 +2725,8 @@
         };
         
         const swatchColor = themeSwatchColors[theme.id] || theme.colors.primary;
+        // Set swatch color dynamically (per-theme color, so inline style is appropriate)
         colorSwatch.style.backgroundColor = swatchColor;
-        
-        // Blank theme: add border to make white swatch visible (EXACT same as main theme modal)
-        if (theme.id === 'blank') {
-          colorSwatch.style.border = '1px solid #e5e7eb';
-        }
         
         // Create theme name label (EXACT same as main theme modal)
         const label = document.createElement('div');
@@ -2178,13 +2737,15 @@
         themeBox.appendChild(colorSwatch);
         themeBox.appendChild(label);
         
-        // Attach click handler - calls loadTheme() with theme ID to apply the theme
+        // Attach click handler - store theme ID and update visual state
         themeBox.addEventListener('click', () => {
-          if (window.loadTheme) {
-            window.loadTheme(theme.id);
+          // Store theme ID directly in selectedTheme
+          selectTheme(theme.id);
+          
+          // Update visual state in main themes modal if it exists
+          if (window.currentTheme !== undefined) {
+            window.currentTheme = theme.id;
           }
-          // Also update visual state for AI generator
-          selectTheme(theme.name);
         });
         
         aiThemesGrid.appendChild(themeBox);
@@ -2207,8 +2768,11 @@
     // Restore selected theme state if one was previously selected
     const currentSelectedTheme = window.selectedTheme || selectedTheme;
     if (currentSelectedTheme && typeof currentSelectedTheme === 'string' && currentSelectedTheme.trim() !== '') {
-      // Restore visual state without changing the stored value
+      // Restore visual state - selectedTheme now stores theme ID directly
       selectTheme(currentSelectedTheme);
+    } else if (window.currentTheme) {
+      // If no explicit selection but there's a current theme, select it by ID
+      selectTheme(window.currentTheme);
     }
 
     // Generate button handler - attach handleGenerate listener
@@ -2314,14 +2878,6 @@
       newTextSubmitBtn.addEventListener('click', handleTextSubmit);
     }
 
-    // IMPROVE WORKFLOW BUTTON LISTENER
-    const improveSubmitBtn = document.getElementById('ai-improve-submit');
-    if (improveSubmitBtn) {
-      // Remove any existing listeners
-      improveSubmitBtn.replaceWith(improveSubmitBtn.cloneNode(true));
-      const newImproveSubmitBtn = document.getElementById('ai-improve-submit');
-      newImproveSubmitBtn.addEventListener('click', handleImproveSubmit);
-    }
   }
 
   // Initialize only once when DOM is ready
@@ -2346,6 +2902,9 @@
 
   // Expose function globally
   window.openAIGenerator = openAIGenerator;
+  
+  // Expose createAramcoSlide globally for use in app.js (Proof/Review feature)
+  window.createAramcoSlide = createAramcoSlide;
 
   // Note: btn-ai-generate listener is handled in initializeAIPage() to avoid duplicates
   // No separate connectAIGenerateButton() needed

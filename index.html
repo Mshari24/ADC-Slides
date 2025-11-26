@@ -1129,20 +1129,61 @@
           </div>
         </div>
 
-        <!-- Slide Notes -->
-        <div class="right-sidebar-card">
+        <!-- Proof / Review Slide -->
+        <div class="right-sidebar-card" id="proof-review-card">
           <div class="right-sidebar-header">
-            <h3 class="right-sidebar-title">Slide Notes</h3>
+            <h3 class="right-sidebar-title">Proof / Review Slide</h3>
           </div>
-          <div class="slide-notes">
-            <textarea 
-              id="slide-notes-textarea" 
-              class="slide-notes-textarea" 
-              placeholder="Add notes for this slide..."
-              rows="8"
-            ></textarea>
+          <div class="proof-review-content">
+            <!-- AI Content Preview -->
+            <div class="proof-ai-content" id="proof-ai-content">
+              <div class="proof-section-label">AI-Generated Content:</div>
+              <div class="proof-content-preview" id="proof-content-preview">
+                <div class="proof-content-title" id="proof-content-title"></div>
+                <div class="proof-content-bullets" id="proof-content-bullets"></div>
+              </div>
+            </div>
+            
+            <!-- Feedback Input -->
+            <div class="proof-feedback-section">
+              <div class="proof-section-label">Your Feedback / Notes:</div>
+              <textarea 
+                id="proof-feedback-textarea" 
+                class="proof-feedback-textarea" 
+                placeholder="Write here what you want to change in this slide… e.g., make it shorter, add example, change tone."
+                rows="4"
+              ></textarea>
+              <div class="proof-feedback-hint" id="proof-feedback-hint">
+                Your feedback will be used to regenerate only this slide.
+              </div>
+              <div class="proof-feedback-applied" id="proof-feedback-applied" style="display: none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 6L9 17l-5-5"></path>
+                </svg>
+                <span>Feedback applied. You can refine it further or regenerate again.</span>
+              </div>
+            </div>
+            
+            <!-- Regenerate Button -->
+            <button 
+              id="proof-regenerate-btn" 
+              class="proof-regenerate-btn"
+              disabled
+            >
+              <svg class="proof-regenerate-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                <path d="M21 3v5h-5"></path>
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                <path d="M3 21v-5h5"></path>
+              </svg>
+              <svg class="proof-regenerate-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              <span class="proof-regenerate-text">Regenerate This Slide</span>
+            </button>
           </div>
         </div>
+
       </aside>
     </main>
 
@@ -1824,9 +1865,6 @@
               <button class="ai-workflow-tab" data-workflow="text" id="ai-workflow-tab-text">
                 <span>From Text</span>
               </button>
-              <button class="ai-workflow-tab" data-workflow="improve" id="ai-workflow-tab-improve">
-                <span>Improve Slides</span>
-              </button>
             </div>
 
             <!-- Options Section -->
@@ -1878,13 +1916,6 @@
               </div>
             </div>
 
-            <!-- Improve Workflow Content -->
-            <div class="ai-generator-workflow-content" id="ai-page-content-improve">
-              <div class="ai-input-section">
-                <p class="ai-info-text">Improve your existing slides with AI-powered enhancements.</p>
-              </div>
-            </div>
-
             <!-- Generate Button -->
             <button class="ai-submit-btn" id="ai-page-generate-btn">
               <span>Generate Presentation</span>
@@ -1902,25 +1933,76 @@
                 <!-- Theme boxes will be dynamically created here -->
               </div>
             </div>
-
-            <!-- AI Style Recommendation Panel -->
-            <div class="ai-panel ai-style-recommendation">
-              <h4 class="ai-panel-title">AI Style Recommendation</h4>
-              <p class="ai-panel-text">AI can suggest fonts, accent colors, and layout. (Coming soon or already wired.)</p>
-            </div>
-
-            <!-- AI Options Summary Panel -->
-            <div class="ai-panel ai-options-summary">
-              <h4 class="ai-panel-title">AI Options Summary</h4>
-              <ul class="ai-panel-list">
-                <li>Auto theme suggestion</li>
-                <li>Slide structure suggestion</li>
-                <li>Layout & style recommendations</li>
-                <li>Smart length control</li>
-              </ul>
-            </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating AI Assistant Button -->
+  <button class="ai-floating-btn" id="ai-floating-btn" aria-label="Open AI Assistant">
+    <svg 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      stroke-width="2" 
+      stroke-linecap="round" 
+      stroke-linejoin="round"
+    >
+      <rect x="3" y="7" width="18" height="12" rx="3" />
+      <circle cx="9" cy="13" r="1.5" />
+      <circle cx="15" cy="13" r="1.5" />
+      <path d="M12 7V4" />
+      <circle cx="12" cy="2" r="1" />
+    </svg>
+  </button>
+
+  <!-- AI Assistant Chat Panel (Popup) -->
+  <div class="ai-chat-panel" id="ai-chat-panel">
+    <div class="ai-chat-panel-header">
+      <h3 class="ai-chat-panel-title">AI Assistant</h3>
+      <button class="ai-chat-panel-close" id="ai-chat-panel-close" aria-label="Close chat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="ai-chat-panel-content">
+      <div class="ai-assistant-messages" id="ai-assistant-messages">
+        <div class="ai-assistant-message ai-message">
+          <div class="ai-message-avatar">AI</div>
+          <div class="ai-message-content">
+            <p>Hi! I'm your AI assistant. I can help you:</p>
+            <ul>
+              <li>Understand how to use the AI slide generator</li>
+              <li>Get suggestions for better prompts</li>
+              <li>Improve specific slides</li>
+            </ul>
+            <p>What would you like to know?</p>
+          </div>
+        </div>
+      </div>
+      <div class="ai-assistant-input-container">
+        <input 
+          type="text" 
+          id="ai-assistant-input" 
+          class="ai-assistant-input" 
+          placeholder="Ask me anything about AI slides..."
+          autocomplete="off"
+        />
+        <button 
+          id="ai-assistant-send" 
+          class="ai-assistant-send-btn"
+          aria-label="Send message"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
       </div>
     </div>
   </div>

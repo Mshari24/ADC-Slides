@@ -101,6 +101,26 @@
           el.text = el.text || el.content || '';
         }
       });
+      
+      // Normalize Proof/Review fields safely (extend slide data structure)
+      // These fields are optional and independent of main generation
+      if (slide.aiContent && typeof slide.aiContent === 'object') {
+        // Ensure aiContent has expected structure
+        if (typeof slide.aiContent.title !== 'string') {
+          slide.aiContent.title = '';
+        }
+        if (!Array.isArray(slide.aiContent.bullets)) {
+          slide.aiContent.bullets = [];
+        }
+      }
+      // aiFeedback is optional string
+      if (slide.aiFeedback !== undefined && typeof slide.aiFeedback !== 'string') {
+        slide.aiFeedback = String(slide.aiFeedback || '');
+      }
+      // aiFeedbackApplied is optional boolean
+      if (slide.aiFeedbackApplied !== undefined && typeof slide.aiFeedbackApplied !== 'boolean') {
+        slide.aiFeedbackApplied = !!slide.aiFeedbackApplied;
+      }
     });
     st.title = st.title || 'Untitled presentation';
     if (typeof st.currentSlideIndex !== 'number') st.currentSlideIndex = 0;
@@ -191,8 +211,7 @@
       globalDragState.offsetX = e.clientX - stageRect.left - el.x;
       globalDragState.offsetY = e.clientY - stageRect.top - el.y;
       
-      document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
-      node.classList.add('selected');
+      selectElement(node);
       updateToolbarFromSelection();
       showContextToolbar(node);
       hideTextControlBar();
@@ -483,124 +502,249 @@
       const label = document.createElement('div');
       label.className = 'thumb-label';
       label.textContent = `Slide ${idx + 1}`;
+      
+      // Add indicator for slides with revision notes (Proof/Review feature)
+      if (slide.aiFeedback && slide.aiFeedback.trim()) {
+        const notesIndicator = document.createElement('div');
+        notesIndicator.className = 'thumb-notes-indicator';
+        notesIndicator.title = 'Has revision notes';
+        thumb.appendChild(notesIndicator);
+      }
 
       const inner = document.createElement('div');
       inner.className = 'thumb-inner';
+      
+      // Apply slide background if it exists
+      if (slide.background) {
+        inner.style.backgroundColor = slide.background;
+        inner.setAttribute('data-background', slide.background);
+      } else {
+        inner.style.backgroundColor = '#ffffff';
+      }
       
       // Ensure slide.elements exists
       if (!Array.isArray(slide.elements)) {
         slide.elements = [];
       }
       
-      // Render preview of elements
+      // Render preview of elements - show actual slide content
       slide.elements.forEach((el) => {
         if (el.type === 'text') {
           const t = document.createElement('div');
+          t.className = 'thumb-text-preview'; // Special class to prevent editor styles
+          // State model: Set mode to "thumbnail" for sidebar previews
+          t.dataset.mode = 'thumbnail';
+          t.dataset.isSelected = 'false';
+          t.dataset.isHovered = 'false';
           t.style.position = 'absolute';
-          t.style.left = (el.x * 0.12) + 'px';
-          t.style.top = (el.y * 0.12) + 'px';
-          t.style.fontSize = ((el.fontSize || 18) * 0.12) + 'px';
+          t.style.left = (el.x * 0.105) + 'px';
+          t.style.top = (el.y * 0.105) + 'px';
+          t.style.fontSize = Math.max(((el.fontSize || 18) * 0.105), 1.5) + 'px'; // Minimum readable size
           t.style.fontFamily = el.fontFamily || 'Inter, system-ui, sans-serif';
           t.style.color = el.color || '#111';
-          t.style.whiteSpace = 'nowrap';
+          t.style.whiteSpace = 'pre-wrap'; // Allow wrapping for better preview
+          t.style.wordWrap = 'break-word';
           t.style.overflow = 'hidden';
-          t.style.maxWidth = '150px';
-          const plain = (el.content ? el.content.replace(/<[^>]+>/g, '') : el.text || 'Text');
-          t.textContent = plain.substring(0, 20);
+          // Use actual element dimensions if available, otherwise reasonable defaults
+          const textWidth = el.width ? (el.width * 0.105) : 168; // Max available width
+          const textHeight = el.height ? (el.height * 0.105) : null;
+          
+          t.style.width = textWidth + 'px';
+          t.style.maxWidth = textWidth + 'px';
+          if (textHeight) {
+            t.style.height = textHeight + 'px';
+            t.style.maxHeight = textHeight + 'px';
+          }
+          t.style.border = 'none';
+          t.style.outline = 'none';
+          t.style.boxShadow = 'none';
+          t.style.backgroundColor = el.fillColor && el.fillColor !== 'transparent' ? el.fillColor : 'transparent';
+          t.style.fontWeight = el.fontWeight || 'normal';
+          t.style.fontStyle = el.fontStyle || 'normal';
+          t.style.textDecoration = el.underline ? 'underline' : 'none';
+          t.style.textAlign = el.textAlign || 'left';
+          t.style.lineHeight = el.lineHeight ? String(el.lineHeight) : '1.2';
+          t.style.padding = '0';
+          t.style.margin = '0';
+          t.style.textOverflow = 'ellipsis';
+          t.style.display = 'block';
+          
+          // Get text content - preserve HTML formatting but strip editor-specific classes
+          let content = el.content || el.text || '';
+          if (content) {
+            // Remove HTML tags but preserve line breaks and basic formatting
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            // Remove any editor-specific classes or attributes
+            tempDiv.querySelectorAll('*').forEach(node => {
+              node.removeAttribute('class');
+              node.removeAttribute('data-id');
+            });
+            content = tempDiv.textContent || tempDiv.innerText || '';
+          }
+          
+          // Show text content - truncate only if necessary for very long content
+          if (content.length > 0) {
+            // For thumbnails, show up to 150 characters or 3 lines worth
+            const maxChars = 150;
+            if (content.length > maxChars) {
+              t.textContent = content.substring(0, maxChars) + '...';
+            } else {
+              t.textContent = content;
+            }
+          } else {
+            // Empty text element - show placeholder only if it's the only element
+            if (slide.elements.length === 1) {
+              t.textContent = 'Text';
+              t.style.color = 'rgba(0, 0, 0, 0.3)';
+              t.style.fontStyle = 'italic';
+            } else {
+              // Don't show placeholder for empty elements when there are other elements
+              t.style.display = 'none';
+            }
+          }
+          
           inner.appendChild(t);
         } else if (el.type === 'shape') {
           const s = document.createElement('div');
+          s.className = 'thumb-shape-preview'; // Special class to prevent editor styles
           s.style.position = 'absolute';
-          s.style.left = (el.x * 0.12) + 'px';
-          s.style.top = (el.y * 0.12) + 'px';
-          s.style.width = ((el.width || 100) * 0.12) + 'px';
-          s.style.height = ((el.height || 100) * 0.12) + 'px';
+          s.style.left = (el.x * 0.105) + 'px';
+          s.style.top = (el.y * 0.105) + 'px';
+          s.style.width = ((el.width || 100) * 0.105) + 'px';
+          s.style.height = ((el.height || 100) * 0.105) + 'px';
           s.style.backgroundColor = el.fillColor || '#fff';
-          s.style.border = `1px solid ${el.strokeColor || '#000'}`;
+          // Only show border if strokeColor is explicitly set and not transparent
+          if (el.strokeColor && el.strokeColor !== 'transparent' && el.strokeWidth && el.strokeWidth > 0) {
+            s.style.border = `${Math.max((el.strokeWidth || 1) * 0.105, 0.5)}px solid ${el.strokeColor}`;
+          } else {
+            s.style.border = 'none';
+          }
+          s.style.outline = 'none';
+          s.style.boxShadow = 'none';
+          s.style.padding = '0';
+          s.style.margin = '0';
           applyShapeAppearance(s, el.shape);
           inner.appendChild(s);
         } else if (el.type === 'table') {
           const tablePreview = document.createElement('div');
+          tablePreview.className = 'thumb-table-preview'; // Special class to prevent editor styles
           tablePreview.style.position = 'absolute';
-          tablePreview.style.left = (el.x * 0.12) + 'px';
-          tablePreview.style.top = (el.y * 0.12) + 'px';
-          tablePreview.style.width = ((el.width || 300) * 0.12) + 'px';
-          tablePreview.style.height = ((el.height || 200) * 0.12) + 'px';
+          tablePreview.style.left = (el.x * 0.105) + 'px';
+          tablePreview.style.top = (el.y * 0.105) + 'px';
+          tablePreview.style.width = ((el.width || 300) * 0.105) + 'px';
+          tablePreview.style.height = ((el.height || 200) * 0.105) + 'px';
           tablePreview.style.display = 'grid';
           const rows = el.rows || 3;
           const cols = el.cols || 3;
           tablePreview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
           tablePreview.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-          tablePreview.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+          tablePreview.style.border = `1px solid ${el.borderColor || 'rgba(0, 0, 0, 0.15)'}`;
+          tablePreview.style.outline = 'none';
+          tablePreview.style.boxShadow = 'none';
+          tablePreview.style.padding = '0';
+          tablePreview.style.margin = '0';
           for (let r = 0; r < rows * cols; r++) {
             const cell = document.createElement('div');
-            cell.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+            cell.style.border = `1px solid ${el.borderColor || 'rgba(0, 0, 0, 0.1)'}`;
             cell.style.background = el.backgroundColor || '#ffffff';
+            cell.style.outline = 'none';
+            cell.style.boxShadow = 'none';
+            cell.style.padding = '0';
+            cell.style.margin = '0';
             tablePreview.appendChild(cell);
           }
           inner.appendChild(tablePreview);
         } else if (el.type === 'image' && el.src) {
           const img = document.createElement('img');
+          img.className = 'thumb-image-preview'; // Special class to prevent editor styles
           img.src = el.src;
           img.style.position = 'absolute';
-          img.style.left = (el.x * 0.12) + 'px';
-          img.style.top = (el.y * 0.12) + 'px';
-          img.style.width = ((el.width || 200) * 0.12) + 'px';
-          img.style.height = ((el.height || 200) * 0.12) + 'px';
+          img.style.left = (el.x * 0.105) + 'px';
+          img.style.top = (el.y * 0.105) + 'px';
+          img.style.width = ((el.width || 200) * 0.105) + 'px';
+          img.style.height = ((el.height || 200) * 0.105) + 'px';
           img.style.objectFit = 'cover';
+          img.style.border = 'none';
+          img.style.outline = 'none';
+          img.style.boxShadow = 'none';
+          img.style.padding = '0';
+          img.style.margin = '0';
+          // Handle image load errors gracefully
+          img.onerror = function() {
+            this.style.display = 'none';
+          };
           inner.appendChild(img);
         } else if (el.type === 'sticky') {
           const stickyPreview = document.createElement('div');
+          stickyPreview.className = 'thumb-sticky-preview'; // Special class to prevent editor styles
           stickyPreview.style.position = 'absolute';
-          stickyPreview.style.left = (el.x * 0.12) + 'px';
-          stickyPreview.style.top = (el.y * 0.12) + 'px';
-          stickyPreview.style.width = ((el.width || 200) * 0.12) + 'px';
-          stickyPreview.style.height = ((el.height || 200) * 0.12) + 'px';
+          stickyPreview.style.left = (el.x * 0.105) + 'px';
+          stickyPreview.style.top = (el.y * 0.105) + 'px';
+          stickyPreview.style.width = ((el.width || 200) * 0.105) + 'px';
+          stickyPreview.style.height = ((el.height || 200) * 0.105) + 'px';
           stickyPreview.style.backgroundColor = el.color || '#fef08a';
           stickyPreview.style.borderRadius = '2px';
-          stickyPreview.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          stickyPreview.style.border = 'none';
+          stickyPreview.style.outline = 'none';
+          stickyPreview.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.08)';
+          stickyPreview.style.padding = '0';
+          stickyPreview.style.margin = '0';
           inner.appendChild(stickyPreview);
         } else if (el.type === 'pdf' && el.src) {
           const pdfPreview = document.createElement('div');
+          pdfPreview.className = 'thumb-pdf-preview'; // Special class to prevent editor styles
           pdfPreview.style.position = 'absolute';
-          pdfPreview.style.left = (el.x * 0.12) + 'px';
-          pdfPreview.style.top = (el.y * 0.12) + 'px';
-          pdfPreview.style.width = ((el.width || 200) * 0.12) + 'px';
-          pdfPreview.style.height = ((el.height || 250) * 0.12) + 'px';
+          pdfPreview.style.left = (el.x * 0.105) + 'px';
+          pdfPreview.style.top = (el.y * 0.105) + 'px';
+          pdfPreview.style.width = ((el.width || 200) * 0.105) + 'px';
+          pdfPreview.style.height = ((el.height || 250) * 0.105) + 'px';
           pdfPreview.style.backgroundColor = '#f3f4f6';
-          pdfPreview.style.border = '1px solid #d1d5db';
+          pdfPreview.style.border = '1px solid rgba(0, 0, 0, 0.1)';
           pdfPreview.style.borderRadius = '2px';
-          pdfPreview.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          pdfPreview.style.outline = 'none';
+          pdfPreview.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.08)';
+          pdfPreview.style.padding = '0';
+          pdfPreview.style.margin = '0';
           inner.appendChild(pdfPreview);
         } else if (el.type === 'chart') {
           const chartPreview = document.createElement('div');
+          chartPreview.className = 'thumb-chart-preview'; // Special class to prevent editor styles
           chartPreview.style.position = 'absolute';
-          chartPreview.style.left = (el.x * 0.12) + 'px';
-          chartPreview.style.top = (el.y * 0.12) + 'px';
-          chartPreview.style.width = ((el.width || 400) * 0.12) + 'px';
-          chartPreview.style.height = ((el.height || 300) * 0.12) + 'px';
+          chartPreview.style.left = (el.x * 0.105) + 'px';
+          chartPreview.style.top = (el.y * 0.105) + 'px';
+          chartPreview.style.width = ((el.width || 400) * 0.105) + 'px';
+          chartPreview.style.height = ((el.height || 300) * 0.105) + 'px';
           chartPreview.style.backgroundColor = '#ffffff';
-          chartPreview.style.border = '1px solid #e5e7eb';
+          chartPreview.style.border = '1px solid rgba(0, 0, 0, 0.1)';
           chartPreview.style.borderRadius = '2px';
-          chartPreview.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+          chartPreview.style.outline = 'none';
+          chartPreview.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.08)';
+          chartPreview.style.padding = '0';
+          chartPreview.style.margin = '0';
           inner.appendChild(chartPreview);
         } else if (el.type === 'line') {
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-          svg.setAttribute('width', '153.6');
-          svg.setAttribute('height', '86.4');
+          svg.className = 'thumb-line-preview'; // Special class to prevent editor styles
+          svg.setAttribute('width', '168');
+          svg.setAttribute('height', '94.5');
           svg.style.position = 'absolute';
           svg.style.left = '0';
           svg.style.top = '0';
           svg.style.pointerEvents = 'none';
+          svg.style.border = 'none';
+          svg.style.outline = 'none';
+          svg.style.padding = '0';
+          svg.style.margin = '0';
           
-          let x1 = (el.x1 || 200) * 0.12;
-          let y1 = (el.y1 || 200) * 0.12;
-          let x2 = (el.x2 || 400) * 0.12;
-          let y2 = (el.y2 || 200) * 0.12;
-          let midX = el.midX !== null && el.midX !== undefined ? el.midX * 0.12 : null;
-          let midY = el.midY !== null && el.midY !== undefined ? el.midY * 0.12 : null;
+          let x1 = (el.x1 || 200) * 0.105;
+          let y1 = (el.y1 || 200) * 0.105;
+          let x2 = (el.x2 || 400) * 0.105;
+          let y2 = (el.y2 || 200) * 0.105;
+          let midX = el.midX !== null && el.midX !== undefined ? el.midX * 0.105 : null;
+          let midY = el.midY !== null && el.midY !== undefined ? el.midY * 0.105 : null;
           const strokeColor = el.strokeColor || '#000000';
-          const strokeWidth = (el.strokeWidth || 2) * 0.12;
+          const strokeWidth = (el.strokeWidth || 2) * 0.105;
           
           let path;
           if (el.lineType === 'straight') {
@@ -641,7 +785,7 @@
         if (e.target.closest('.context-menu')) return;
         state.currentSlideIndex = idx;
         saveState(); // Auto-save on slide switch
-        renderAll();
+        renderAll(); // This will call scrollSelectedSlideIntoView()
       });
 
       // Drag and drop
@@ -740,6 +884,25 @@
     hideTextControlBar();
   }
 
+  // Helper function to update state model when deselecting elements
+  function deselectAllElements() {
+    document.querySelectorAll('.el').forEach(el => {
+      el.classList.remove('selected');
+      if (el.dataset) {
+        el.dataset.isSelected = 'false';
+      }
+    });
+  }
+
+  // Helper function to select an element and update state model
+  function selectElement(node) {
+    deselectAllElements();
+    node.classList.add('selected');
+    if (node.dataset) {
+      node.dataset.isSelected = 'true';
+    }
+  }
+
   function renderStage() {
     if (!stageEl) {
       console.error('Stage element not found');
@@ -804,17 +967,21 @@
                             (slide.elements.length === 1 && slide.elements[0].isTitleOnly);
     
     // Remove previous selection listeners
-    document.querySelectorAll('.el').forEach(el => {
-      el.classList.remove('selected');
-    });
+    deselectAllElements();
     
     slide.elements.forEach((el, index) => {
       if (el.type === 'text') {
         const node = document.createElement('div');
         node.className = 'el text';
         node.dataset.id = el.id;
+        // State model: Set mode to "editor" for main canvas elements
+        node.dataset.mode = 'editor';
+        node.dataset.isSelected = 'false';
+        node.dataset.isHovered = 'false';
         node.contentEditable = el.locked ? 'false' : 'true';
         node.spellcheck = false;
+        // Make focusable for keyboard navigation (tabIndex allows focus without contentEditable being active)
+        node.tabIndex = el.locked ? -1 : 0;
         
         // Apply positioning and classes
         if (el.isTitleOnly) {
@@ -956,11 +1123,13 @@
         node.style.textAlign = el.textAlign || 'left';
         node.style.lineHeight = el.lineHeight ? String(el.lineHeight) : '1.2';
         node.style.backgroundColor = el.fillColor || 'transparent';
-        // Remove border if strokeWidth is 0 (for Aramco template text without borders)
-        if (el.strokeWidth === 0) {
-          node.style.border = 'none';
+        // Only show border if explicitly set by user (strokeWidth > 0 AND strokeColor is set and not transparent)
+        // This ensures clean presentation view by default
+        if (el.strokeWidth && el.strokeWidth > 0 && el.strokeColor && el.strokeColor !== 'transparent') {
+          node.style.border = `${el.strokeWidth}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor}`;
         } else {
-          node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || 'transparent'}`;
+          // No border by default - clean presentation view
+          node.style.border = 'none';
         }
         // Handle bullet points: main bullets use dots, sub-bullets use dashes
         let displayText = el.content || el.text || 'Double-click to edit';
@@ -990,6 +1159,42 @@
           saveState();
         });
 
+        // Focus handler: Show edit border when focused (keyboard navigation)
+        node.addEventListener('focus', () => {
+          if (!el.locked && node.dataset.mode === 'editor') {
+            selectElement(node);
+            // Show handles when focused
+            const moveHandle = node.querySelector('.text-move-handle');
+            const resizeHandle = node.querySelector('.resize-handle');
+            if (moveHandle && resizeHandle) {
+              moveHandle.style.display = 'inline-flex';
+              resizeHandle.style.display = 'block';
+            }
+            updateToolbarFromSelection();
+            showContextToolbar(node);
+            showTextControlBarForElement(el);
+          }
+        });
+
+        // Blur handler: Exit editing when focus is lost
+        node.addEventListener('blur', (e) => {
+          // Don't exit if clicking on toolbar or control elements
+          const relatedTarget = e.relatedTarget;
+          if (relatedTarget && (
+            relatedTarget.closest('.text-control-bar') ||
+            relatedTarget.closest('.floating-toolbar') ||
+            relatedTarget.closest('.text-move-handle') ||
+            relatedTarget.closest('.resize-handle')
+          )) {
+            return; // Keep editing if focus moves to controls
+          }
+          
+          // Exit editing when focus is lost (but keep selected if just clicking elsewhere)
+          if (editingElementId === el.id) {
+            exitTextEditing();
+          }
+        });
+
         let dragging = false;
         let resizing = false;
         let dragFromIcon = false;
@@ -1012,17 +1217,26 @@
         node.appendChild(resizeHandle);
         
         // Show controls on hover, hide on mouse leave
+        // State B: HOVERED - show subtle hint and controls
         let isHovering = false;
         node.addEventListener('mouseenter', () => {
           if (!el.locked) {
             isHovering = true;
-            moveHandle.style.display = 'inline-flex';
-            resizeHandle.style.display = 'block';
+            // Update state model
+            node.dataset.isHovered = 'true';
+            // Only show handles if not already selected/editing
+            if (!node.classList.contains('selected') && !node.classList.contains('editing')) {
+              moveHandle.style.display = 'inline-flex';
+              resizeHandle.style.display = 'block';
+            }
           }
         });
         node.addEventListener('mouseleave', () => {
           isHovering = false;
-          if (!dragging && !resizing) {
+          // Update state model
+          node.dataset.isHovered = 'false';
+          // Hide handles when leaving, unless selected/editing/dragging
+          if (!dragging && !resizing && !node.classList.contains('selected') && !node.classList.contains('editing')) {
             moveHandle.style.display = 'none';
             resizeHandle.style.display = 'none';
           }
@@ -1059,8 +1273,10 @@
           if (e.button !== 0) return;
           if (editingElementId === el.id && !options.force) return;
           if (el.locked) {
-            document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
-            node.classList.add('selected');
+            selectElement(node);
+            // State C: Show handles when selected
+            moveHandle.style.display = 'inline-flex';
+            resizeHandle.style.display = 'block';
             updateToolbarFromSelection();
             showContextToolbar(node);
             showTextControlBarForElement(el);
@@ -1090,8 +1306,12 @@
           origX = el.x;
           origY = el.y;
           
-          document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
-          node.classList.add('selected');
+          selectElement(node);
+          // State C: Show handles when selected
+          if (!el.locked) {
+            moveHandle.style.display = 'inline-flex';
+            resizeHandle.style.display = 'block';
+          }
           updateToolbarFromSelection();
           showContextToolbar(node);
           showTextControlBarForElement(el);
@@ -1289,6 +1509,9 @@
           if (el.locked) {
             document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
             node.classList.add('selected');
+            // State C: Show handles when selected
+            moveHandle.style.display = 'inline-flex';
+            resizeHandle.style.display = 'block';
             updateToolbarFromSelection();
             showContextToolbar(node);
             e.preventDefault();
@@ -1316,8 +1539,7 @@
           origX = el.x;
           origY = el.y;
           
-          document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
-          node.classList.add('selected');
+          selectElement(node);
           updateToolbarFromSelection();
           showContextToolbar(node);
           node.classList.add('dragging');
@@ -1727,8 +1949,7 @@
         
         node.addEventListener('mousedown', (e) => {
           if (e.button !== 0) return;
-          document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
-          node.classList.add('selected');
+          selectElement(node);
           updateToolbarFromSelection();
           showContextToolbar(node);
           hideTextControlBar();
@@ -2116,8 +2337,11 @@
           if (e.target.classList.contains('line-center-handle')) {
             return; // Let center handle handle it
           }
-          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          deselectAllElements();
           container.classList.add('selected');
+          if (container.dataset) {
+            container.dataset.isSelected = 'true';
+          }
           updateSelectionBox();
           updateToolbarFromSelection();
           showContextToolbar(container);
@@ -2183,8 +2407,11 @@
             deactivateDrawingMode();
             return;
           }
-          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
+          deselectAllElements();
           container.classList.add('selected');
+          if (container.dataset) {
+            container.dataset.isSelected = 'true';
+          }
           updateToolbarFromSelection();
           showContextToolbar(container);
           hideTextControlBar();
@@ -2259,17 +2486,1417 @@
     
     renderSidebar();
     renderStage();
+    updateProofReviewSection(); // Update Proof/Review section when slide changes
     
     const slideCount = state.slides ? state.slides.length : 0;
     const currentIndex = typeof state.currentSlideIndex === 'number' ? state.currentSlideIndex : 0;
     setStatus(`Slide ${currentIndex + 1} of ${slideCount}`);
+    
+    // Scroll selected slide into view after rendering
+    scrollSelectedSlideIntoView();
+  }
+  
+  // ============================================
+  //  Proof / Review Slide Feature
+  // ============================================
+  
+  /**
+   * Extract AI-generated content from slide elements
+   * Returns { title, bullets } structure
+   */
+  function extractSlideContent(slide) {
+    if (!slide || !Array.isArray(slide.elements)) {
+      return { title: '', bullets: [] };
+    }
+    
+    let title = '';
+    const bullets = [];
+    
+    slide.elements.forEach(el => {
+      if (el.type === 'text') {
+        const text = el.text || el.content || '';
+        
+        if (el.isTitleOnly || el.isContentTitle) {
+          title = text;
+        } else if (el.isBullet) {
+          bullets.push(text);
+        }
+      }
+    });
+    
+    // If no title found but we have elements, try to get first text element
+    if (!title && slide.elements.length > 0) {
+      const firstText = slide.elements.find(el => el.type === 'text');
+      if (firstText) {
+        title = firstText.text || firstText.content || '';
+      }
+    }
+    
+    return { title: title.trim(), bullets: bullets.map(b => b.trim()).filter(b => b.length > 0) };
+  }
+  
+  /**
+   * Update Proof/Review section with current slide content
+   */
+  function updateProofReviewSection() {
+    const proofCard = document.getElementById('proof-review-card');
+    const contentPreview = document.getElementById('proof-content-preview');
+    const titleEl = document.getElementById('proof-content-title');
+    const bulletsEl = document.getElementById('proof-content-bullets');
+    const feedbackTextarea = document.getElementById('proof-feedback-textarea');
+    const regenerateBtn = document.getElementById('proof-regenerate-btn');
+    
+    if (!proofCard || !contentPreview || !titleEl || !bulletsEl || !feedbackTextarea || !regenerateBtn) {
+      return; // Elements not found, skip
+    }
+    
+    const slide = state.slides[state.currentSlideIndex];
+    if (!slide) {
+      proofCard.style.display = 'none';
+      return;
+    }
+    
+    // Extract content from slide
+    const content = extractSlideContent(slide);
+    
+    // Check if slide has any content (title or bullets)
+    const hasContent = content.title || content.bullets.length > 0;
+    
+    if (!hasContent) {
+      // Hide Proof/Review section if slide is empty
+      proofCard.style.display = 'none';
+      return;
+    }
+    
+    // Store original content in slide for regeneration (if not already stored)
+    if (!slide.aiContent) {
+      slide.aiContent = content;
+    }
+    
+    // Display content preview
+    titleEl.textContent = content.title || '(No title)';
+    
+    if (content.bullets.length > 0) {
+      bulletsEl.innerHTML = content.bullets.map(bullet => 
+        `<div class="proof-bullet-item">• ${bullet}</div>`
+      ).join('');
+      bulletsEl.style.display = 'block';
+    } else {
+      bulletsEl.innerHTML = '<div class="proof-bullet-item proof-empty">(Title-only slide)</div>';
+      bulletsEl.style.display = 'block';
+    }
+    
+    // Load saved feedback for this slide
+    if (slide.aiFeedback) {
+      feedbackTextarea.value = slide.aiFeedback;
+    } else {
+      feedbackTextarea.value = '';
+    }
+    
+    // Show/hide "applied" indicator based on whether feedback was applied
+    const feedbackAppliedEl = document.getElementById('proof-feedback-applied');
+    const feedbackHintEl = document.getElementById('proof-feedback-hint');
+    
+    if (slide.aiFeedbackApplied && slide.aiFeedback && slide.aiFeedback.trim()) {
+      // Feedback has been applied - show indicator
+      if (feedbackAppliedEl) feedbackAppliedEl.style.display = 'flex';
+      if (feedbackHintEl) feedbackHintEl.style.display = 'none';
+    } else {
+      // No feedback applied yet - show hint
+      if (feedbackAppliedEl) feedbackAppliedEl.style.display = 'none';
+      if (feedbackHintEl) feedbackHintEl.style.display = 'block';
+    }
+    
+    // Enable regenerate button (always enabled if slide has content)
+    regenerateBtn.disabled = false;
+    
+    // Show the card
+    proofCard.style.display = 'block';
+  }
+  
+  /**
+   * Regenerate a single slide based on feedback
+   */
+  async function regenerateSingleSlide(slideIndex, feedback) {
+    const slide = state.slides[slideIndex];
+    if (!slide) {
+      console.error('Slide not found at index:', slideIndex);
+      return;
+    }
+    
+    // Get original content or extract from current slide
+    const originalContent = slide.aiContent || extractSlideContent(slide);
+    
+    if (!originalContent.title) {
+      alert('Cannot regenerate slide: no content found');
+      return;
+    }
+    
+    // Get current theme (preserve theme consistency)
+    const themeId = state.theme || window.currentTheme || 'aramco';
+    const themeName = getThemeNameFromId(themeId);
+    
+    // Determine original layout type to preserve it
+    const originalLayoutType = slide.layout || (originalContent.bullets.length === 0 ? 'title' : 'content');
+    const isTitleOnly = originalLayoutType === 'title' || originalContent.bullets.length === 0;
+    
+    // Show loading state
+    const regenerateBtn = document.getElementById('proof-regenerate-btn');
+    const regenerateIcon = regenerateBtn?.querySelector('.proof-regenerate-icon');
+    const regenerateSpinner = regenerateBtn?.querySelector('.proof-regenerate-spinner');
+    const regenerateText = regenerateBtn?.querySelector('.proof-regenerate-text');
+    
+    if (regenerateBtn) {
+      regenerateBtn.disabled = true;
+      regenerateBtn.classList.add('proof-regenerating');
+      
+      // Show spinner, hide icon
+      if (regenerateIcon) regenerateIcon.style.display = 'none';
+      if (regenerateSpinner) regenerateSpinner.style.display = 'block';
+      if (regenerateText) regenerateText.textContent = 'Regenerating...';
+    }
+    
+    // Store original slide state as backup (for error recovery)
+    const originalSlideBackup = {
+      elements: JSON.parse(JSON.stringify(slide.elements || [])),
+      background: slide.background,
+      layout: slide.layout,
+      isBlueAramcoTitle: slide.isBlueAramcoTitle
+    };
+    
+    try {
+      // Call API to regenerate single slide
+      const response = await fetch('http://localhost:3000/api/ai/regenerate-slide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: originalContent.title,
+          originalContent: originalContent,
+          feedback: feedback.trim(),
+          theme: themeName,
+          language: 'en', // Default to English, could be made configurable
+          preserveLayoutType: isTitleOnly // Tell server to preserve layout type
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorData.error || `Failed to regenerate slide (HTTP ${response.status})`);
+      }
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        throw new Error('Invalid response from server. Please try again.');
+      }
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.slide) {
+        throw new Error('No slide data returned from server');
+      }
+      
+      // Validate slide data structure
+      if (!data.slide.title || typeof data.slide.title !== 'string') {
+        throw new Error('Invalid slide data: missing or invalid title');
+      }
+      
+      if (!Array.isArray(data.slide.bullets)) {
+        throw new Error('Invalid slide data: bullets must be an array');
+      }
+      
+      // Update slide in place (don't regenerate entire deck)
+      const newSlideData = data.slide;
+      const themeIdForSlide = getThemeIdFromName(themeName);
+      
+      // Ensure layout type is preserved: if original was title-only, force empty bullets
+      if (isTitleOnly && newSlideData.bullets && newSlideData.bullets.length > 0) {
+        console.warn('[Proof/Review] Original slide was title-only, but AI returned bullets. Preserving title-only layout.');
+        newSlideData.bullets = [];
+      }
+      
+      // Create new slide object with theme applied (using same logic as main AI generation)
+      const newSlide = createAramcoSlideForProof(newSlideData, slideIndex, themeIdForSlide);
+      
+      // Validate new slide structure before applying
+      if (!newSlide || !Array.isArray(newSlide.elements)) {
+        throw new Error('Failed to create slide structure. Please try again.');
+      }
+      
+      // Preserve slide ID and replace elements
+      newSlide.id = slide.id;
+      
+      // Preserve layout type explicitly
+      newSlide.layout = isTitleOnly ? 'title' : 'content';
+      
+      // Apply theme-consistent background and properties
+      slide.elements = newSlide.elements || [];
+      slide.background = newSlide.background || slide.background;
+      slide.layout = newSlide.layout; // Use the preserved layout type
+      
+      // Preserve theme-specific properties (e.g., blue-aramco title slide)
+      if (newSlide.isBlueAramcoTitle !== undefined) {
+        slide.isBlueAramcoTitle = newSlide.isBlueAramcoTitle;
+      } else if (themeIdForSlide === 'blue-aramco' && slideIndex === 0) {
+        // Ensure first slide of blue-aramco theme has special treatment
+        slide.isBlueAramcoTitle = true;
+      } else {
+        slide.isBlueAramcoTitle = false;
+      }
+      
+      // Update AI content reference (persisted in state)
+      slide.aiContent = {
+        title: newSlideData.title || '',
+        bullets: newSlideData.bullets || []
+      };
+      
+      // Keep feedback for future regenerations
+      slide.aiFeedback = feedback.trim();
+      slide.aiFeedbackApplied = true; // Mark that feedback has been applied
+      
+      // Re-render to show updated slide
+      renderAll();
+      saveState();
+      
+      // Update Proof/Review section (will show "applied" indicator)
+      updateProofReviewSection();
+      
+      console.log(`[Proof/Review] Regenerated slide ${slideIndex + 1} with feedback: "${feedback.trim()}" (Theme: ${themeIdForSlide}, Layout: ${slide.layout})`);
+      
+    } catch (error) {
+      console.error('[Proof/Review] Error regenerating slide:', error);
+      
+      // ERROR HANDLING: Restore original slide state if it was partially modified
+      // This ensures the slide is never wiped or corrupted
+      try {
+        slide.elements = originalSlideBackup.elements;
+        slide.background = originalSlideBackup.background;
+        slide.layout = originalSlideBackup.layout;
+        slide.isBlueAramcoTitle = originalSlideBackup.isBlueAramcoTitle;
+        
+        // Re-render to ensure UI shows original state
+        renderAll();
+      } catch (restoreError) {
+        console.error('[Proof/Review] Error restoring slide state:', restoreError);
+        // Even if restore fails, slide should still be intact from original state
+      }
+      
+      // Show user-friendly error message
+      const errorMessage = error.message || 'Unknown error occurred';
+      let userMessage = 'Failed to regenerate slide. ';
+      
+      if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
+        userMessage += 'Please check your internet connection and try again.';
+      } else if (errorMessage.includes('API') || errorMessage.includes('OpenAI')) {
+        userMessage += 'The AI service encountered an error. Please try again in a moment.';
+      } else if (errorMessage.includes('JSON') || errorMessage.includes('parse') || errorMessage.includes('Invalid')) {
+        userMessage += 'Received invalid response. Please try again.';
+      } else if (errorMessage.includes('HTTP')) {
+        userMessage += 'Server error. Please try again.';
+      } else {
+        userMessage += errorMessage;
+      }
+      
+      // Show error notification (non-blocking, allows retry)
+      showProofErrorNotification(userMessage);
+      
+      // Ensure slide state is preserved (log for debugging)
+      console.log('[Proof/Review] Slide preserved after error:', {
+        slideIndex,
+        hasElements: slide.elements && slide.elements.length > 0,
+        title: originalContent.title,
+        elementsCount: slide.elements ? slide.elements.length : 0
+      });
+      
+    } finally {
+      // Reset button state (always reset, even on error - allows retry)
+      if (regenerateBtn) {
+        regenerateBtn.disabled = false;
+        regenerateBtn.classList.remove('proof-regenerating');
+        
+        // Hide spinner, show icon
+        if (regenerateIcon) regenerateIcon.style.display = 'block';
+        if (regenerateSpinner) regenerateSpinner.style.display = 'none';
+        if (regenerateText) regenerateText.textContent = 'Regenerate This Slide';
+      }
+    }
+  }
+  
+  /**
+   * Show error notification for Proof/Review feature
+   * Non-blocking, allows user to retry
+   */
+  function showProofErrorNotification(message) {
+    // Check if notification element already exists
+    let errorEl = document.getElementById('proof-error-notification');
+    
+    if (!errorEl) {
+      // Create error notification element
+      errorEl = document.createElement('div');
+      errorEl.id = 'proof-error-notification';
+      errorEl.className = 'proof-error-notification';
+      
+      const proofCard = document.getElementById('proof-review-card');
+      if (proofCard) {
+        proofCard.appendChild(errorEl);
+      } else {
+        // Fallback: append to body
+        document.body.appendChild(errorEl);
+      }
+    }
+    
+    // Set message
+    errorEl.innerHTML = `
+      <div class="proof-error-content">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span class="proof-error-message">${escapeHtml(message)}</span>
+        <button class="proof-error-close" aria-label="Close error message">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    `;
+    
+    // Show notification
+    errorEl.style.display = 'block';
+    // Trigger animation
+    requestAnimationFrame(() => {
+      errorEl.classList.add('proof-error-visible');
+    });
+    
+    // Auto-hide after 8 seconds
+    setTimeout(() => {
+      hideProofErrorNotification();
+    }, 8000);
+    
+    // Close button handler
+    const closeBtn = errorEl.querySelector('.proof-error-close');
+    if (closeBtn) {
+      // Remove old listeners and add new one
+      const newCloseBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+      newCloseBtn.addEventListener('click', hideProofErrorNotification);
+    }
+  }
+  
+  /**
+   * Hide error notification
+   */
+  function hideProofErrorNotification() {
+    const errorEl = document.getElementById('proof-error-notification');
+    if (errorEl) {
+      errorEl.classList.remove('proof-error-visible');
+      setTimeout(() => {
+        errorEl.style.display = 'none';
+      }, 300); // Wait for fade-out animation
+    }
+  }
+  
+  /**
+   * Escape HTML to prevent XSS
+   */
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  /**
+   * Helper to get theme name from theme ID
+   */
+  function getThemeNameFromId(themeId) {
+    const themeMap = {
+      'blank': 'Blank Theme',
+      'aramco': 'AD Theme 2',
+      'dark-aramco': 'AD Dark Theme',
+      'blue-aramco': 'AD Theme 1'
+    };
+    return themeMap[themeId] || 'AD Theme 2';
+  }
+  
+  /**
+   * Helper to get theme ID from theme name (for createAramcoSlide)
+   */
+  function getThemeIdFromName(themeName) {
+    const nameMap = {
+      'Blank Theme': 'blank',
+      'AD Theme 2': 'aramco',
+      'AD Dark Theme': 'dark-aramco',
+      'AD Theme 1': 'blue-aramco'
+    };
+    return nameMap[themeName] || 'aramco';
+  }
+  
+  /**
+   * Helper to create slide using createAramcoSlide from ai-generator.js
+   * This ensures theme consistency with the main AI generation logic
+   */
+  function createAramcoSlideForProof(slideData, index, themeId) {
+    // Use the function from ai-generator.js if available (same logic as main generation)
+    if (window.createAramcoSlide && typeof window.createAramcoSlide === 'function') {
+      // Ensure slideData has correct structure
+      const normalizedSlideData = {
+        title: slideData.title || '',
+        bullets: Array.isArray(slideData.bullets) ? slideData.bullets : []
+      };
+      
+      // Use the same createAramcoSlide function that main AI generation uses
+      // This ensures theme colors, fonts, spacing, and layout are applied consistently
+      return window.createAramcoSlide(normalizedSlideData, index, themeId);
+    }
+    
+    // Fallback: create basic slide structure (should not happen if ai-generator.js is loaded)
+    const slide = defaultSlide();
+    slide.layout = (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content';
+    
+    console.warn('[Proof/Review] createAramcoSlide not available from ai-generator.js, using fallback. Theme may not be applied correctly.');
+    return slide;
+  }
+  
+  // Initialize Proof/Review section event listeners
+  function initializeProofReview() {
+    const feedbackTextarea = document.getElementById('proof-feedback-textarea');
+    const regenerateBtn = document.getElementById('proof-regenerate-btn');
+    
+    if (!feedbackTextarea || !regenerateBtn) {
+      // Elements not found, try again after DOM loads
+      setTimeout(initializeProofReview, 100);
+      return;
+    }
+    
+    // Save feedback when user types
+    feedbackTextarea.addEventListener('input', () => {
+      const slide = state.slides[state.currentSlideIndex];
+      if (slide) {
+        slide.aiFeedback = feedbackTextarea.value;
+        // Clear "applied" flag when user edits feedback
+        if (slide.aiFeedbackApplied && feedbackTextarea.value.trim() !== slide.aiFeedback) {
+          slide.aiFeedbackApplied = false;
+          const feedbackAppliedEl = document.getElementById('proof-feedback-applied');
+          const feedbackHintEl = document.getElementById('proof-feedback-hint');
+          if (feedbackAppliedEl) feedbackAppliedEl.style.display = 'none';
+          if (feedbackHintEl) feedbackHintEl.style.display = 'block';
+        }
+        saveState();
+      }
+    });
+    
+    // Regenerate button click
+    regenerateBtn.addEventListener('click', async () => {
+      const feedback = feedbackTextarea.value.trim();
+      const slideIndex = state.currentSlideIndex;
+      
+      if (slideIndex < 0 || slideIndex >= state.slides.length) {
+        alert('Invalid slide index');
+        return;
+      }
+      
+      await regenerateSingleSlide(slideIndex, feedback);
+    });
+    
+    // Initial update
+    updateProofReviewSection();
+  }
+  
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeProofReview);
+  } else {
+    initializeProofReview();
+  }
+  
+  // ============================================
+  //  AI Assistant Chatbot
+  // ============================================
+  
+  // Chat history for current session (resets on page reload)
+  let chatHistory = [];
+  
+  /**
+   * Initialize AI Assistant chatbot (floating button + popup panel)
+   */
+  let isChatOpen = false;
+  
+  function initializeAIAssistant() {
+    const floatingBtn = document.getElementById('ai-floating-btn');
+    const chatPanel = document.getElementById('ai-chat-panel');
+    const closeBtn = document.getElementById('ai-chat-panel-close');
+    const input = document.getElementById('ai-assistant-input');
+    const sendBtn = document.getElementById('ai-assistant-send');
+    const messagesContainer = document.getElementById('ai-assistant-messages');
+    
+    if (!floatingBtn || !chatPanel || !closeBtn || !input || !sendBtn || !messagesContainer) {
+      // Elements not found, try again after DOM loads
+      setTimeout(initializeAIAssistant, 100);
+      return;
+    }
+    
+    // Open chat panel when floating button is clicked
+    floatingBtn.addEventListener('click', () => {
+      openChatPanel();
+    });
+    
+    // Close chat panel when close button is clicked
+    closeBtn.addEventListener('click', () => {
+      closeChatPanel();
+    });
+    
+    // Close chat panel when clicking outside (on backdrop)
+    chatPanel.addEventListener('click', (e) => {
+      if (e.target === chatPanel) {
+        closeChatPanel();
+      }
+    });
+    
+    // Send message on button click
+    sendBtn.addEventListener('click', () => {
+      const message = input.value.trim();
+      if (message) {
+        handleAssistantMessage(message);
+        input.value = '';
+      }
+    });
+    
+    // Send message on Enter key
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        const message = input.value.trim();
+        if (message) {
+          handleAssistantMessage(message);
+          input.value = '';
+        }
+      }
+    });
+    
+    // Restore chat history from session
+    restoreChatHistory();
+    
+    // Initialize state: button visible, panel hidden
+    updateChatUI();
+  }
+  
+  /**
+   * Open chat panel
+   */
+  function openChatPanel() {
+    isChatOpen = true;
+    updateChatUI();
+    // Focus input after animation
+    setTimeout(() => {
+      const input = document.getElementById('ai-assistant-input');
+      if (input) input.focus();
+    }, 300);
+  }
+  
+  /**
+   * Close chat panel
+   */
+  function closeChatPanel() {
+    isChatOpen = false;
+    updateChatUI();
+  }
+  
+  /**
+   * Update UI based on chat state
+   */
+  function updateChatUI() {
+    const floatingBtn = document.getElementById('ai-floating-btn');
+    const chatPanel = document.getElementById('ai-chat-panel');
+    
+    if (floatingBtn) {
+      if (isChatOpen) {
+        floatingBtn.classList.add('hidden');
+      } else {
+        floatingBtn.classList.remove('hidden');
+      }
+    }
+    
+    if (chatPanel) {
+      if (isChatOpen) {
+        chatPanel.classList.add('open');
+      } else {
+        chatPanel.classList.remove('open');
+      }
+    }
+  }
+  
+  /**
+   * Restore chat history from session memory
+   */
+  function restoreChatHistory() {
+    const messagesContainer = document.getElementById('ai-assistant-messages');
+    if (!messagesContainer) {
+      return;
+    }
+    
+    // If we have chat history, restore it (replacing the initial welcome message)
+    if (chatHistory.length > 0) {
+      // Clear the initial welcome message
+      messagesContainer.innerHTML = '';
+      
+      // Restore all messages from history
+      chatHistory.forEach(({ text, type }) => {
+        addMessageToChatDOM(text, type, false); // false = don't add to history (already in history)
+      });
+      
+      scrollChatToBottom();
+    } else {
+      // No history - keep the initial welcome message from HTML
+      // The welcome message is already in the DOM, so we don't need to do anything
+    }
+  }
+  
+  /**
+   * Add message to chat DOM (internal function, doesn't update history)
+   */
+  function addMessageToChatDOM(text, type, addToHistory = true) {
+    const messagesContainer = document.getElementById('ai-assistant-messages');
+    if (!messagesContainer) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `ai-assistant-message ${type}-message`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'ai-message-avatar';
+    avatar.textContent = type === 'user' ? 'You' : 'AI';
+    
+    const content = document.createElement('div');
+    content.className = 'ai-message-content';
+    
+    // Format text with basic markdown-like formatting
+    const formattedText = formatAssistantMessage(text);
+    content.innerHTML = formattedText;
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(content);
+    messagesContainer.appendChild(messageDiv);
+    
+    // Add to history if requested
+    if (addToHistory) {
+      chatHistory.push({ text, type, timestamp: Date.now() });
+    }
+    
+    scrollChatToBottom();
+  }
+  
+  /**
+   * Handle user message and generate response
+   */
+  async function handleAssistantMessage(userMessage) {
+    const messagesContainer = document.getElementById('ai-assistant-messages');
+    const sendBtn = document.getElementById('ai-assistant-send');
+    const input = document.getElementById('ai-assistant-input');
+    
+    if (!messagesContainer) return;
+    
+    // Clear initial welcome message if this is the first user message
+    if (chatHistory.length === 0 && messagesContainer.children.length > 0) {
+      // Check if first child is the welcome message (has class 'ai-message' but not 'user-message')
+      const firstChild = messagesContainer.firstElementChild;
+      if (firstChild && firstChild.classList.contains('ai-message') && 
+          !firstChild.classList.contains('user-message')) {
+        messagesContainer.removeChild(firstChild);
+      }
+    }
+    
+    // Add user message to chat immediately (will be added to history)
+    addMessageToChat(userMessage, 'user');
+    
+    // Disable input and send button while processing
+    if (sendBtn) sendBtn.disabled = true;
+    if (input) input.disabled = true;
+    
+    // Show typing indicator
+    const typingIndicator = addTypingIndicator();
+    
+    try {
+      // Build context for AI
+      const deckInfo = {
+        title: state.title || 'Untitled presentation',
+        slideCount: state.slides ? state.slides.length : 0
+      };
+      
+      // Get current slide info
+      const currentSlide = state.slides[state.currentSlideIndex];
+      const currentSlideContent = currentSlide ? extractSlideContent(currentSlide) : null;
+      
+      // Parse slide number reference if mentioned
+      const slideNumMatch = userMessage.match(/slide\s*(\d+)/i);
+      const referencedSlideNum = slideNumMatch ? parseInt(slideNumMatch[1]) : null;
+      const referencedSlide = referencedSlideNum && referencedSlideNum >= 1 && referencedSlideNum <= state.slides.length
+        ? state.slides[referencedSlideNum - 1]
+        : null;
+      const referencedSlideContent = referencedSlide ? extractSlideContent(referencedSlide) : null;
+      
+      // Use referenced slide if mentioned, otherwise use current slide
+      const activeSlide = referencedSlide || currentSlide;
+      const activeSlideContent = referencedSlideContent || currentSlideContent;
+      const activeSlideNum = referencedSlideNum || (state.currentSlideIndex + 1);
+      
+      const currentSlideInfo = activeSlideContent && activeSlideContent.title ? {
+        title: activeSlideContent.title,
+        bullets: activeSlideContent.bullets || [],
+        slideNumber: activeSlideNum
+      } : null;
+      
+      // Call AI backend
+      const response = await fetch('http://localhost:3000/api/ai/assistant-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: userMessage,
+          deckInfo: deckInfo,
+          currentSlideInfo: currentSlideInfo,
+          slideNumber: activeSlideNum
+        })
+      });
+      
+      // Remove typing indicator
+      removeTypingIndicator(typingIndicator);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+        throw new Error(errorData.error || 'Failed to get AI response');
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      if (!data.response) {
+        throw new Error('No response from AI');
+      }
+      
+      // Validate response for safety
+      if (!validateChatbotResponse(data.response)) {
+        throw new Error('Invalid response format');
+      }
+      
+      // Add AI response to chat (will be added to history automatically)
+      addMessageToChat(data.response, 'ai');
+      
+    } catch (error) {
+      console.error('[AI Assistant] Error:', error);
+      
+      // Remove typing indicator
+      removeTypingIndicator(typingIndicator);
+      
+      // Show error message
+      const errorMessage = error.message.includes('API key') 
+        ? 'AI service is not configured. Using fallback responses.'
+        : 'Failed to get AI response. Using fallback.';
+      
+      addMessageToChat(errorMessage, 'ai');
+      
+      // Fallback to rule-based response
+      const fallbackResponse = generateAssistantResponse(userMessage);
+      if (fallbackResponse !== errorMessage) {
+        setTimeout(() => {
+          addMessageToChat(fallbackResponse, 'ai');
+          scrollChatToBottom();
+        }, 500);
+      }
+      
+    } finally {
+      // Re-enable input and send button
+      if (sendBtn) sendBtn.disabled = false;
+      if (input) {
+        input.disabled = false;
+        input.focus();
+      }
+    }
+  }
+  
+  /**
+   * Add typing indicator to chat
+   */
+  function addTypingIndicator() {
+    const messagesContainer = document.getElementById('ai-assistant-messages');
+    if (!messagesContainer) return null;
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'ai-assistant-message ai-message ai-typing-indicator';
+    typingDiv.id = 'ai-typing-indicator';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'ai-message-avatar';
+    avatar.textContent = 'AI';
+    
+    const content = document.createElement('div');
+    content.className = 'ai-message-content';
+    content.innerHTML = '<p>Thinking...</p>';
+    
+    typingDiv.appendChild(avatar);
+    typingDiv.appendChild(content);
+    messagesContainer.appendChild(typingDiv);
+    
+    scrollChatToBottom();
+    return typingDiv;
+  }
+  
+  /**
+   * Remove typing indicator
+   */
+  function removeTypingIndicator(typingIndicator) {
+    if (typingIndicator && typingIndicator.parentNode) {
+      typingIndicator.parentNode.removeChild(typingIndicator);
+    } else {
+      const existing = document.getElementById('ai-typing-indicator');
+      if (existing && existing.parentNode) {
+        existing.parentNode.removeChild(existing);
+      }
+    }
+  }
+  
+  /**
+   * Add message to chat UI (public API - updates history)
+   */
+  function addMessageToChat(text, type) {
+    addMessageToChatDOM(text, type, true); // true = add to history
+  }
+  
+  /**
+   * Format message text (basic markdown support)
+   * Also sanitizes content to prevent code execution
+   */
+  function formatAssistantMessage(text) {
+    // Escape HTML first (prevents XSS)
+    let formatted = escapeHtml(text);
+    
+    // Remove any potential script tags or javascript: protocols (double safety)
+    formatted = formatted.replace(/<script[^>]*>.*?<\/script>/gi, '');
+    formatted = formatted.replace(/javascript:/gi, '');
+    formatted = formatted.replace(/on\w+\s*=/gi, ''); // Remove event handlers
+    
+    // Convert line breaks
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Convert **bold** to <strong>
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Convert *italic* to <em>
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Convert lists (lines starting with - or *)
+    const lines = formatted.split('<br>');
+    let inList = false;
+    let result = [];
+    
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (trimmed.match(/^[-*]\s/)) {
+        if (!inList) {
+          result.push('<ul>');
+          inList = true;
+        }
+        result.push(`<li>${trimmed.substring(2)}</li>`);
+      } else {
+        if (inList) {
+          result.push('</ul>');
+          inList = false;
+        }
+        if (trimmed) {
+          result.push(`<p>${trimmed}</p>`);
+        }
+      }
+    });
+    
+    if (inList) {
+      result.push('</ul>');
+    }
+    
+    return result.join('');
+  }
+  
+  /**
+   * Generate assistant response based on user message
+   */
+  function generateAssistantResponse(userMessage) {
+    const lowerMessage = userMessage.toLowerCase();
+    
+    // Get current slide context
+    const currentSlide = state.slides[state.currentSlideIndex];
+    const slideContent = currentSlide ? extractSlideContent(currentSlide) : null;
+    const currentSlideNum = state.currentSlideIndex + 1;
+    
+    // Parse slide number references (e.g., "slide 3", "slide number 5")
+    const slideNumMatch = userMessage.match(/slide\s*(\d+)/i);
+    const referencedSlideNum = slideNumMatch ? parseInt(slideNumMatch[1]) : null;
+    const referencedSlide = referencedSlideNum && referencedSlideNum >= 1 && referencedSlideNum <= state.slides.length
+      ? state.slides[referencedSlideNum - 1]
+      : null;
+    const referencedSlideContent = referencedSlide ? extractSlideContent(referencedSlide) : null;
+    
+    // Use referenced slide if mentioned, otherwise use current slide
+    const activeSlide = referencedSlide || currentSlide;
+    const activeSlideContent = referencedSlideContent || slideContent;
+    const activeSlideNum = referencedSlideNum || currentSlideNum;
+    
+    // User wants a presentation - provide complete prompt example
+    if ((lowerMessage.includes('want') || lowerMessage.includes('need') || lowerMessage.includes('create')) && 
+        (lowerMessage.includes('presentation') || lowerMessage.includes('slides'))) {
+      // Extract topic if mentioned
+      const topicMatch = userMessage.match(/(?:about|on|for)\s+(.+?)(?:\s+presentation|\s+slides|$)/i);
+      const topic = topicMatch ? topicMatch[1].trim() : 'your topic';
+      
+      // Detect tone/style preferences
+      const isShort = lowerMessage.includes('short') || lowerMessage.includes('brief');
+      const isProfessional = lowerMessage.includes('professional') || lowerMessage.includes('formal');
+      const isTechnical = lowerMessage.includes('technical');
+      
+      const slideCount = isShort ? '5-6' : '7-10';
+      const tone = isProfessional ? 'professional' : isTechnical ? 'technical' : 'clear and engaging';
+      const audience = lowerMessage.includes('executive') ? 'executives' : 
+                      lowerMessage.includes('employee') ? 'employees' :
+                      lowerMessage.includes('student') ? 'students' : 'your audience';
+      
+      return `**Here's a ready-to-use prompt:**
+
+"${topic}: key points, main benefits, implementation - ${slideCount} slides - ${tone} presentation for ${audience}"
+
+**To use:**
+1. Click **"AI Generate"** (top toolbar)
+2. Paste the prompt above
+3. Choose ${slideCount} slides
+4. Select a theme
+5. Click Generate
+
+**Customize it:** Add specific points you want covered, e.g., "${topic}: [point 1], [point 2], [point 3] - ${slideCount} slides - ${tone} for ${audience}"`;
+    }
+    
+    // "What should I type?" or "What should I write?" - Quick prompt suggestions
+    if (lowerMessage.includes('what should i type') || 
+        lowerMessage.includes('what should i write') ||
+        lowerMessage.includes('what to type') ||
+        lowerMessage.includes('example prompt') ||
+        (lowerMessage.includes('good') && lowerMessage.includes('prompt'))) {
+      return `**Quick prompt examples:**
+
+**For business:**
+"Q4 sales results: revenue growth, key wins, challenges, next quarter forecast - for executive team"
+
+**For training:**
+"Introduction to project management: planning, execution, monitoring - for new employees"
+
+**For technical:**
+"Cloud migration strategy: architecture, security, cost optimization - technical presentation"
+
+**Formula:** [Topic]: [Key points] - [Audience/Tone]
+
+**Pro tip:** Be specific! "Marketing strategy" → "Q4 product launch marketing: social media, email campaigns, events - for marketing team"`;
+    }
+    
+    // Tone/style requests: formal, shorter, technical, etc.
+    if (lowerMessage.includes('formal') || lowerMessage.includes('professional')) {
+      return `**To make slides more formal:**
+
+**In your prompt, add:**
+- "Formal business presentation"
+- "For executive audience"
+- "Professional tone"
+
+**Example:** "Quarterly financial review: revenue, expenses, projections - formal executive presentation"
+
+**For existing slides:** Use Proof/Review feedback like:
+- "Make the language more formal and professional"
+- "Use business terminology"
+- "Remove casual phrases"`;
+    }
+    
+    if (lowerMessage.includes('shorter') || lowerMessage.includes('concise') || lowerMessage.includes('brief')) {
+      return `**To make slides shorter:**
+
+**In your prompt, add:**
+- "Keep it concise"
+- "Brief overview"
+- "Key points only"
+
+**For existing slides:** Use Proof/Review feedback:
+- "Make it shorter and more concise"
+- "Reduce to 3 bullet points"
+- "Cut unnecessary details"
+- "Focus on main points only"`;
+    }
+    
+    if (lowerMessage.includes('technical') || lowerMessage.includes('detailed')) {
+      return `**To make slides more technical:**
+
+**In your prompt, add:**
+- "Technical presentation"
+- "Include technical details"
+- "For technical audience"
+
+**Example:** "API architecture: REST endpoints, authentication, rate limiting - technical deep dive"
+
+**For existing slides:** Use Proof/Review feedback:
+- "Add more technical details"
+- "Include specifications"
+- "Use technical terminology"
+- "Add implementation details"`;
+    }
+    
+    // "This slide is too long" or "How to fix" - Provide specific revision note
+    if ((lowerMessage.includes('too long') || lowerMessage.includes('too much') || 
+         lowerMessage.includes('how can i tell') || lowerMessage.includes('how to tell')) &&
+        (lowerMessage.includes('fix') || lowerMessage.includes('shorter'))) {
+      
+      const bullets = activeSlideContent ? (activeSlideContent.bullets || []) : [];
+      const targetBullets = bullets.length > 4 ? 3 : 4;
+      
+      return `**Copy-paste this into Proof/Review:**
+
+"Make this slide shorter with ${targetBullets} bullets and keep only the main ideas."
+
+**Or try these:**
+• "Reduce to ${targetBullets} key points and remove unnecessary details"
+• "Make it more concise - focus on the most important information"
+• "Cut this down to ${targetBullets} main bullet points"
+
+**To use:**
+1. Go to **Proof/Review** section (above this chat)
+2. Paste one of the suggestions above
+3. Click **"Regenerate This Slide"**
+
+The AI will make it shorter while keeping the main content!`;
+    }
+    
+    // "What should I ask to fix this slide?" - Contextual feedback suggestions
+    if ((lowerMessage.includes('what should i ask') || 
+         lowerMessage.includes('what should i say') ||
+         lowerMessage.includes('how to fix') ||
+         lowerMessage.includes('improve this slide')) &&
+        activeSlideContent && activeSlideContent.title) {
+      
+      const suggestions = [];
+      const bullets = activeSlideContent.bullets || [];
+      
+      // Analyze slide content and suggest specific feedback
+      if (bullets.length > 5) {
+        suggestions.push(`"Make this slide shorter with 3 bullets and keep only the main ideas."`);
+      }
+      if (bullets.length < 3 && bullets.length > 0) {
+        suggestions.push(`"Add more detail - expand to 4-5 bullet points"`);
+      }
+      if (activeSlideContent.title.length > 60) {
+        suggestions.push(`"Make the title shorter and more concise"`);
+      }
+      
+      // General suggestions
+      suggestions.push(`"Simplify the language - make it easier to understand"`);
+      suggestions.push(`"Add a concrete example"`);
+      suggestions.push(`"Focus on the key benefits"`);
+      
+      return `**For slide ${activeSlideNum} ("${activeSlideContent.title}"):**
+
+**Copy-paste these into Proof/Review:**
+
+${suggestions.map(s => `• ${s}`).join('\n')}
+
+**How to use:**
+1. Copy one of the suggestions above
+2. Paste it in the **Proof/Review** notes box (above this chat)
+3. Click **"Regenerate This Slide"**
+
+**Or customize:** "Make it [shorter/more detailed/more visual] and [add example/focus on benefits]"`;
+    }
+    
+    // "What does proof slide box do?" - Explain Proof/Review feature
+    if (lowerMessage.includes('proof') && (lowerMessage.includes('box') || lowerMessage.includes('do') || 
+        lowerMessage.includes('what') || lowerMessage.includes('how'))) {
+      return `**Proof/Review Slide feature:**
+
+**What it does:**
+• Lets you add feedback notes about the current slide
+• Regenerates only that slide based on your feedback
+• Other slides stay unchanged
+
+**How to use:**
+1. Navigate to the slide you want to improve
+2. Find **"Proof/Review Slide"** section in the right sidebar (above this chat)
+3. Type your feedback in the notes box, e.g.:
+   - "Make it shorter"
+   - "Add an example about X"
+   - "Make it more formal"
+4. Click **"Regenerate This Slide"**
+
+**Benefits:**
+• Fix individual slides without regenerating the whole deck
+• Iterate until you're happy with each slide
+• Keep your other slides exactly as they are
+
+**Example feedback:**
+"Make this slide shorter with 3 bullets and keep only the main ideas."`;
+    }
+    
+    // Slide number specific questions
+    if (referencedSlideNum && activeSlideContent) {
+      if (lowerMessage.includes('improve') || lowerMessage.includes('fix') || lowerMessage.includes('better')) {
+        const bullets = activeSlideContent.bullets || [];
+        return `**Slide ${referencedSlideNum} suggestions:**
+
+**Current content:** "${activeSlideContent.title}"
+${bullets.length > 0 ? `\n• ${bullets.slice(0, 3).join('\n• ')}${bullets.length > 3 ? '...' : ''}` : '\n(Title-only slide)'}
+
+**Quick fixes to try:**
+• "Make it shorter" ${bullets.length > 4 ? '(currently has ' + bullets.length + ' points)' : ''}
+• "Add a concrete example"
+• "Simplify the language"
+• "Focus on the main benefits"
+
+**To apply:** Use the Proof/Review section above, paste your feedback, and click "Regenerate This Slide"`;
+      }
+    }
+    
+    // Check for common questions about AI generator
+    if (lowerMessage.includes('how') && (lowerMessage.includes('generate') || lowerMessage.includes('ai'))) {
+      return `**Quick steps:**
+
+1. Click **"AI Generate"** (top toolbar)
+2. Type your topic - Be specific!
+3. Choose slide count (5-10 works well)
+4. Pick a theme
+5. Click Generate
+
+**What to type?** Try: "[Your topic]: [key points] - for [audience]"
+
+Example: "Product launch: features, pricing, marketing - for sales team"`;
+    }
+    
+    if (lowerMessage.includes('prompt') || lowerMessage.includes('better prompt')) {
+      return `**Quick prompt formula:**
+
+**[Topic]: [Key points] - [Audience/Tone]**
+
+**Examples:**
+• "Sales strategy: Q4 goals, tactics, metrics - for sales team"
+• "Product demo: features, benefits, pricing - executive brief"
+• "Training: onboarding process, tools, timeline - for new hires"
+
+**Do's:**
+✅ Be specific: "Q4 marketing" not "Marketing"
+✅ Add audience: "for executives" or "for students"
+✅ List 3-5 key points
+
+**Don'ts:**
+❌ Too vague: "Business stuff"
+❌ Too broad: "Everything about tech"
+❌ Too many topics: Keep it focused`;
+    }
+    
+    if (lowerMessage.includes('improve') || lowerMessage.includes('better slide')) {
+      if (activeSlideContent && activeSlideContent.title) {
+        const bullets = activeSlideContent.bullets || [];
+        return `**Quick fixes for slide ${activeSlideNum}:**
+
+**Copy-paste these into Proof/Review:**
+• "Make it shorter" ${bullets.length > 4 ? `(${bullets.length} points → 3-4)` : ''}
+• "Add an example"
+• "Simplify the language"
+• "Focus on benefits"
+
+**Or be specific:** "Make it more [formal/technical/visual] and [add example/focus on ROI]"
+
+**To use:** Paste feedback → Click "Regenerate This Slide"`;
+      }
+      
+      return `**Quick improvement tips:**
+
+**For any slide:**
+• Use Proof/Review → Add feedback → Regenerate
+• Try: "Make it shorter", "Add example", "Simplify"
+
+**General rules:**
+• 3-5 bullet points max
+• One main idea per slide
+• Clear, concise titles
+
+**Want specific help?** Tell me the slide number or ask about your current slide!`;
+    }
+    
+    if (lowerMessage.includes('theme') || lowerMessage.includes('design')) {
+      return `You can choose from 4 themes:
+
+1. **AD Theme 1 (Blue Aramco)** - Professional blue gradient, great for corporate presentations
+2. **AD Theme 2 (Aramco)** - Clean and modern, versatile for any content
+3. **AD Dark Theme** - Dark background, good for technical or creative presentations
+4. **Blank Theme** - Minimal white background, maximum flexibility
+
+**When to use each:**
+- **AD Theme 1**: Corporate meetings, formal presentations, executive briefings
+- **AD Theme 2**: General business, training, educational content
+- **AD Dark Theme**: Technical presentations, creative pitches, evening presentations
+- **Blank Theme**: When you want full control over design
+
+You can change themes when generating slides, and all slides will use the same theme for consistency.`;
+    }
+    
+    if (lowerMessage.includes('regenerate') || lowerMessage.includes('revision')) {
+      return `**Quick steps:**
+
+1. Go to the slide (or tell me the slide number)
+2. Use **Proof/Review** section above
+3. Paste feedback like:
+   • "Make it shorter"
+   • "Add example"
+   • "More formal"
+4. Click **"Regenerate This Slide"**
+
+**Only that slide changes** - others stay the same!
+
+**Pro tip:** Try different feedback until it's perfect.`;
+    }
+    
+    if (lowerMessage.includes('help') || lowerMessage.includes('what can')) {
+      return `I can help you with:
+
+**🎯 Using the AI Generator**
+- How to create slides with AI
+- Writing effective prompts
+- Choosing the right theme
+
+**✏️ Improving Slides**
+- Feedback on your current slide
+- Tips for better slide design
+- How to use the revision feature
+
+**💡 Best Practices**
+- Slide structure and layout
+- Content organization
+- Presentation tips
+
+Just ask me anything! For example:
+- "How do I generate slides?"
+- "What makes a good prompt?"
+- "How can I improve this slide?"`;
+    }
+    
+    // Context-aware response about current slide
+    if (activeSlideContent && activeSlideContent.title && (
+      lowerMessage.includes('this slide') || 
+      lowerMessage.includes('current slide') ||
+      lowerMessage.includes('slide about') ||
+      (referencedSlideNum && lowerMessage.match(/slide\s*\d+/i))
+    )) {
+      const bullets = activeSlideContent.bullets || [];
+      const slideInfo = referencedSlideNum 
+        ? `Slide ${referencedSlideNum}`
+        : `Current slide (${activeSlideNum})`;
+      
+      return `**${slideInfo}: "${activeSlideContent.title}"**
+
+${bullets.length > 0 
+  ? `**Content:**\n${bullets.slice(0, 3).map(b => `• ${b}`).join('\n')}${bullets.length > 3 ? `\n... (${bullets.length} total)` : ''}`
+  : '**(Title-only slide)**'}
+
+**Quick fixes:**
+• "Make it shorter" ${bullets.length > 4 ? `(${bullets.length} → 3-4 points)` : ''}
+• "Add example"
+• "Simplify language"
+• "More formal/technical"
+
+**To apply:** Copy feedback → Proof/Review → Regenerate`;
+    }
+    
+    // Default response - keep it short and practical
+    return `**Quick help:**
+
+**Common questions:**
+• "What should I type?" → Prompt examples
+• "Make it shorter/formal/technical" → Tone guidance
+• "How to fix slide 3?" → Specific suggestions
+• "Better prompt?" → Writing tips
+
+**Or ask:** "What should I ask to fix this slide?" for instant feedback suggestions!
+
+**My scope:** I help with slide presentations, prompt writing, and editing guidance. I provide suggestions - you use the interface to apply them.
+
+What do you need help with?`;
+  }
+  
+  /**
+   * Validate that chatbot response doesn't contain dangerous content
+   * (e.g., code execution attempts, direct slide modifications)
+   */
+  function validateChatbotResponse(response) {
+    if (!response || typeof response !== 'string') {
+      return false;
+    }
+    
+    const lowerResponse = response.toLowerCase();
+    
+    // Check for potential code execution attempts
+    const dangerousPatterns = [
+      /eval\s*\(/i,
+      /function\s*\(/i,
+      /\.exec\(/i,
+      /\.call\(/i,
+      /document\.(write|execCommand)/i,
+      /innerHTML\s*=/i,
+      /outerHTML\s*=/i,
+      /<script/i,
+      /javascript:/i
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(response)) {
+        console.warn('[AI Assistant] Potentially dangerous content detected in response');
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Scroll chat to bottom
+   */
+  function scrollChatToBottom() {
+    const messagesContainer = document.getElementById('ai-assistant-messages');
+    if (messagesContainer) {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+  }
+  
+  // Initialize AI Assistant when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAIAssistant);
+  } else {
+    initializeAIAssistant();
+  }
+  
+  // Helper function to scroll selected slide into view
+  function scrollSelectedSlideIntoView() {
+    if (!sidebarEl) return;
+    const selectedThumb = sidebarEl.querySelector('.slide-thumb.selected');
+    if (selectedThumb) {
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        selectedThumb.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest', 
+          inline: 'nearest' 
+        });
+      });
+    }
   }
 
   // Actions
   function addSlide() {
     state.slides.push(defaultSlide());
     state.currentSlideIndex = state.slides.length - 1;
-    renderAll();
+    renderAll(); // This will call scrollSelectedSlideIntoView()
   }
 
   function deleteSlide() {
@@ -2409,8 +4036,7 @@
       const stickyElement = stageEl.querySelector(`.el.sticky[data-id="${newSticky.id}"]`);
       if (stickyElement) {
         // Select the sticky note
-        document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
-        stickyElement.classList.add('selected');
+        selectElement(stickyElement);
         updateToolbarFromSelection();
         showContextToolbar(stickyElement);
         
@@ -2454,8 +4080,7 @@
     setTimeout(() => {
       const imageElement = stageEl.querySelector(`.el.image[data-id="${newImage.id}"]`);
       if (imageElement) {
-        document.querySelectorAll('.el').forEach(el => el.classList.remove('selected'));
-        imageElement.classList.add('selected');
+        selectElement(imageElement);
         updateToolbarFromSelection();
         showContextToolbar(imageElement);
       }
@@ -2964,6 +4589,46 @@
       cancelDrawing();
       deactivateDrawingMode();
       return;
+    }
+    
+    // Exit text editing with Escape
+    if (e.key === 'Escape' && editingElementId) {
+      e.preventDefault();
+      exitTextEditing();
+      return;
+    }
+    
+    // Keyboard navigation for slides (Arrow Up/Down)
+    // Only handle if not typing in an input/textarea/contentEditable
+    const activeElement = document.activeElement;
+    const isTyping = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.contentEditable === 'true'
+    );
+    
+    if (!isTyping && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+      // Check if we're in the slides editor (not other pages)
+      if (sidebarEl && state && Array.isArray(state.slides)) {
+        e.preventDefault();
+        const currentIdx = state.currentSlideIndex || 0;
+        let newIdx;
+        
+        if (e.key === 'ArrowUp') {
+          newIdx = Math.max(0, currentIdx - 1);
+        } else {
+          newIdx = Math.min(state.slides.length - 1, currentIdx + 1);
+        }
+        
+        if (newIdx !== currentIdx) {
+          state.currentSlideIndex = newIdx;
+          saveState();
+          renderAll();
+          // Scroll selected slide into view
+          scrollSelectedSlideIntoView();
+        }
+        return;
+      }
     }
     
     // Undo/Redo
@@ -3791,8 +5456,14 @@
     node.contentEditable = 'true';
     node.classList.add('editing');
     node.style.userSelect = 'text';
-    document.querySelectorAll('.el').forEach(elNode => elNode.classList.remove('selected'));
-    node.classList.add('selected');
+    selectElement(node);
+    // State C: Show handles when editing/selected
+    const moveHandle = node.querySelector('.text-move-handle');
+    const resizeHandle = node.querySelector('.resize-handle');
+    if (moveHandle && resizeHandle && !el.locked) {
+      moveHandle.style.display = 'inline-flex';
+      resizeHandle.style.display = 'block';
+    }
     updateToolbarFromSelection();
     showContextToolbar(node);
     showTextControlBarForElement(el);
@@ -3807,10 +5478,21 @@
       const el = getEditingElement();
       if (el) syncEditingContent({ save: false });
       editingNode.classList.remove('editing');
+      // Revert to State A: Deselect and update state model
+      editingNode.classList.remove('selected');
+      if (editingNode.dataset) {
+        editingNode.dataset.isSelected = 'false';
+      }
+      // Hide handles when exiting editing
+      const moveHandle = editingNode.querySelector('.text-move-handle');
+      const resizeHandle = editingNode.querySelector('.resize-handle');
+      if (moveHandle) moveHandle.style.display = 'none';
+      if (resizeHandle) resizeHandle.style.display = 'none';
     }
     editingElementId = null;
     editingNode = null;
     hideTextControlBar();
+    hideContextToolbar();
   }
 
   function getEditingElement() {
@@ -4548,13 +6230,19 @@
       return;
     }
     if (!e.target.closest('.el')) {
+      // Click outside: Deselect all elements and revert to State A
+      deselectAllElements();
+      // Hide selection boxes for lines
       document.querySelectorAll('.el').forEach(el => {
-        el.classList.remove('selected');
-        // Hide selection boxes for lines
         const selectionBox = el.querySelector('.line-selection-box');
         if (selectionBox) {
           selectionBox.style.display = 'none';
         }
+        // Hide handles for all elements
+        const moveHandle = el.querySelector('.text-move-handle');
+        const resizeHandle = el.querySelector('.resize-handle');
+        if (moveHandle) moveHandle.style.display = 'none';
+        if (resizeHandle) resizeHandle.style.display = 'none';
       });
       hideContextToolbar();
       exitTextEditing();
@@ -6933,44 +8621,148 @@
   }
   
   // Expose function for AI generator to add slides to state
-  window.addAISlides = function(slideObjects) {
+  // Flag to prevent duplicate slide additions
+  let isAddingAISlides = false;
+
+  window.addAISlides = function(slideObjects, themeId) {
     if (!Array.isArray(slideObjects) || slideObjects.length === 0) {
       console.warn('Invalid slide objects provided');
       return;
     }
     
-    // Add each slide to state
-    slideObjects.forEach(slideObj => {
-      // Ensure slide has required structure
-      if (slideObj && slideObj.id && Array.isArray(slideObj.elements)) {
+    // Prevent duplicate additions
+    if (isAddingAISlides) {
+      console.warn('Already adding AI slides, skipping duplicate call');
+      return;
+    }
+    
+    isAddingAISlides = true;
+    
+    try {
+      // REGENERATION BEHAVIOR: Always replace, never append
+      // When user clicks "Generate" or "Regenerate", clear existing slides first
+      // This ensures exactly one presentation is shown, never multiple decks stacked
+      console.log('Clearing existing slides before adding AI-generated slides (regeneration behavior)');
+      state.slides = [];
+      state.currentSlideIndex = 0;
+      
+      // Add each slide to state - ensure exact count, no duplicates
+      if (slideObjects.length === 0) {
+        console.warn('No slide objects to add');
+        isAddingAISlides = false;
+        return;
+      }
+      
+      // Add slides one by one, ensuring no duplicates by ID and exact count
+      const addedIds = new Set();
+      const requestedCount = slideObjects.length;
+      
+      slideObjects.forEach((slideObj, index) => {
+        // Safety check: never exceed requested count
+        if (state.slides.length >= requestedCount) {
+          console.warn(`Slide count limit reached (${requestedCount}), skipping additional slides`);
+          return;
+        }
+        
+        // Ensure slide has required structure
+        if (!slideObj || !slideObj.id || !Array.isArray(slideObj.elements)) {
+          console.warn(`Invalid slide object at index ${index}:`, slideObj);
+          return;
+        }
+        
+        // Prevent duplicate slides by ID
+        if (addedIds.has(slideObj.id)) {
+          console.warn(`Duplicate slide ID detected: ${slideObj.id}, skipping`);
+          return;
+        }
+        
+        addedIds.add(slideObj.id);
+        
+        // Initialize Proof/Review fields for AI-generated slides
+        // Extract content for future regeneration (integration with Proof/Review feature)
+        const slideContent = extractSlideContent(slideObj);
+        if (slideContent.title || slideContent.bullets.length > 0) {
+          slideObj.aiContent = slideContent;
+          // Don't set aiFeedback or aiFeedbackApplied - user hasn't provided feedback yet
+        }
+        
         state.slides.push(slideObj);
-      } else {
-        console.warn('Invalid slide object:', slideObj);
+      });
+      
+      // DEFENSIVE CHECK: Final validation - ensure exact count
+      if (state.slides.length !== requestedCount) {
+        console.warn(`[Safety] Slide count mismatch: expected ${requestedCount}, got ${state.slides.length}`);
+        // Trim to exact count if we somehow got more
+        if (state.slides.length > requestedCount) {
+          state.slides = state.slides.slice(0, requestedCount);
+          console.log(`[Safety] Trimmed slides to exact count: ${requestedCount}`);
+        }
       }
-    });
-    
-    // Update current slide index to the last added slide
-    state.currentSlideIndex = state.slides.length - 1;
-    
-    // Normalize state and render
-    normalizeState(state);
-    renderAll();
-    saveState();
-    
-    // Auto-save to recent work for AI-generated presentations
-    setTimeout(() => {
-      if (window.saveToRecentWork) {
-        window.saveToRecentWork();
+      
+      // MINIMAL LOG: Final slide count and theme
+      console.log(`[Final] Added ${state.slides.length} slides, theme: ${themeId || 'none'}`);
+      
+      // Set theme state if provided (slides already have theme colors applied)
+      if (themeId) {
+        currentTheme = themeId;
+        window.currentTheme = themeId;
+        state.theme = themeId;
+        
+        // Update theme CSS variables
+        const theme = availableThemes.find(t => t.id === themeId);
+        if (theme) {
+          if (themeId === 'blank') {
+            document.documentElement.style.removeProperty('--theme-primary');
+            document.documentElement.style.removeProperty('--theme-secondary');
+            document.documentElement.style.removeProperty('--theme-background');
+          } else {
+            document.documentElement.style.setProperty('--theme-primary', theme.colors.primary);
+            document.documentElement.style.setProperty('--theme-secondary', theme.colors.secondary);
+            document.documentElement.style.setProperty('--theme-background', theme.colors.background);
+          }
+          
+          // Update active theme boxes
+          document.querySelectorAll('.theme-box').forEach(box => {
+            box.classList.toggle('active', box.dataset.themeId === themeId);
+          });
+          document.querySelectorAll('#ai-themes-grid .theme-box').forEach(box => {
+            box.classList.toggle('active', box.dataset.themeId === themeId);
+          });
+        }
       }
-    }, 500);
+      
+      // Update current slide index to the last added slide
+      state.currentSlideIndex = state.slides.length - 1;
+      
+      // Normalize state and render
+      normalizeState(state);
+      renderAll();
+      saveState();
+      
+      // Auto-save to recent work for AI-generated presentations
+      setTimeout(() => {
+        if (window.saveToRecentWork) {
+          window.saveToRecentWork();
+        }
+      }, 500);
+    } finally {
+      // Reset flag after a short delay to allow for async operations
+      setTimeout(() => {
+        isAddingAISlides = false;
+      }, 1000);
+    }
   };
 
-  // Listen for AI slides event
-  window.addEventListener('ai-slides-generated', function(e) {
-    if (e.detail && e.detail.slides) {
-      window.addAISlides(e.detail.slides);
-    }
-  });
+  // Listen for AI slides event (only once)
+  let aiSlidesEventListenerAdded = false;
+  if (!aiSlidesEventListenerAdded) {
+    window.addEventListener('ai-slides-generated', function(e) {
+      if (e.detail && e.detail.slides) {
+        window.addAISlides(e.detail.slides, e.detail.themeId);
+      }
+    });
+    aiSlidesEventListenerAdded = true;
+  }
 
   // ============================================
   //  Themes Modal Functionality
