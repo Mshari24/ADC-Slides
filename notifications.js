@@ -265,7 +265,7 @@
 
     seeAll?.addEventListener('click', (event) => {
       event.preventDefault();
-      window.location.assign('./notification.html');
+      // Notification page has been removed
     });
   };
 
