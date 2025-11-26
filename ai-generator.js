@@ -2161,8 +2161,7 @@
 
       // DEFENSIVE CHECK: Ensure we don't exceed requested count
       const MAX_SLIDES = 50;
-      const clampedSlideCount = Math.min(slideCount, MAX_SLIDES, result.slides.length);
-      const slidesToGenerate = result.slides.slice(0, clampedSlideCount);
+      const slidesToGenerate = result.slides.slice(0, slideCount);
       
       // MINIMAL LOG: Slide count requested vs produced
       if (slidesToGenerate.length !== slideCount) {
@@ -2204,11 +2203,11 @@
       }).filter(slide => slide !== null && slide !== undefined); // Remove any null/undefined slides
       
       // DEFENSIVE CHECK: Final validation - ensure exact count
-      if (slideObjects.length !== clampedSlideCount) {
-        console.warn(`[Safety] Created ${slideObjects.length} slides, expected ${clampedSlideCount}`);
+      if (slideObjects.length !== slideCount) {
+        console.warn(`[Safety] Created ${slideObjects.length} slides, expected ${slideCount}`);
         // Trim to exact count if we somehow got more
-        if (slideObjects.length > clampedSlideCount) {
-          slideObjects.splice(clampedSlideCount);
+        if (slideObjects.length > slideCount) {
+          slideObjects.splice(slideCount);
         }
       }
       
@@ -2405,11 +2404,11 @@
       }).filter(slide => slide !== null && slide !== undefined); // Remove any null/undefined slides
       
       // DEFENSIVE CHECK: Final validation - ensure exact count
-      if (slideObjects.length !== clampedSlideCount) {
-        console.warn(`[Safety] Created ${slideObjects.length} slides, expected ${clampedSlideCount}`);
+      if (slideObjects.length !== selectedSlideCount) {
+        console.warn(`[Safety] Created ${slideObjects.length} slides, expected ${selectedSlideCount}`);
         // Trim to exact count if we somehow got more
-        if (slideObjects.length > clampedSlideCount) {
-          slideObjects.splice(clampedSlideCount);
+        if (slideObjects.length > selectedSlideCount) {
+          slideObjects.splice(selectedSlideCount);
         }
       }
       
@@ -2422,8 +2421,8 @@
       if (typeof window !== 'undefined' && window.addAISlides) {
         window.addAISlides(slideObjects, themeId);
         } else {
-        // Fallback: dispatch event that app.js listens to
-        const event = new CustomEvent('ai-slides-generated', { 
+          // Fallback: dispatch event that app.js listens to
+          const event = new CustomEvent('ai-slides-generated', {
           detail: { slides: slideObjects, themeId: themeId },
           bubbles: true
         });

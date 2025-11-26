@@ -1,7 +1,6 @@
 // Slide Management Module with Undo/Redo Functionality
 
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+// jsPDF and html2canvas are loaded via CDN script tags, available as window.jspdf and window.html2canvas
 
 (function() {
   'use strict';
@@ -648,6 +647,11 @@ import html2canvas from 'html2canvas';
 
   // Export presentation as PDF function
   function exportPresentationPDF() {
+    if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+      alert('PDF export libraries not loaded. Please refresh the page.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p', 'pt', 'a4');
     const slides = document.querySelectorAll('.slide');
 

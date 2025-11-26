@@ -223,7 +223,7 @@ app.post('/api/ai/generate-slides', async (req, res) => {
     const conclusionSlides = 1; // Always end with conclusion
     const mainContentSlides = Math.max(1, finalSlideCount - introSlides - conclusionSlides);
     
-    const systemPrompt = `You are a professional presentation generator. Generate structured slide content as JSON.
+    const systemPrompt = `You are a professional presentation generator. Generate structured slide content in a clear text format.
 
 ${languageInstruction}
 
@@ -234,7 +234,7 @@ CRITICAL CONSTRAINTS (MUST FOLLOW EXACTLY):
 4. Do NOT create multiple slides with identical or nearly identical titles/bullets.
 
 SLIDE STRUCTURE REQUIREMENTS:
-- Slide 1: Introduction/Title slide (title-only, bullets: [])
+- Slide 1: Introduction/Title slide (title-only, no bullets)
 - Slides 2-${finalSlideCount - 1}: Main content slides (each with 3-5 bullet points)
 - Slide ${finalSlideCount}: Summary/Conclusion slide (title-only or with 2-3 summary bullets)
 
@@ -244,32 +244,23 @@ CONTENT SLIDE REQUIREMENTS:
 - Bullet points should be distinct and non-repetitive
 - Content should flow logically from slide to slide
 
-SECTION HEADER SLIDES:
-- Use for major section breaks (Introduction, Main Topic, Conclusion, etc.)
-- Set "bullets" to an empty array []
-- Should be strategically placed to divide content logically
+OUTPUT FORMAT (use this exact structure for each slide):
+SLIDE 1:
+Title: [slide title text]
+Bullets: [leave empty for title-only slides]
 
-JSON FORMAT (return ONLY valid JSON, no markdown, no code blocks):
-{
-  "slides": [
-    {
-      "title": "Introduction",
-      "bullets": []
-    },
-    {
-      "title": "Main Topic Title",
-      "bullets": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
-    },
-    {
-      "title": "Conclusion",
-      "bullets": []
-    }
-  ]
-}
+SLIDE 2:
+Title: [slide title text]
+Bullets:
+- [bullet point 1]
+- [bullet point 2]
+- [bullet point 3]
+
+[Continue this format for all ${finalSlideCount} slides]
 
 VALIDATION RULES:
 - Total slides: exactly ${finalSlideCount}
-- First slide: title-only (bullets: [])
+- First slide: title-only (no bullets)
 - Last slide: title-only or summary bullets
 - Middle slides: each has 3-5 bullet points
 - All titles: unique and non-repetitive
@@ -296,7 +287,7 @@ REQUIREMENTS:
       response = await client.responses.create({
         model: "gpt-4o-mini",
         input: combinedInput,
-        response_format: { type: "json_object" }
+        text: { format: { type: "text" } }
       });
     } catch (apiError) {
       console.error('=== OpenAI API CALL ERROR ===');
@@ -319,30 +310,61 @@ REQUIREMENTS:
       throw new Error('No response content from OpenAI');
     }
 
-    let parsedResponse;
-    try {
-      parsedResponse = JSON.parse(response.output_text);
-    } catch (parseError) {
-      console.error('[Safety] JSON parse error:', parseError.message);
-      console.error('[Safety] Response preview:', response.output_text.substring(0, 200));
-      throw new Error('Failed to parse AI response as JSON. The AI may have returned invalid data.');
+    // Parse text response into slide objects
+    function parseTextResponse(text) {
+      const slides = [];
+      const slideBlocks = text.split(/SLIDE \d+:/i);
+      
+      for (let i = 1; i < slideBlocks.length; i++) {
+        const block = slideBlocks[i].trim();
+        if (!block) continue;
+        
+        const titleMatch = block.match(/Title:\s*(.+?)(?:\n|$)/i);
+        const title = titleMatch ? titleMatch[1].trim() : '';
+        
+        if (!title) continue;
+        
+        // Extract bullets
+        const bullets = [];
+        const bulletsMatch = block.match(/Bullets:\s*\n((?:- .+\n?)+)/is);
+        if (bulletsMatch) {
+          const bulletsText = bulletsMatch[1];
+          const bulletLines = bulletsText.match(/- (.+)/g);
+          if (bulletLines) {
+            bullets.push(...bulletLines.map(b => b.replace(/^- /, '').trim()).filter(b => b.length > 0));
+          }
+        }
+        
+        slides.push({
+          title: title,
+          bullets: bullets
+        });
+      }
+      
+      return slides;
     }
 
-    // DEFENSIVE CHECK: Validate structure
-    if (!parsedResponse || typeof parsedResponse !== 'object') {
-      console.error('[Safety] Invalid response: not an object');
-      throw new Error('Invalid response structure: response is not an object');
+    let parsedSlides;
+    try {
+      parsedSlides = parseTextResponse(response.output_text);
+    } catch (parseError) {
+      console.error('[Safety] Text parse error:', parseError.message);
+      console.error('[Safety] Response preview:', response.output_text.substring(0, 500));
+      throw new Error('Failed to parse AI response. The AI may have returned invalid data.');
     }
     
-    if (!parsedResponse.slides || !Array.isArray(parsedResponse.slides)) {
-      console.error('[Safety] Invalid response: missing or invalid slides array');
-      throw new Error('Invalid response structure: missing slides array');
+    if (!parsedSlides || !Array.isArray(parsedSlides)) {
+      console.error('[Safety] Invalid response: could not extract slides');
+      throw new Error('Invalid response structure: could not extract slides');
     }
     
-    if (parsedResponse.slides.length === 0) {
+    if (parsedSlides.length === 0) {
       console.error('[Safety] Invalid response: empty slides array');
       throw new Error('Invalid response: AI returned no slides');
     }
+    
+    // Wrap in expected structure for compatibility
+    const parsedResponse = { slides: parsedSlides };
 
     // MINIMAL LOG: Slide count requested vs produced
     console.log(`[AI Response] Requested: ${finalSlideCount}, Received: ${parsedResponse.slides.length}`);
@@ -566,21 +588,21 @@ ${languageInstruction}
 
 IMPORTANT:
 - Generate exactly ONE slide (not multiple slides)
-- Return ONLY valid JSON in this format:
-{
-  "title": "Slide title",
-  "bullets": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
-}
+- Return slide content in the following text format:
+Title: [slide title]
+Bullets:
+- [bullet point 1]
+- [bullet point 2]
+- [bullet point 3]
 
-If the slide should be title-only, use an empty bullets array: []
+If the slide should be title-only, leave Bullets section empty.
 
 SLIDE REQUIREMENTS:
 - Title: Clear, concise, relevant to the topic
-- Bullets: ${isTitleOnly ? 'MUST use empty array [] (this is a title-only slide).' : 'Provide 3-5 bullet points for content slide.'}
+- Bullets: ${isTitleOnly ? 'MUST leave empty (this is a title-only slide).' : 'Provide 3-5 bullet points for content slide.'}
 - Content should incorporate user feedback while maintaining relevance to the original topic
-- ${isTitleOnly ? 'IMPORTANT: This slide must remain title-only. Return bullets as empty array [].' : ''}
-- Use proper ${lang === 'ar' ? 'Arabic' : 'English'} grammar and formatting
-- Return ONLY valid JSON, no markdown, no code blocks, no explanations`;
+- ${isTitleOnly ? 'IMPORTANT: This slide must remain title-only. Leave Bullets section empty.' : ''}
+- Use proper ${lang === 'ar' ? 'Arabic' : 'English'} grammar and formatting`;
 
     const userPrompt = feedback && feedback.trim()
       ? `Original slide topic: "${topic}"
@@ -589,22 +611,22 @@ Original content:
 Title: ${originalContent.title || '(No title)'}
 Bullets:
 ${originalBulletsText}
-${isTitleOnly ? '\nNOTE: This is a title-only slide. You MUST return an empty bullets array [].' : ''}
+${isTitleOnly ? '\nNOTE: This is a title-only slide. You MUST leave Bullets empty.' : ''}
 
 User feedback: "${feedback}"
 
 Please regenerate this slide incorporating the user's feedback. ${feedback.toLowerCase().includes('simpler') || feedback.toLowerCase().includes('simple') ? 'Make it simpler and more concise.' : ''} ${feedback.toLowerCase().includes('example') ? 'Add a concrete example.' : ''} ${feedback.toLowerCase().includes('long') || feedback.toLowerCase().includes('shorter') ? 'Make it shorter and more concise.' : ''}
 
-${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Return bullets as empty array [].' : 'Return the regenerated slide as JSON with title and bullets array (3-5 bullets).'}`
+${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Leave Bullets section empty.' : 'Return the regenerated slide in text format with Title and Bullets (3-5 bullets).'}`
       : `Regenerate this slide about "${topic}".
 
 Original content:
 Title: ${originalContent.title || '(No title)'}
 Bullets:
 ${originalBulletsText}
-${isTitleOnly ? '\nNOTE: This is a title-only slide. You MUST return an empty bullets array [].' : ''}
+${isTitleOnly ? '\nNOTE: This is a title-only slide. You MUST leave Bullets empty.' : ''}
 
-${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Return bullets as empty array [].' : 'Return the regenerated slide as JSON with title and bullets array (3-5 bullets).'}`;
+${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Leave Bullets section empty.' : 'Return the regenerated slide in text format with Title and Bullets (3-5 bullets).'}`;
 
     const combinedInput = `${systemPrompt}\n\n${userPrompt}`;
 
@@ -614,7 +636,7 @@ ${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Return bullets as 
       response = await client.responses.create({
         model: "gpt-4o-mini",
         input: combinedInput,
-        response_format: { type: "json_object" }
+        text: { format: { type: "text" } }
       });
     } catch (apiError) {
       console.error('[Safety] OpenAI API error:', apiError.message);
@@ -626,12 +648,36 @@ ${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Return bullets as 
       throw new Error('No response content from OpenAI');
     }
 
+    // Parse text response
+    function parseSingleSlideText(text) {
+      const titleMatch = text.match(/Title:\s*(.+?)(?:\n|$)/i);
+      const title = titleMatch ? titleMatch[1].trim() : '';
+      
+      if (!title) {
+        throw new Error('Invalid response: missing title');
+      }
+      
+      // Extract bullets
+      const bullets = [];
+      const bulletsMatch = text.match(/Bullets:\s*\n((?:- .+\n?)+)/is);
+      if (bulletsMatch) {
+        const bulletsText = bulletsMatch[1];
+        const bulletLines = bulletsText.match(/- (.+)/g);
+        if (bulletLines) {
+          bullets.push(...bulletLines.map(b => b.replace(/^- /, '').trim()).filter(b => b.length > 0));
+        }
+      }
+      
+      return { title, bullets };
+    }
+
     let parsedResponse;
     try {
-      parsedResponse = JSON.parse(response.output_text);
+      parsedResponse = parseSingleSlideText(response.output_text);
     } catch (parseError) {
-      console.error('[Safety] JSON parse error:', parseError.message);
-      throw new Error('Failed to parse AI response as JSON');
+      console.error('[Safety] Text parse error:', parseError.message);
+      console.error('[Safety] Response preview:', response.output_text.substring(0, 300));
+      throw new Error('Failed to parse AI response');
     }
 
     // Validate response structure
@@ -832,7 +878,7 @@ USER'S QUESTION: "${message.trim()}"`;
       response = await client.responses.create({
         model: "gpt-4o-mini",
         input: contextPrompt,
-        response_format: { type: "text" }
+        text: { format: { type: "text" } }
       });
     } catch (apiError) {
       console.error('[AI Assistant] OpenAI API error:', apiError.message);
