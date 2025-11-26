@@ -935,6 +935,231 @@ USER'S QUESTION: "${message.trim()}"`;
   }
 });
 
+// AI Image Generation endpoint
+app.post('/api/ai/generate-image', async (req, res) => {
+  console.log('POST /api/ai/generate-image - Request received');
+  
+  try {
+    const { slideTitle, bulletPoints, topic, theme } = req.body;
+
+    // Validate inputs
+    if (!slideTitle || typeof slideTitle !== 'string') {
+      return res.status(400).json({
+        error: "slideTitle is required and must be a string",
+      });
+    }
+
+    // Check if API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ 
+        error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY in .env file' 
+      });
+    }
+
+    // Build image prompt based on slide content
+    const bulletText = Array.isArray(bulletPoints) && bulletPoints.length > 0
+      ? bulletPoints.slice(0, 3).join(', ') // Use first 3 bullets for context
+      : '';
+    
+    const imagePrompt = `A professional, clean, modern illustration or photograph related to: ${slideTitle}${bulletText ? '. Key concepts: ' + bulletText : ''}. ${topic ? 'Context: ' + topic : ''}. Style: professional presentation slide image, clean background, suitable for business presentation, high quality, professional photography or illustration style.`;
+
+    // Generate image using DALL-E (MANDATORY - always generate)
+    let imageResponse;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        imageResponse = await client.images.generate({
+          model: "dall-e-3",
+          prompt: imagePrompt,
+          n: 1,
+          size: "1024x1024",
+          quality: "standard"
+        });
+        break; // Success, exit retry loop
+      } catch (apiError) {
+        retryCount++;
+        console.error(`[Image Generation] OpenAI API error (attempt ${retryCount}/${maxRetries + 1}):`, apiError.message);
+        
+        if (retryCount > maxRetries) {
+          // All retries exhausted - return error but don't fail the request
+          // Placeholder will remain in slide
+          console.warn('[Image Generation] All retries exhausted, placeholder will be used');
+          return res.json({
+            success: true,
+            imageUrl: null,
+            error: `Image generation failed after ${maxRetries + 1} attempts: ${apiError.message}`,
+            prompt: imagePrompt // Return prompt for debugging
+          });
+        }
+        
+        // Wait before retry (exponential backoff)
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+
+    // Extract image URL
+    const imageUrl = imageResponse.data && imageResponse.data[0] && imageResponse.data[0].url
+      ? imageResponse.data[0].url
+      : null;
+
+    if (!imageUrl) {
+      console.warn('[Image Generation] No image URL in response');
+      return res.json({
+        success: true,
+        imageUrl: null
+      });
+    }
+
+    console.log(`[Image Generation] Generated image for slide: "${slideTitle}"`);
+
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      prompt: imagePrompt
+    });
+
+  } catch (error) {
+    console.error('=== ERROR IN /api/ai/generate-image ===');
+    console.error('Request body:', req.body);
+    console.error('Error:', error.message);
+    console.error('========================================');
+    
+    // Image generation is optional, so return success with null image
+    res.json({
+      success: true,
+      imageUrl: null,
+      error: error.message
+    });
+  }
+});
+
+// AI Chart Data Generation endpoint
+app.post('/api/ai/generate-chart-data', async (req, res) => {
+  console.log('POST /api/ai/generate-chart-data - Request received');
+  
+  try {
+    const { slideTitle, bulletPoints, topic } = req.body;
+
+    // Validate inputs
+    if (!slideTitle || typeof slideTitle !== 'string') {
+      return res.status(400).json({
+        error: "slideTitle is required and must be a string",
+      });
+    }
+
+    // Check if API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ 
+        error: 'OpenAI API key is not configured. Please set OPENAI_API_KEY in .env file' 
+      });
+    }
+
+    // Build prompt to extract data and suggest chart type
+    const bulletText = Array.isArray(bulletPoints) && bulletPoints.length > 0
+      ? bulletPoints.join('\n')
+      : '';
+    
+    const chartPrompt = `Analyze the following slide content and extract numerical data that would benefit from visualization.
+
+Slide Title: ${slideTitle}
+Content:
+${bulletText}
+${topic ? `Context: ${topic}` : ''}
+
+Extract any numbers, percentages, statistics, comparisons, or data points mentioned. If data is present, suggest an appropriate chart type (bar, pie, line, column) and create realistic chart data.
+
+Return ONLY a JSON object with this structure:
+{
+  "chartType": "bar" | "pie" | "line" | "column",
+  "data": [
+    {"label": "Category 1", "value": 25},
+    {"label": "Category 2", "value": 40},
+    ...
+  ]
+}
+
+If no meaningful data can be extracted, return:
+{
+  "chartType": null,
+  "data": []
+}`;
+
+    // Call OpenAI API
+    let response;
+    try {
+      response = await client.responses.create({
+        model: "gpt-4o-mini",
+        input: chartPrompt,
+        text: { format: { type: "text" } }
+      });
+    } catch (apiError) {
+      console.error('[Chart Generation] OpenAI API error:', apiError.message);
+      return res.json({
+        success: true,
+        chartData: null,
+        error: apiError.message
+      });
+    }
+
+    if (!response.output_text) {
+      return res.json({
+        success: true,
+        chartData: null
+      });
+    }
+
+    // Parse response - try to extract JSON
+    let chartData = null;
+    try {
+      // Try to find JSON in response
+      const jsonMatch = response.output_text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        chartData = JSON.parse(jsonMatch[0]);
+      }
+    } catch (parseError) {
+      console.warn('[Chart Generation] Failed to parse JSON, using fallback');
+      // Fallback: create simple bar chart from bullet points
+      if (bulletPoints && bulletPoints.length > 0) {
+        chartData = {
+          chartType: 'bar',
+          data: bulletPoints.slice(0, 5).map((bullet, i) => ({
+            label: `Item ${i + 1}`,
+            value: 20 + (i * 10) // Simple incrementing values
+          }))
+        };
+      }
+    }
+
+    if (chartData && chartData.chartType && chartData.data && chartData.data.length > 0) {
+      console.log(`[Chart Generation] Generated ${chartData.chartType} chart with ${chartData.data.length} data points`);
+      res.json({
+        success: true,
+        chartData: chartData
+      });
+    } else {
+      console.warn('[Chart Generation] No valid chart data generated');
+      res.json({
+        success: true,
+        chartData: null
+      });
+    }
+
+  } catch (error) {
+    console.error('=== ERROR IN /api/ai/generate-chart-data ===');
+    console.error('Request body:', req.body);
+    console.error('Error:', error.message);
+    console.error('========================================');
+    
+    res.json({
+      success: true,
+      chartData: null,
+      error: error.message
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

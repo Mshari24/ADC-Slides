@@ -411,6 +411,66 @@
   }
 
   /**
+   * Generate monochromatic color variations from a base color
+   * Creates shades and tints of the same hue for cohesive design
+   * @param {string} baseColor - Hex color (e.g., '#00aae7')
+   * @param {number} titleDarkness - Darkness level for title (0-1, higher = darker)
+   * @param {number} bodyLightness - Lightness level for body (0-1, higher = lighter)
+   * @returns {Object} { titleColor, bodyColor }
+   */
+  function generateMonochromaticColors(baseColor, titleDarkness = 0.85, bodyLightness = 0.65) {
+    // Convert hex to RGB
+    const hex = baseColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Calculate luminance to determine if we should darken or lighten
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    const isLight = luminance > 0.5;
+
+    // Generate title color (darker/more saturated)
+    let titleR, titleG, titleB;
+    if (isLight) {
+      // Darken the color for title
+      titleR = Math.max(0, Math.floor(r * titleDarkness));
+      titleG = Math.max(0, Math.floor(g * titleDarkness));
+      titleB = Math.max(0, Math.floor(b * titleDarkness));
+    } else {
+      // Lighten slightly but keep saturation
+      titleR = Math.min(255, Math.floor(r + (255 - r) * (1 - titleDarkness) * 0.3));
+      titleG = Math.min(255, Math.floor(g + (255 - g) * (1 - titleDarkness) * 0.3));
+      titleB = Math.min(255, Math.floor(b + (255 - b) * (1 - titleDarkness) * 0.3));
+    }
+
+    // Generate body color (lighter/more muted)
+    let bodyR, bodyG, bodyB;
+    if (isLight) {
+      // Further darken but less than title
+      const bodyDarkness = titleDarkness * bodyLightness;
+      bodyR = Math.max(0, Math.floor(r * bodyDarkness));
+      bodyG = Math.max(0, Math.floor(g * bodyDarkness));
+      bodyB = Math.max(0, Math.floor(b * bodyDarkness));
+    } else {
+      // Lighten more for body text
+      bodyR = Math.min(255, Math.floor(r + (255 - r) * bodyLightness * 0.5));
+      bodyG = Math.min(255, Math.floor(g + (255 - g) * bodyLightness * 0.5));
+      bodyB = Math.min(255, Math.floor(b + (255 - b) * bodyLightness * 0.5));
+    }
+
+    // Convert back to hex
+    const toHex = (val) => {
+      const hex = val.toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+
+    return {
+      titleColor: `#${toHex(titleR)}${toHex(titleG)}${toHex(titleB)}`,
+      bodyColor: `#${toHex(bodyR)}${toHex(bodyG)}${toHex(bodyB)}`
+    };
+  }
+
+  /**
    * Create a slide with theme applied at content creation step
    * This is Step 5 of the clean pipeline: Apply theme + layout to each slide
    * 
@@ -466,172 +526,740 @@
       slideObj.isBlueAramcoTitle = true;
     }
 
+    // Generate monochromatic colors (used for both title and content slides)
+    const monochromeColors = generateMonochromaticColors(
+      theme.colors.primary || theme.colors.text || '#00aae7',
+      isTitleSlide ? 0.90 : 0.85, // Title darkness
+      0.70  // Body lightness
+    );
+
     if (isTitleSlide) {
       // Title slide: Apply theme typography, spacing, and alignment
-      const titlePos = layout.titlePosition;
+      // Calculate image dimensions and position for title slide
+      const imageWidth = 280;
+      const imageHeight = 200;
+      const imageMargin = 24;
+      
+      // Position image on right side, centered vertically
+      const imageX = slideWidth - imageWidth - imageMargin;
+      const imageY = (slideHeight - imageHeight) / 2; // Center vertically
+      
+      // Adjust title position to account for image on right
+      // Title should be centered in remaining space (left side)
+      const availableWidth = imageX - imageMargin; // Space left of image
+      const titleX = availableWidth / 2; // Center in available space
+      const titleY = slideHeight / 2; // Center vertically
+      
+      // Ensure title doesn't overflow
+      const maxTitleWidth = Math.min(availableWidth - 40, slideWidth * 0.6); // Max 60% of slide width
+      
       const titleElement = createTextElement(
         slideData.title || '',
-        titlePos.x,
-        titlePos.y,
+        titleX,
+        titleY,
         {
           fontSize: theme.fonts.titleSize,
           fontWeight: theme.fonts.titleWeight,
-          color: theme.colors.text,
-          textAlign: theme.alignment.title,
-          fontFamily: theme.fonts.family
+          color: monochromeColors.titleColor, // Use monochromatic title color
+          textAlign: 'center', // Center align for title slides
+          fontFamily: theme.fonts.family,
+          lineHeight: 1.2
         }
       );
       
+      // Set width constraints to prevent overflow
+      titleElement.width = maxTitleWidth;
+      titleElement.maxWidth = maxTitleWidth;
+      titleElement.wordBreak = 'break-word';
+      titleElement.whiteSpace = 'normal';
+      titleElement.overflowWrap = 'break-word';
       titleElement.isTitleOnly = true;
       slideObj.elements.push(titleElement);
+      
+      // Add image placeholder for title slide
+      const imageSpace = {
+        id: generateId(),
+        type: 'shape',
+        x: imageX,
+        y: imageY,
+        width: imageWidth,
+        height: imageHeight,
+        shapeType: 'rectangle',
+        fillColor: 'transparent',
+        strokeColor: 'transparent',
+        strokeWidth: 0,
+        strokeDash: 'solid',
+        borderRadius: 0,
+        locked: false,
+        isImageSpace: true,
+        isReservedSpace: true
+      };
+      slideObj.elements.push(imageSpace);
+      
+      // Generate image for title slide
+      slideObj._imageGenerationPromise = generateAIImageForSlide(
+        slideData.title || '',
+        [],
+        slideData.topic || '',
+        themeId
+      ).then(imageUrl => {
+        if (imageUrl) {
+          setTimeout(() => {
+            if (typeof window !== 'undefined' && window.state && window.state.slides) {
+              const slideInState = window.state.slides.find(s => s.id === slideObj.id) || window.state.slides[index];
+              if (slideInState && slideInState.elements) {
+                const placeholderIndex = slideInState.elements.findIndex(el => el.isImageSpace);
+                if (placeholderIndex >= 0) {
+                  const imageElement = {
+                    id: generateId(),
+                    type: 'image',
+                    x: imageX,
+                    y: imageY,
+                    width: imageWidth,
+                    height: imageHeight,
+                    src: imageUrl,
+                    fileName: `ai-generated-title-${index + 1}`,
+                    fileType: 'image',
+                    isAIGenerated: true,
+                    slideIndex: index
+                  };
+                  slideInState.elements[placeholderIndex] = imageElement;
+                  if (window.saveState) window.saveState();
+                  if (window.renderAll) window.renderAll();
+                  console.log(`[Image Generation] Added image to title slide ${index + 1}`);
+                }
+              }
+            }
+          }, 500);
+        }
+        return imageUrl;
+      }).catch(error => {
+        console.error(`[Image Generation] Failed for title slide ${index + 1}:`, error);
+        return null;
+      });
     } else {
-      // Content slide: Grid-based layout similar to Canva
+      // Content slide: Clean left-aligned layout with reserved image space
+      // Using pure text elements only - NO HTML, NO markup, NO styling
       
-      // Mark slide as using grid layout
-      slideObj.layout = 'grid';
-      slideObj.useGridLayout = true;
+      // Mark slide as using flex layout
+      slideObj.layout = 'flex';
+      slideObj.useFlexLayout = true;
       
-      // 1) TITLE SECTION - Full width, large bold title at top
-      const titleFontSize = 40; // Fixed 40px as specified
-      const titleTopMargin = 32;
-      const titleY = titleTopMargin;
+      // Body text size (18px or theme's bodySize if < 20)
+      const bodyFontSize = theme.fonts.bodySize && theme.fonts.bodySize < 20 ? theme.fonts.bodySize : 18;
+      
+      // Generate monochromatic colors from theme primary color
+      const monochromeColors = generateMonochromaticColors(
+        theme.colors.primary || theme.colors.text || '#00aae7',
+        0.85, // Title darkness (85% of original)
+        0.70  // Body lightness (70% of title darkness)
+      );
+      const titleColor = monochromeColors.titleColor;
+      const bodyTextColor = monochromeColors.bodyColor;
+      
+      // DETECT IF SLIDE NEEDS DATA VISUALIZATION (CHART) OR IMAGE
+      const needsChart = needsDataVisualization(slideData.title || '', bulletPoints);
+      const visualType = needsChart ? 'chart' : 'image'; // Chart takes priority if data detected
+      
+      // USE THEME SPACING RULES for layout
+      const themeSpacing = theme.spacing || {};
+      const themeLeftMargin = themeSpacing.leftMargin || 112; // Default from theme
+      const themeRightMargin = themeSpacing.rightMargin || 112;
+      const themeContentTop = themeSpacing.contentTop || 80;
+      const themeBulletSpacing = themeSpacing.bulletSpacing || 12;
+      
+      // VISUAL ELEMENT DIMENSIONS AND POSITIONING (calculated first to reserve space)
+      // Charts are slightly larger than images for better readability
+      // Base dimensions that will be adjusted based on available space
+      const baseVisualWidth = needsChart ? 300 : 280;
+      const baseVisualHeight = needsChart ? 200 : 200;
+      
+      // Calculate visual element position using theme right margin
+      const visualX = slideWidth - baseVisualWidth - themeRightMargin;
+      const visualWidth = baseVisualWidth;
+      const visualHeight = baseVisualHeight;
+      
+      // Calculate available width for text using theme left margin
+      const textAreaWidth = visualX - themeLeftMargin; // Space between theme left margin and visual element
+      const textLeftMargin = themeLeftMargin; // Use theme-defined left margin
+      
+      // 1) TITLE ELEMENT - Use theme layout rules
+      // Get title size from theme or use default
+      const titleFontSize = theme.fonts.titleSize || 36;
+      const titleFontWeight = theme.fonts.titleWeight || '700';
+      const titleAlignment = theme.alignment.title || 'left';
+      
+      // Adjust title width to fit in available space (respecting theme margins)
+      const titleMaxWidth = Math.min(textAreaWidth, visualX - themeLeftMargin - 20);
+      const titleTopMargin = themeContentTop; // Use theme-defined content top margin
       
       const titleElement = createTextElement(
-        slideData.title || '',
-        slideWidth / 2, // Center horizontally
-        titleY,
+        (slideData.title || '').trim(), // Pure text, no HTML
+        textLeftMargin, // x position (use theme left margin)
+        titleTopMargin, // y position (use theme content top)
         {
           fontSize: titleFontSize,
-          fontWeight: '700',
-          color: theme.colors.text,
-          textAlign: 'center',
+          fontWeight: titleFontWeight,
+          color: titleColor, // Use monochromatic title color
+          textAlign: titleAlignment,
           fontFamily: theme.fonts.family,
           lineHeight: 1.2
         }
       );
       titleElement.isContentTitle = true;
-      titleElement.isGridTitle = true;
-      titleElement.width = slideWidth - 64; // Full width minus margins
-      titleElement.maxWidth = slideWidth - 64;
+      titleElement.isLeftAligned = (titleAlignment === 'left');
+      titleElement.width = titleMaxWidth;
+      titleElement.maxWidth = titleMaxWidth;
+      titleElement.wordBreak = 'break-word';
+      titleElement.whiteSpace = 'normal';
+      titleElement.overflowWrap = 'break-word';
+      
+      // Validate title position stays within bounds (respecting theme margins)
+      if (titleElement.x < themeLeftMargin) titleElement.x = themeLeftMargin;
+      if (titleElement.x + titleMaxWidth > visualX) {
+        titleElement.width = Math.max(200, visualX - titleElement.x - 20); // Minimum 200px width
+        titleElement.maxWidth = titleElement.width;
+      }
+      
       slideObj.elements.push(titleElement);
+
+      // Calculate title height for positioning body text
+      const titleHeight = titleFontSize * 1.2; // fontSize * lineHeight
+      const titleBottom = titleTopMargin + titleHeight;
+      const bodyStartY = titleBottom + 20; // Title bottom + margin (theme spacing)
       
-      // Calculate title height
-      const titleHeight = titleFontSize * 1.2;
-      const titleBottom = titleY + titleHeight + 20; // 20px margin below title
+      // Calculate visual element Y position (align with body start, respecting theme spacing)
+      const visualY = Math.max(bodyStartY, titleBottom + 16); // Align with body start or below title
+      const visualBottom = visualY + visualHeight;
+      const slideBottom = slideHeight - themeRightMargin; // Use theme right margin for bottom
+      const maxBodyHeight = Math.min(visualBottom, slideBottom) - bodyStartY - themeRightMargin;
       
-      // 2) CREATE GRID CONTAINER ELEMENT - Special container for grid layout
-      const gridContainerId = generateId();
+      // 2) BODY TEXT ELEMENTS - Use theme spacing and alignment rules
+      const validBullets = bulletPoints
+        .map(bullet => bullet.trim())
+        .filter(bullet => bullet.length > 0);
       
-      // Create grid container as a special text element that will render as HTML container
-      const gridContainerHTML = `
-        <div class="contentGrid" style="
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 28px;
-          padding: 20px 32px;
-          width: 100%;
-          box-sizing: border-box;
-        ">
-          ${bulletPoints.map((bullet, index) => {
-            const textLength = bullet.trim().length;
-            let gridItemFontSize = 22;
-            if (textLength < 160) gridItemFontSize = 22;
-            else if (textLength < 300) gridItemFontSize = 20;
-            else if (textLength < 450) gridItemFontSize = 18;
-            else gridItemFontSize = 16;
-            
-            return `
-              <div class="gridItem" style="
-                background: transparent;
-                padding: 6px 0;
-                white-space: normal;
-                word-break: break-word;
-                overflow-wrap: anywhere;
-                line-height: 1.45;
-                font-size: ${gridItemFontSize}px;
-                font-family: ${theme.fonts.family};
-                color: ${theme.colors.text};
-                font-weight: ${theme.fonts.bodyWeight || 'normal'};
-              ">
-                ${bullet.trim()}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      `;
+      let currentY = bodyStartY;
+      const lineSpacing = themeBulletSpacing; // Use theme-defined bullet spacing
+      let dynamicBodyFontSize = bodyFontSize; // Start with theme body size
+      const bodyAlignment = theme.alignment.body || 'left';
       
-      // Create grid container as text element (will render HTML)
-      const gridContainer = createTextElement(
-        '', // Empty text, HTML in content
-        32, // x position (left padding)
-        titleBottom, // y position (below title)
-        {
-          fontSize: 16, // Base font size (actual sizes in HTML)
-          fontWeight: 'normal',
-          color: theme.colors.text,
-          textAlign: 'left',
-          fontFamily: theme.fonts.family,
-          lineHeight: 1.45
+      // Calculate if we need to reduce font size to fit all content
+      let totalEstimatedHeight = 0;
+      validBullets.forEach(bullet => {
+        const estimatedLines = Math.max(1, Math.ceil(bullet.length / Math.floor(textAreaWidth / (bodyFontSize * 0.6))));
+        totalEstimatedHeight += Math.ceil(bodyFontSize * 1.45 * estimatedLines) + lineSpacing;
+      });
+      
+      // If content exceeds available space, reduce font size
+      if (totalEstimatedHeight > maxBodyHeight && maxBodyHeight > 0) {
+        const scaleFactor = Math.max(0.75, maxBodyHeight / totalEstimatedHeight); // Minimum 75% of original size
+        dynamicBodyFontSize = Math.max(14, Math.floor(bodyFontSize * scaleFactor)); // Minimum 14px
+      }
+      
+      validBullets.forEach((bullet, index) => {
+        // Calculate text width based on available space
+        const bulletTextWidth = textAreaWidth;
+        const estimatedLines = Math.max(1, Math.ceil(bullet.length / Math.floor(bulletTextWidth / (dynamicBodyFontSize * 0.6))));
+        const bulletHeight = Math.ceil(dynamicBodyFontSize * 1.45 * estimatedLines);
+        
+        // Check if this bullet would overflow (using theme margins)
+        if (currentY + bulletHeight > slideBottom - themeRightMargin) {
+          // Reduce font size further if needed
+          const remainingHeight = slideBottom - themeRightMargin - currentY;
+          if (remainingHeight > 0) {
+            const adjustedFontSize = Math.max(12, Math.floor(dynamicBodyFontSize * (remainingHeight / bulletHeight)));
+            dynamicBodyFontSize = Math.min(dynamicBodyFontSize, adjustedFontSize);
+          }
         }
-      );
-      
-      // Mark as grid container
-      gridContainer.type = 'text'; // Keep as text type for rendering
-      gridContainer.isGridContainer = true;
-      gridContainer.gridContainerId = gridContainerId;
-      gridContainer.content = gridContainerHTML;
-      gridContainer.width = slideWidth - 64; // Full width minus margins
-      gridContainer.height = slideHeight - titleBottom - 40; // Remaining height
-      gridContainer.display = 'block';
-      gridContainer.useGridLayout = true;
-      
-      slideObj.elements.push(gridContainer);
-      
-      // 4) OPTIONAL IMAGE SIDE AREA - If images exist, create image block
-      // For now, create image placeholder as before
-      const imagePlaceholderWidth = 200;
-      const imagePlaceholderHeight = 160;
-      const imageX = slideWidth - imagePlaceholderWidth - 32; // Right side with margin
-      const imageY = titleBottom + 20;
-      
-      const imagePlaceholder = {
-        id: generateId(),
-        type: 'shape',
-        x: imageX,
-        y: imageY,
-        width: imagePlaceholderWidth,
-        height: imagePlaceholderHeight,
-        shapeType: 'rectangle',
-        fillColor: 'transparent',
-        strokeColor: '#d0d0d0',
-        strokeWidth: 2,
-        strokeDash: 'dashed',
-        borderRadius: 8,
-        locked: false,
-        isGridImageBlock: true,
-        gridContainerId: gridContainerId
-      };
-      slideObj.elements.push(imagePlaceholder);
-      
-      // Add "Image Here" text inside placeholder
-      const imageLabel = createTextElement(
-        'Image Here',
-        imageX + imagePlaceholderWidth / 2,
-        imageY + imagePlaceholderHeight / 2,
-        {
-          fontSize: 14,
-          fontWeight: 'normal',
-          color: '#999999',
-          textAlign: 'center',
-          fontFamily: theme.fonts.family
+        
+        // Create text element with pure text only - using theme rules
+        const bodyTextElement = createTextElement(
+          bullet, // Pure text, no HTML, no markup
+          textLeftMargin, // x position (use theme left margin)
+          currentY, // y position
+          {
+            fontSize: dynamicBodyFontSize, // Use dynamically adjusted font size
+            fontWeight: theme.fonts.bodyWeight || 'normal',
+            color: bodyTextColor, // Monochromatic color matching theme
+            textAlign: bodyAlignment, // Use theme-defined body alignment
+            fontFamily: theme.fonts.family, // Use theme font family
+            lineHeight: 1.45
+          }
+        );
+        
+        // Mark as body text
+        bodyTextElement.isBodyText = true;
+        bodyTextElement.bulletIndex = index;
+        
+        // Set width constraints for wrapping (leaves room for visual element on right)
+        // Respect theme margins
+        bodyTextElement.width = bulletTextWidth;
+        bodyTextElement.maxWidth = bulletTextWidth;
+        bodyTextElement.wordBreak = 'break-word';
+        bodyTextElement.whiteSpace = 'normal';
+        bodyTextElement.overflowWrap = 'anywhere';
+        bodyTextElement.display = 'block';
+        
+        // Validate position stays within bounds (respecting theme margins)
+        if (bodyTextElement.x < themeLeftMargin) bodyTextElement.x = themeLeftMargin;
+        if (bodyTextElement.x + bulletTextWidth > visualX - 20) {
+          bodyTextElement.width = Math.max(200, visualX - bodyTextElement.x - 20); // Minimum 200px
+          bodyTextElement.maxWidth = bodyTextElement.width;
         }
-      );
-      imageLabel.isImagePlaceholder = true;
-      imageLabel.isGridImageLabel = true;
-      slideObj.elements.push(imageLabel);
+        if (bodyTextElement.y < bodyStartY) bodyTextElement.y = bodyStartY;
+        if (bodyTextElement.y + bulletHeight > slideBottom) {
+          // Adjust Y position if it would overflow (respecting theme margins)
+          bodyTextElement.y = Math.max(bodyStartY, slideBottom - bulletHeight - themeRightMargin);
+        }
+        
+        slideObj.elements.push(bodyTextElement);
+        
+        // Update Y position for next bullet (using theme spacing)
+        currentY += bulletHeight + lineSpacing;
+        
+        // Stop if we've run out of vertical space (respecting theme margins)
+        if (currentY > slideBottom - themeRightMargin) {
+          console.warn(`[Layout] Content truncated at bullet ${index + 1} to prevent overflow`);
+        }
+      });
+      
+      // 3) GENERATE AND ADD VISUAL ELEMENT (CHART OR IMAGE) - Based on content analysis
+      // Ensure visual element doesn't overflow slide bounds (using theme margins)
+      const finalVisualY = Math.max(themeRightMargin, Math.min(visualY, slideHeight - visualHeight - themeRightMargin));
+      const finalVisualX = Math.max(themeRightMargin, Math.min(visualX, slideWidth - visualWidth - themeRightMargin));
+      
+      // DYNAMIC IMAGE RESIZING: Adjust image size based on available space and content
+      let finalVisualWidth = visualWidth;
+      let finalVisualHeight = visualHeight;
+      
+      if (!needsChart) {
+        // For images: dynamically resize to fit available space while maintaining aspect ratio
+        const availableHeight = slideBottom - finalVisualY;
+        const availableWidth = slideWidth - finalVisualX - themeRightMargin;
+        
+        // Maintain aspect ratio (assume 4:3 for images)
+        const imageAspectRatio = 4 / 3;
+        const maxHeight = Math.min(availableHeight, slideHeight - finalVisualY - themeRightMargin);
+        const maxWidth = Math.min(availableWidth, slideWidth - finalVisualX - themeRightMargin);
+        
+        // Calculate optimal size maintaining aspect ratio
+        const heightBasedWidth = maxHeight * imageAspectRatio;
+        const widthBasedHeight = maxWidth / imageAspectRatio;
+        
+        if (heightBasedWidth <= maxWidth) {
+          finalVisualWidth = Math.min(heightBasedWidth, maxWidth);
+          finalVisualHeight = maxHeight;
+        } else {
+          finalVisualWidth = maxWidth;
+          finalVisualHeight = Math.min(widthBasedHeight, maxHeight);
+        }
+        
+        // Ensure minimum size
+        finalVisualWidth = Math.max(200, finalVisualWidth);
+        finalVisualHeight = Math.max(150, finalVisualHeight);
+        
+        // Recalculate text area if image was resized
+        if (finalVisualWidth !== visualWidth) {
+          const newVisualX = slideWidth - finalVisualWidth - themeRightMargin;
+          const newTextAreaWidth = newVisualX - themeLeftMargin;
+          
+          // Adjust title width if needed
+          if (titleElement.width > newTextAreaWidth) {
+            titleElement.width = Math.max(200, newTextAreaWidth);
+            titleElement.maxWidth = titleElement.width;
+          }
+          
+          // Adjust body text widths
+          slideObj.elements.forEach(el => {
+            if (el.isBodyText && el.width > newTextAreaWidth) {
+              el.width = Math.max(200, newTextAreaWidth);
+              el.maxWidth = el.width;
+            }
+          });
+        }
+      }
+      
+      if (needsChart) {
+        // Add chart placeholder initially (will be replaced by chart when ready)
+        // Charts use fixed size (not dynamically resized like images)
+        const chartSpace = {
+          id: generateId(),
+          type: 'shape',
+          x: finalVisualX,
+          y: finalVisualY,
+          width: visualWidth, // Charts use fixed width
+          height: visualHeight, // Charts use fixed height
+          shapeType: 'rectangle',
+          fillColor: 'transparent',
+          strokeColor: 'transparent',
+          strokeWidth: 0,
+          strokeDash: 'solid',
+          borderRadius: 0,
+          locked: false,
+          isChartSpace: true,
+          isReservedSpace: true
+        };
+        
+        // Final validation: ensure chart doesn't overflow (using theme margins)
+        if (chartSpace.x + chartSpace.width > slideWidth) {
+          chartSpace.x = slideWidth - chartSpace.width - themeRightMargin;
+        }
+        if (chartSpace.y + chartSpace.height > slideHeight) {
+          chartSpace.y = slideHeight - chartSpace.height - themeRightMargin;
+        }
+        if (chartSpace.x < themeRightMargin) chartSpace.x = themeRightMargin;
+        if (chartSpace.y < themeRightMargin) chartSpace.y = themeRightMargin;
+        
+        slideObj.elements.push(chartSpace);
+        
+        // Generate chart data asynchronously
+        slideObj._chartGenerationPromise = generateChartDataForSlide(
+          slideData.title || '',
+          bulletPoints,
+          slideData.topic || ''
+        ).then(chartData => {
+          if (chartData) {
+            setTimeout(() => {
+              if (typeof window !== 'undefined' && window.state && window.state.slides) {
+                const slideInState = window.state.slides.find(s => s.id === slideObj.id) || window.state.slides[index];
+                if (slideInState && slideInState.elements) {
+                  const placeholderIndex = slideInState.elements.findIndex(el => el.isChartSpace);
+                  if (placeholderIndex >= 0) {
+                    // Generate theme-based colors for chart
+                    const chartColors = generateChartColors(theme.colors.primary || '#00aae7', chartData.data.length);
+                    
+                    const chartElement = {
+                      id: generateId(),
+                      type: 'chart',
+                      chartType: chartData.chartType || 'bar',
+                      x: chartSpace.x,
+                      y: chartSpace.y,
+                      width: chartSpace.width,
+                      height: chartSpace.height,
+                      data: chartData.data || [],
+                      colors: chartColors,
+                      showLegend: true,
+                      showLabels: true,
+                      isAIGenerated: true,
+                      slideIndex: index
+                    };
+                    
+                    // Final bounds check (using theme margins)
+                    if (chartElement.x + chartElement.width > slideWidth) {
+                      chartElement.width = slideWidth - chartElement.x - themeRightMargin;
+                    }
+                    if (chartElement.y + chartElement.height > slideHeight) {
+                      chartElement.height = slideHeight - chartElement.y - themeRightMargin;
+                    }
+                    
+                    slideInState.elements[placeholderIndex] = chartElement;
+                    if (window.saveState) window.saveState();
+                    if (window.renderAll) window.renderAll();
+                    console.log(`[Chart Generation] Added chart to slide ${index + 1} at (${chartElement.x}, ${chartElement.y})`);
+                  }
+                }
+              }
+            }, 500);
+          }
+          return chartData;
+        }).catch(error => {
+          console.error(`[Chart Generation] Failed for slide ${index + 1}:`, error);
+          return null;
+        });
+      } else {
+        // Add image placeholder initially (will be replaced by image when ready)
+        const imageSpace = {
+          id: generateId(),
+          type: 'shape',
+          x: finalVisualX,
+          y: finalVisualY,
+          width: visualWidth,
+          height: visualHeight,
+          shapeType: 'rectangle',
+          fillColor: 'transparent',
+          strokeColor: 'transparent',
+          strokeWidth: 0,
+          strokeDash: 'solid',
+          borderRadius: 0,
+          locked: false,
+          isImageSpace: true,
+          isReservedSpace: true
+        };
+        
+        // Use dynamically calculated image dimensions
+        imageSpace.width = finalVisualWidth;
+        imageSpace.height = finalVisualHeight;
+        imageSpace.x = finalVisualX;
+        imageSpace.y = finalVisualY;
+        
+        // Final validation: ensure image doesn't overflow (using theme margins)
+        if (imageSpace.x + imageSpace.width > slideWidth) {
+          imageSpace.x = slideWidth - imageSpace.width - themeRightMargin;
+        }
+        if (imageSpace.y + imageSpace.height > slideHeight) {
+          imageSpace.y = slideHeight - imageSpace.height - themeRightMargin;
+        }
+        if (imageSpace.x < themeRightMargin) imageSpace.x = themeRightMargin;
+        if (imageSpace.y < themeRightMargin) imageSpace.y = themeRightMargin;
+        
+        slideObj.elements.push(imageSpace);
+        
+        // Generate image asynchronously (ALWAYS generate, not optional)
+        slideObj._imageGenerationPromise = generateAIImageForSlide(
+          slideData.title || '',
+          bulletPoints,
+          slideData.topic || '',
+          themeId
+        ).then(imageUrl => {
+          if (imageUrl) {
+            setTimeout(() => {
+              if (typeof window !== 'undefined' && window.state && window.state.slides) {
+                const slideInState = window.state.slides.find(s => s.id === slideObj.id) || window.state.slides[index];
+                if (slideInState && slideInState.elements) {
+                  const placeholderIndex = slideInState.elements.findIndex(el => el.isImageSpace);
+                  if (placeholderIndex >= 0) {
+                    // Use dynamically resized dimensions
+                    const imageElement = {
+                      id: generateId(),
+                      type: 'image',
+                      x: imageSpace.x, // Use validated position
+                      y: imageSpace.y, // Use validated position
+                      width: imageSpace.width, // Use dynamically resized width
+                      height: imageSpace.height, // Use dynamically resized height
+                      src: imageUrl,
+                      fileName: `ai-generated-${index + 1}`,
+                      fileType: 'image',
+                      isAIGenerated: true,
+                      slideIndex: index
+                    };
+                    
+                    // Final bounds check (using theme margins)
+                    if (imageElement.x + imageElement.width > slideWidth) {
+                      imageElement.width = slideWidth - imageElement.x - themeRightMargin;
+                    }
+                    if (imageElement.y + imageElement.height > slideHeight) {
+                      imageElement.height = slideHeight - imageElement.y - themeRightMargin;
+                    }
+                    
+                    slideInState.elements[placeholderIndex] = imageElement;
+                    if (window.saveState) window.saveState();
+                    if (window.renderAll) window.renderAll();
+                    console.log(`[Image Generation] Added image to slide ${index + 1} at (${imageElement.x}, ${imageElement.y})`);
+                  }
+                }
+              }
+            }, 500);
+          } else {
+            console.warn(`[Image Generation] No image URL returned for slide ${index + 1}, keeping placeholder`);
+          }
+          return imageUrl;
+        }).catch(error => {
+          console.error(`[Image Generation] Failed for slide ${index + 1}:`, error);
+          return null;
+        });
+      }
     }
 
+    // Final validation: Ensure all elements are within slide bounds (using theme margins)
+    const themeSpacingFinal = theme.spacing || {};
+    const finalThemeLeftMargin = themeSpacingFinal.leftMargin || 112;
+    const finalThemeRightMargin = themeSpacingFinal.rightMargin || 112;
+    
+    slideObj.elements.forEach((element, elemIndex) => {
+      // Validate X position (respecting theme margins)
+      if (element.x < finalThemeLeftMargin) {
+        console.warn(`[Layout Validation] Element ${elemIndex} X position ${element.x} < theme margin, adjusting`);
+        element.x = finalThemeLeftMargin;
+      }
+      if (element.x + (element.width || 0) > slideWidth - finalThemeRightMargin) {
+        const maxWidth = slideWidth - element.x - finalThemeRightMargin;
+        if (element.width) {
+          element.width = Math.max(50, maxWidth); // Minimum 50px width
+          element.maxWidth = element.width;
+        }
+        console.warn(`[Layout Validation] Element ${elemIndex} would overflow right, adjusted width to ${element.width}`);
+      }
+      
+      // Validate Y position (respecting theme margins)
+      if (element.y < finalThemeRightMargin) {
+        console.warn(`[Layout Validation] Element ${elemIndex} Y position ${element.y} < theme margin, adjusting`);
+        element.y = finalThemeRightMargin;
+      }
+      if (element.y + (element.height || 0) > slideHeight - finalThemeRightMargin) {
+        const maxHeight = slideHeight - element.y - finalThemeRightMargin;
+        if (element.height) {
+          element.height = Math.max(50, maxHeight); // Minimum 50px height
+        }
+        console.warn(`[Layout Validation] Element ${elemIndex} would overflow bottom, adjusted height to ${element.height}`);
+      }
+    });
+
     return slideObj;
+  }
+
+  /**
+   * Detect if slide content needs data visualization (chart)
+   * Checks for numerical data, comparisons, percentages, trends, etc.
+   * @param {string} slideTitle - Title of the slide
+   * @param {Array} bulletPoints - Array of bullet points
+   * @returns {boolean} True if chart would be beneficial
+   */
+  function needsDataVisualization(slideTitle, bulletPoints) {
+    const content = (slideTitle + ' ' + bulletPoints.join(' ')).toLowerCase();
+    
+    // Keywords that suggest data visualization
+    const chartKeywords = [
+      'percent', 'percentage', '%', 'statistic', 'data', 'number', 'figure',
+      'increase', 'decrease', 'growth', 'decline', 'trend', 'compare', 'comparison',
+      'ratio', 'rate', 'average', 'total', 'sum', 'count', 'survey', 'poll',
+      'result', 'outcome', 'score', 'metric', 'measurement', 'analysis',
+      'quarter', 'year', 'month', 'week', 'period', 'timeframe',
+      'bar chart', 'pie chart', 'line graph', 'graph', 'chart'
+    ];
+    
+    // Check for numbers (especially percentages or comparisons)
+    const hasNumbers = /\d+/.test(content);
+    const hasPercentages = /%\s*\d+|\d+\s*%/.test(content);
+    const hasComparisons = /\d+\s*(vs|versus|compared|to|and)\s*\d+/.test(content);
+    
+    // Check for chart-related keywords
+    const hasChartKeywords = chartKeywords.some(keyword => content.includes(keyword));
+    
+    // Check for multiple data points (suggests comparison)
+    const numbers = content.match(/\d+/g);
+    const hasMultipleDataPoints = numbers && numbers.length >= 3;
+    
+    // Decision: chart if (has numbers AND chart keywords) OR (has percentages/comparisons) OR (multiple data points)
+    return (hasNumbers && hasChartKeywords) || hasPercentages || hasComparisons || (hasMultipleDataPoints && hasChartKeywords);
+  }
+
+  /**
+   * Generate theme-based chart colors from primary color
+   * Creates harmonious color palette for charts
+   * @param {string} primaryColor - Theme primary color
+   * @param {number} count - Number of colors needed
+   * @returns {Array<string>} Array of hex color codes
+   */
+  function generateChartColors(primaryColor, count) {
+    // Convert hex to RGB
+    const hex = primaryColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    
+    const colors = [];
+    const toHex = (val) => {
+      const hex = Math.max(0, Math.min(255, Math.floor(val))).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    };
+    
+    // Generate variations: lighter, darker, complementary
+    for (let i = 0; i < count; i++) {
+      const factor = i / Math.max(1, count - 1); // 0 to 1
+      let newR, newG, newB;
+      
+      if (i === 0) {
+        // First color: primary color
+        newR = r;
+        newG = g;
+        newB = b;
+      } else {
+        // Create variations: mix with white/black and shift hue
+        const lightness = 0.7 + (factor * 0.3); // 0.7 to 1.0
+        const saturation = 0.8 - (factor * 0.2); // 0.8 to 0.6
+        
+        // Simple color variation algorithm
+        newR = Math.min(255, r + (255 - r) * (1 - lightness) * saturation + Math.sin(factor * Math.PI * 2) * 30);
+        newG = Math.min(255, g + (255 - g) * (1 - lightness) * saturation + Math.cos(factor * Math.PI * 2) * 30);
+        newB = Math.min(255, b + (255 - b) * (1 - lightness) * saturation);
+      }
+      
+      colors.push(`#${toHex(newR)}${toHex(newG)}${toHex(newB)}`);
+    }
+    
+    return colors;
+  }
+
+  /**
+   * Generate chart data from slide content using AI
+   * @param {string} slideTitle - Title of the slide
+   * @param {Array} bulletPoints - Array of bullet points
+   * @param {string} topic - Overall presentation topic
+   * @returns {Promise<Object|null>} Chart data object or null if generation fails
+   */
+  async function generateChartDataForSlide(slideTitle, bulletPoints, topic) {
+    try {
+      const response = await fetch('http://localhost:3000/api/ai/generate-chart-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slideTitle: slideTitle || 'Presentation Slide',
+          bulletPoints: bulletPoints || [],
+          topic: topic || ''
+        })
+      });
+
+      if (!response.ok) {
+        console.warn(`[Chart Generation] HTTP ${response.status}: ${response.statusText}`);
+        return null;
+      }
+
+      const data = await response.json();
+      if (data.chartData) {
+        console.log(`[Chart Generation] Successfully generated chart data for: "${slideTitle}"`);
+        return data.chartData;
+      } else {
+        console.warn(`[Chart Generation] No chart data in response for: "${slideTitle}"`);
+        return null;
+      }
+    } catch (error) {
+      console.error('[Chart Generation] Error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate AI image for a slide using DALL-E
+   * ALWAYS generates an image - this is mandatory for all slides
+   * @param {string} slideTitle - Title of the slide
+   * @param {Array} bulletPoints - Array of bullet points
+   * @param {string} topic - Overall presentation topic
+   * @param {string} themeId - Theme ID
+   * @returns {Promise<string|null>} Image URL or null if generation fails (placeholder kept)
+   */
+  async function generateAIImageForSlide(slideTitle, bulletPoints, topic, themeId) {
+    try {
+      const response = await fetch('http://localhost:3000/api/ai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slideTitle: slideTitle || 'Presentation Slide',
+          bulletPoints: bulletPoints || [],
+          topic: topic || '',
+          theme: themeId || 'aramco'
+        })
+      });
+
+      if (!response.ok) {
+        console.warn(`[Image Generation] HTTP ${response.status}: ${response.statusText} - Will retry or use placeholder`);
+        // Return null but placeholder is already in place
+        return null;
+      }
+
+      const data = await response.json();
+      if (data.imageUrl) {
+        console.log(`[Image Generation] Successfully generated image for: "${slideTitle}"`);
+        return data.imageUrl;
+      } else {
+        console.warn(`[Image Generation] No image URL in response for: "${slideTitle}" - Placeholder will remain`);
+        return null;
+      }
+    } catch (error) {
+      console.error('[Image Generation] Error:', error);
+      // Placeholder is already in place, so slide is still valid
+      return null;
+    }
   }
 
   // ----------------------
@@ -2291,6 +2919,9 @@
       // Step 5: For each slide - Apply theme + layout
       // Theme is applied at content creation step (not after, not separately)
       // DEFENSIVE CHECK: Validate each slide data before creating
+      // Get topic from the original request (stored in result or passed separately)
+      const presentationTopic = result.topic || text || '';
+      
       const slideObjects = slidesToGenerate.map((slideData, index) => {
         // DEFENSIVE CHECK: Handle malformed slide data
         if (!slideData || typeof slideData !== 'object') {
@@ -2304,7 +2935,8 @@
           title: (slideData.title && typeof slideData.title === 'string') ? slideData.title.trim() : `Slide ${index + 1}`,
           bulletPoints: Array.isArray(slideData.bullets) ? slideData.bullets : [],
           notes: (slideData.notes && typeof slideData.notes === 'string') ? slideData.notes : '',
-          layoutType: (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content'
+          layoutType: (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content',
+          topic: presentationTopic // Pass topic for image generation
         };
         
         // Ensure title is not empty
@@ -2492,6 +3124,9 @@
       // Step 5: For each slide - Apply theme + layout
       // Theme is applied at content creation step (not after, not separately)
       // DEFENSIVE CHECK: Validate each slide data before creating
+      // Get topic from the original request
+      const presentationTopic = data.topic || selectedTopic || '';
+      
       const slideObjects = slidesToGenerate.map((slideData, index) => {
         // DEFENSIVE CHECK: Handle malformed slide data
         if (!slideData || typeof slideData !== 'object') {
@@ -2505,7 +3140,8 @@
           title: (slideData.title && typeof slideData.title === 'string') ? slideData.title.trim() : `Slide ${index + 1}`,
           bulletPoints: Array.isArray(slideData.bullets) ? slideData.bullets : [],
           notes: (slideData.notes && typeof slideData.notes === 'string') ? slideData.notes : '',
-          layoutType: (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content'
+          layoutType: (!slideData.bullets || slideData.bullets.length === 0) ? 'title' : 'content',
+          topic: presentationTopic // Pass topic for image generation
         };
         
         // Ensure title is not empty
