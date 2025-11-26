@@ -4583,6 +4583,14 @@ What do you need help with?`;
 
   // Keyboard shortcuts
   window.addEventListener('keydown', (e) => {
+    // Check if user is typing in an editable element (used by multiple shortcuts)
+    const activeElement = document.activeElement;
+    const isTyping = activeElement && (
+      activeElement.tagName === 'INPUT' ||
+      activeElement.tagName === 'TEXTAREA' ||
+      activeElement.contentEditable === 'true'
+    );
+    
     // Exit drawing mode with Escape
     if (e.key === 'Escape' && isDrawingMode) {
       e.preventDefault();
@@ -4600,12 +4608,6 @@ What do you need help with?`;
     
     // Keyboard navigation for slides (Arrow Up/Down)
     // Only handle if not typing in an input/textarea/contentEditable
-    const activeElement = document.activeElement;
-    const isTyping = activeElement && (
-      activeElement.tagName === 'INPUT' ||
-      activeElement.tagName === 'TEXTAREA' ||
-      activeElement.contentEditable === 'true'
-    );
     
     if (!isTyping && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
       // Check if we're in the slides editor (not other pages)
@@ -4666,8 +4668,11 @@ What do you need help with?`;
       }
     }
     if (e.key.toLowerCase() === 't' && !e.metaKey && !e.ctrlKey) {
-      e.preventDefault();
-      insertText();
+      // Only create new text box if user is NOT typing in an editable element
+      if (!isTyping) {
+        e.preventDefault();
+        insertText();
+      }
     }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
       e.preventDefault();
