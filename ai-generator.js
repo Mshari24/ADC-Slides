@@ -427,8 +427,11 @@
     // Handle both old format (bullets) and new format (bulletPoints)
     const bullets = slideData.bullets || slideData.bulletPoints || [];
     
+    // Ensure bullets is an array
+    const bulletPoints = Array.isArray(bullets) ? bullets : [];
+    
     // Detect layout type: title-only slides vs content slides
-    const isTitleSlide = bullets.length === 0 || slideData.layoutType === 'title';
+    const isTitleSlide = bulletPoints.length === 0 || slideData.layoutType === 'title';
     const layoutType = isTitleSlide ? 'titleSlide' : 'contentSlide';
     
     // Get layout-specific settings from theme
@@ -437,6 +440,19 @@
       ? theme.layouts.titleSlide.background 
       : layout.background;
 
+    // Slide dimensions
+    const slideWidth = 960;
+    const slideHeight = 540;
+    
+    // Layout areas: content area (65%) and image area (30%)
+    const contentAreaWidth = Math.floor(slideWidth * 0.65);
+    const imageAreaWidth = Math.floor(slideWidth * 0.30);
+    const gap = slideWidth - contentAreaWidth - imageAreaWidth; // Remaining space for margins
+    
+    // Image placeholder dimensions
+    const imagePlaceholderWidth = 200;
+    const imagePlaceholderHeight = 160;
+    
     // Create slide object with theme background applied
     const slideObj = {
       id: generateId(),
@@ -469,52 +485,150 @@
       titleElement.isTitleOnly = true;
       slideObj.elements.push(titleElement);
     } else {
-      // Content slide: Apply theme typography, spacing, and alignment
-      const contentLayout = theme.layouts.contentSlide;
-      const titlePos = contentLayout.titlePosition;
+      // Content slide: Grid-based layout similar to Canva
       
-      // Title element with theme styling
+      // Mark slide as using grid layout
+      slideObj.layout = 'grid';
+      slideObj.useGridLayout = true;
+      
+      // 1) TITLE SECTION - Full width, large bold title at top
+      const titleFontSize = 40; // Fixed 40px as specified
+      const titleTopMargin = 32;
+      const titleY = titleTopMargin;
+      
       const titleElement = createTextElement(
         slideData.title || '',
-        titlePos.x,
-        titlePos.y,
+        slideWidth / 2, // Center horizontally
+        titleY,
         {
-          fontSize: theme.fonts.titleSize * 0.72, // Slightly smaller for content titles (42px)
+          fontSize: titleFontSize,
           fontWeight: '700',
           color: theme.colors.text,
-          textAlign: theme.alignment.title,
-          fontFamily: theme.fonts.family
+          textAlign: 'center',
+          fontFamily: theme.fonts.family,
+          lineHeight: 1.2
         }
       );
       titleElement.isContentTitle = true;
+      titleElement.isGridTitle = true;
+      titleElement.width = slideWidth - 64; // Full width minus margins
+      titleElement.maxWidth = slideWidth - 64;
       slideObj.elements.push(titleElement);
-
-      // Bullet points with theme styling
-      // Handle both old format (bullets) and new format (bulletPoints)
-      const bulletPoints = Array.isArray(bullets) ? bullets : [];
-      let yPosition = contentLayout.bulletStartY;
       
-      bulletPoints.forEach((bullet, bulletIndex) => {
-        const bulletElement = createTextElement(
-          bullet,
-          theme.spacing.leftMargin,
-          yPosition,
-          {
-            fontSize: theme.fonts.bodySize,
-            fontWeight: theme.fonts.bodyWeight,
-            color: theme.colors.text,
-            textAlign: theme.alignment.body,
-            fontFamily: theme.fonts.family,
-            lineHeight: 1.6
-          }
-        );
-        bulletElement.isBullet = true;
-        bulletElement.bulletIndex = bulletIndex;
-        slideObj.elements.push(bulletElement);
-        
-        // Calculate next bullet position using theme spacing
-        yPosition += Math.ceil(theme.fonts.bodySize * 1.6) + theme.spacing.bulletSpacing;
-      });
+      // Calculate title height
+      const titleHeight = titleFontSize * 1.2;
+      const titleBottom = titleY + titleHeight + 20; // 20px margin below title
+      
+      // 2) CREATE GRID CONTAINER ELEMENT - Special container for grid layout
+      const gridContainerId = generateId();
+      
+      // Create grid container as a special text element that will render as HTML container
+      const gridContainerHTML = `
+        <div class="contentGrid" style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 28px;
+          padding: 20px 32px;
+          width: 100%;
+          box-sizing: border-box;
+        ">
+          ${bulletPoints.map((bullet, index) => {
+            const textLength = bullet.trim().length;
+            let gridItemFontSize = 22;
+            if (textLength < 160) gridItemFontSize = 22;
+            else if (textLength < 300) gridItemFontSize = 20;
+            else if (textLength < 450) gridItemFontSize = 18;
+            else gridItemFontSize = 16;
+            
+            return `
+              <div class="gridItem" style="
+                background: transparent;
+                padding: 6px 0;
+                white-space: normal;
+                word-break: break-word;
+                overflow-wrap: anywhere;
+                line-height: 1.45;
+                font-size: ${gridItemFontSize}px;
+                font-family: ${theme.fonts.family};
+                color: ${theme.colors.text};
+                font-weight: ${theme.fonts.bodyWeight || 'normal'};
+              ">
+                ${bullet.trim()}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+      
+      // Create grid container as text element (will render HTML)
+      const gridContainer = createTextElement(
+        '', // Empty text, HTML in content
+        32, // x position (left padding)
+        titleBottom, // y position (below title)
+        {
+          fontSize: 16, // Base font size (actual sizes in HTML)
+          fontWeight: 'normal',
+          color: theme.colors.text,
+          textAlign: 'left',
+          fontFamily: theme.fonts.family,
+          lineHeight: 1.45
+        }
+      );
+      
+      // Mark as grid container
+      gridContainer.type = 'text'; // Keep as text type for rendering
+      gridContainer.isGridContainer = true;
+      gridContainer.gridContainerId = gridContainerId;
+      gridContainer.content = gridContainerHTML;
+      gridContainer.width = slideWidth - 64; // Full width minus margins
+      gridContainer.height = slideHeight - titleBottom - 40; // Remaining height
+      gridContainer.display = 'block';
+      gridContainer.useGridLayout = true;
+      
+      slideObj.elements.push(gridContainer);
+      
+      // 4) OPTIONAL IMAGE SIDE AREA - If images exist, create image block
+      // For now, create image placeholder as before
+      const imagePlaceholderWidth = 200;
+      const imagePlaceholderHeight = 160;
+      const imageX = slideWidth - imagePlaceholderWidth - 32; // Right side with margin
+      const imageY = titleBottom + 20;
+      
+      const imagePlaceholder = {
+        id: generateId(),
+        type: 'shape',
+        x: imageX,
+        y: imageY,
+        width: imagePlaceholderWidth,
+        height: imagePlaceholderHeight,
+        shapeType: 'rectangle',
+        fillColor: 'transparent',
+        strokeColor: '#d0d0d0',
+        strokeWidth: 2,
+        strokeDash: 'dashed',
+        borderRadius: 8,
+        locked: false,
+        isGridImageBlock: true,
+        gridContainerId: gridContainerId
+      };
+      slideObj.elements.push(imagePlaceholder);
+      
+      // Add "Image Here" text inside placeholder
+      const imageLabel = createTextElement(
+        'Image Here',
+        imageX + imagePlaceholderWidth / 2,
+        imageY + imagePlaceholderHeight / 2,
+        {
+          fontSize: 14,
+          fontWeight: 'normal',
+          color: '#999999',
+          textAlign: 'center',
+          fontFamily: theme.fonts.family
+        }
+      );
+      imageLabel.isImagePlaceholder = true;
+      imageLabel.isGridImageLabel = true;
+      slideObj.elements.push(imageLabel);
     }
 
     return slideObj;
@@ -2162,7 +2276,7 @@
       // DEFENSIVE CHECK: Ensure we don't exceed requested count
       const MAX_SLIDES = 50;
       const slidesToGenerate = result.slides.slice(0, slideCount);
-      
+
       // MINIMAL LOG: Slide count requested vs produced
       if (slidesToGenerate.length !== slideCount) {
         console.log(`[Slide Count] Requested: ${slideCount}, Using: ${slidesToGenerate.length}`);
@@ -2421,8 +2535,8 @@
       if (typeof window !== 'undefined' && window.addAISlides) {
         window.addAISlides(slideObjects, themeId);
         } else {
-          // Fallback: dispatch event that app.js listens to
-          const event = new CustomEvent('ai-slides-generated', {
+        // Fallback: dispatch event that app.js listens to
+        const event = new CustomEvent('ai-slides-generated', { 
           detail: { slides: slideObjects, themeId: themeId },
           bubbles: true
         });
