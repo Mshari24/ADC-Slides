@@ -7694,7 +7694,6 @@ What do you need help with?`;
     
     const startY = 100;
     const titleY = startY;
-    const contentStartY = startY + 140;
     const maxWidth = 1080;
     const lineHeight = 32;
     const padding = 60;
@@ -7705,6 +7704,32 @@ What do you need help with?`;
     
     // Slide title with shadow
     const titleText = slideData.title || 'Slide';
+    
+    // Calculate available width for title based on alignment
+    let titleAvailableWidth;
+    if (titleAlignValue === 'center') {
+      titleAvailableWidth = maxWidth;
+    } else if (titleAlignValue === 'right') {
+      titleAvailableWidth = 1280 - titleX;
+    } else {
+      titleAvailableWidth = 1280 - titleX - padding;
+    }
+    
+    // Estimate title height based on text wrapping
+    // Average character width is approximately fontSize * 0.6 for most fonts
+    const avgCharWidth = titleSizeValue * 0.6;
+    const charsPerLine = Math.floor(titleAvailableWidth / avgCharWidth);
+    const titleLines = Math.max(1, Math.ceil(titleText.length / charsPerLine));
+    const titleHeight = titleLines * (titleSizeValue * 1.2); // fontSize * lineHeight
+    
+    // Calculate accent line position
+    const accentLineY = titleY + titleHeight + 12;
+    
+    // Calculate body content start position: after title + accent line + spacing
+    const accentLineHeight = 3.5;
+    const spacingAfterAccent = 30; // Space between accent line and body content
+    const contentStartY = accentLineY + accentLineHeight + spacingAfterAccent;
+    
     slide.elements.push({
       id: uid(),
       type: 'text',
@@ -7731,7 +7756,6 @@ What do you need help with?`;
     const accentLineWidth = titleWidth * 0.4; // 40% of title width
     const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
                         (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
-    const accentLineY = titleY + titleSizeValue + 12;
     
     slide.elements.push({
       id: uid(),
@@ -7980,19 +8004,44 @@ What do you need help with?`;
     
     const startY = 120;
     const titleY = startY;
-    const contentStartY = startY + 140;
     const columnWidth = 480;
     const columnGap = 80;
     const leftX = 100;
     const rightX = leftX + columnWidth + columnGap;
     const lineHeight = 32;
     const padding = 60;
+    const maxWidth = 1080;
     
     // Adjust title X position based on alignment
     const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : padding);
     
     // Title with shadow
     const titleText = slideData.title || 'Slide';
+    
+    // Calculate available width for title based on alignment
+    let titleAvailableWidth;
+    if (titleAlignValue === 'center') {
+      titleAvailableWidth = maxWidth;
+    } else if (titleAlignValue === 'right') {
+      titleAvailableWidth = 1280 - titleX;
+    } else {
+      titleAvailableWidth = 1280 - titleX - padding;
+    }
+    
+    // Estimate title height based on text wrapping
+    const avgCharWidth = titleSizeValue * 0.6;
+    const charsPerLine = Math.floor(titleAvailableWidth / avgCharWidth);
+    const titleLines = Math.max(1, Math.ceil(titleText.length / charsPerLine));
+    const titleHeight = titleLines * (titleSizeValue * 1.2); // fontSize * lineHeight
+    
+    // Calculate accent line position
+    const accentLineY = titleY + titleHeight + 12;
+    
+    // Calculate body content start position: after title + accent line + spacing
+    const accentLineHeight = 3.5;
+    const spacingAfterAccent = 30; // Space between accent line and body content
+    const contentStartY = accentLineY + accentLineHeight + spacingAfterAccent;
+    
     slide.elements.push({
       id: uid(),
       type: 'text',
@@ -8019,7 +8068,6 @@ What do you need help with?`;
     const accentLineWidth = titleWidth * 0.4; // 40% of title width
     const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
                         (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
-    const accentLineY = titleY + titleSizeValue + 12;
     
     slide.elements.push({
       id: uid(),
@@ -8207,9 +8255,9 @@ What do you need help with?`;
     
     const startY = 150;
     const titleY = startY;
-    const contentStartY = startY + 140;
     const lineHeight = 70;
     const padding = 60;
+    const maxWidth = 1080;
     
     // Adjust title X position based on alignment
     const titleX = titleAlignValue === 'center' ? 640 : (titleAlignValue === 'right' ? 1180 : padding);
@@ -8217,6 +8265,31 @@ What do you need help with?`;
     
     // Title with shadow
     const titleText = slideData.title || 'Key Points';
+    
+    // Calculate available width for title based on alignment
+    let titleAvailableWidth;
+    if (titleAlignValue === 'center') {
+      titleAvailableWidth = maxWidth;
+    } else if (titleAlignValue === 'right') {
+      titleAvailableWidth = 1280 - titleX;
+    } else {
+      titleAvailableWidth = 1280 - titleX - padding;
+    }
+    
+    // Estimate title height based on text wrapping
+    const avgCharWidth = titleSizeValue * 0.6;
+    const charsPerLine = Math.floor(titleAvailableWidth / avgCharWidth);
+    const titleLines = Math.max(1, Math.ceil(titleText.length / charsPerLine));
+    const titleHeight = titleLines * (titleSizeValue * 1.2); // fontSize * lineHeight
+    
+    // Calculate accent line position
+    const accentLineY = titleY + titleHeight + 12;
+    
+    // Calculate body content start position: after title + accent line + spacing
+    const accentLineHeight = 3.5;
+    const spacingAfterAccent = 30; // Space between accent line and body content
+    const contentStartY = accentLineY + accentLineHeight + spacingAfterAccent;
+    
     slide.elements.push({
       id: uid(),
       type: 'text',
@@ -8243,7 +8316,6 @@ What do you need help with?`;
     const accentLineWidth = titleWidth * 0.4; // 40% of title width
     const accentLineX = titleAlignValue === 'center' ? 640 - (accentLineWidth / 2) :
                         (titleAlignValue === 'right' ? titleX + titleWidth - accentLineWidth : titleX);
-    const accentLineY = titleY + titleSizeValue + 12;
     
     slide.elements.push({
       id: uid(),

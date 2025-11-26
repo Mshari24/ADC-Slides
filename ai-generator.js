@@ -6,6 +6,16 @@
 (function() {
   'use strict';
 
+  // Global error handler to catch and log errors
+  window.addEventListener('error', function(event) {
+    console.error('[AI Generator] Global error caught:', event.error);
+    // Prevent default error dialogs from showing
+    if (event.message && event.message.includes('Load failed')) {
+      console.error('[AI Generator] Load failed error detected:', event);
+      event.preventDefault();
+    }
+  });
+
   // Global variable to store selected theme ID (e.g., "blank", "aramco", "blue-aramco", "dark-aramco")
   let selectedTheme = null;
   
@@ -3480,61 +3490,107 @@
     // Theme box selection - Use EXACT same structure and logic as main theme modal
     const aiThemesGrid = aiPage.querySelector('#ai-themes-grid');
     if (aiThemesGrid) {
-      // Use the EXACT same availableThemes array from app.js (exposed via window)
-      const themesToUse = window.availableThemes || [];
-      
-      aiThemesGrid.innerHTML = '';
-      
-      // Get current theme from app.js or previously selected theme (now stores theme ID)
-      const currentThemeId = window.currentTheme || window.selectedTheme || 'blank';
-      
-      // Create theme boxes using EXACT same structure as main theme modal
-      themesToUse.forEach(theme => {
-        // Create simple box container
-        const themeBox = document.createElement('div');
-        // Check if this theme matches the current selection (by ID)
-        const isSelected = theme.id === currentThemeId;
-        themeBox.className = `theme-box ${isSelected ? 'active selected' : ''}`;
-        themeBox.dataset.themeId = theme.id;
+      try {
+        // Use the EXACT same availableThemes array from app.js (exposed via window)
+        // Add fallback themes if window.availableThemes is not yet available
+        let themesToUse = window.availableThemes || [];
         
-        // Create color preview swatch (EXACT same as main theme modal)
-        const colorSwatch = document.createElement('div');
-        colorSwatch.className = 'theme-box-swatch';
-        
-        // Set specific colors for each theme (EXACT same as main theme modal)
-        const themeSwatchColors = {
-          'blank': '#FFFFFF',
-          'aramco': '#004F44',
-          'dark-aramco': '#2E7BA6',
-          'blue-aramco': '#58A9E0'
-        };
-        
-        const swatchColor = themeSwatchColors[theme.id] || theme.colors.primary;
-        // Set swatch color dynamically (per-theme color, so inline style is appropriate)
-        colorSwatch.style.backgroundColor = swatchColor;
-        
-        // Create theme name label (EXACT same as main theme modal)
-        const label = document.createElement('div');
-        label.className = 'theme-box-label';
-        label.textContent = theme.name;
-        
-        // Assemble box (EXACT same as main theme modal)
-        themeBox.appendChild(colorSwatch);
-        themeBox.appendChild(label);
-        
-        // Attach click handler - store theme ID and update visual state
-        themeBox.addEventListener('click', () => {
-          // Store theme ID directly in selectedTheme
-          selectTheme(theme.id);
+        // Fallback themes if app.js hasn't loaded themes yet
+        if (themesToUse.length === 0) {
+          themesToUse = [
+            { id: 'blank', name: 'Blank Theme', colors: { primary: '#000000' } },
+            { id: 'aramco', name: 'AD Theme 1', colors: { primary: '#004F44' } },
+            { id: 'dark-aramco', name: 'AD Dark Theme', colors: { primary: '#2E7BA6' } },
+            { id: 'blue-aramco', name: 'AD Theme 2', colors: { primary: '#58A9E0' } }
+          ];
           
-          // Update visual state in main themes modal if it exists
-          if (window.currentTheme !== undefined) {
-            window.currentTheme = theme.id;
-          }
-        });
+          // Try to get themes again after a short delay (in case app.js is still loading)
+          setTimeout(() => {
+            try {
+              if (window.availableThemes && window.availableThemes.length > 0) {
+                // Re-initialize themes with the actual themes from app.js
+                const actualThemes = window.availableThemes;
+                aiThemesGrid.innerHTML = '';
+                renderThemes(actualThemes, aiThemesGrid);
+              }
+            } catch (err) {
+              console.error('[AI Generator] Error updating themes:', err);
+            }
+          }, 100);
+        }
         
-        aiThemesGrid.appendChild(themeBox);
-      });
+        aiThemesGrid.innerHTML = '';
+        
+        // Get current theme from app.js or previously selected theme (now stores theme ID)
+        const currentThemeId = window.currentTheme || window.selectedTheme || 'blank';
+        
+        // Helper function to render themes
+        function renderThemes(themes, grid) {
+          themes.forEach(theme => {
+            try {
+              // Create simple box container
+              const themeBox = document.createElement('div');
+              // Check if this theme matches the current selection (by ID)
+              const isSelected = theme.id === currentThemeId;
+              themeBox.className = `theme-box ${isSelected ? 'active selected' : ''}`;
+              themeBox.dataset.themeId = theme.id;
+              
+              // Create color preview swatch (EXACT same as main theme modal)
+              const colorSwatch = document.createElement('div');
+              colorSwatch.className = 'theme-box-swatch';
+              
+              // Set specific colors for each theme (EXACT same as main theme modal)
+              const themeSwatchColors = {
+                'blank': '#FFFFFF',
+                'aramco': '#004F44',
+                'dark-aramco': '#2E7BA6',
+                'blue-aramco': '#58A9E0'
+              };
+              
+              const swatchColor = themeSwatchColors[theme.id] || (theme.colors && theme.colors.primary) || '#000000';
+              // Set swatch color dynamically (per-theme color, so inline style is appropriate)
+              colorSwatch.style.backgroundColor = swatchColor;
+              
+              // Create theme name label (EXACT same as main theme modal)
+              const label = document.createElement('div');
+              label.className = 'theme-box-label';
+              label.textContent = theme.name || theme.id || 'Theme';
+              
+              // Assemble box (EXACT same as main theme modal)
+              themeBox.appendChild(colorSwatch);
+              themeBox.appendChild(label);
+              
+              // Attach click handler - store theme ID and update visual state
+              themeBox.addEventListener('click', () => {
+                try {
+                  // Store theme ID directly in selectedTheme
+                  selectTheme(theme.id);
+                  
+                  // Update visual state in main themes modal if it exists
+                  if (window.currentTheme !== undefined) {
+                    window.currentTheme = theme.id;
+                  }
+                } catch (err) {
+                  console.error('[AI Generator] Error selecting theme:', err);
+                }
+              });
+              
+              grid.appendChild(themeBox);
+            } catch (err) {
+              console.error('[AI Generator] Error rendering theme:', theme, err);
+            }
+          });
+        }
+        
+        // Render themes
+        renderThemes(themesToUse, aiThemesGrid);
+      } catch (err) {
+        console.error('[AI Generator] Error initializing themes:', err);
+        // Show fallback themes even if there's an error
+        if (aiThemesGrid) {
+          aiThemesGrid.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Themes will load shortly...</div>';
+        }
+      }
     }
 
     // Listen for theme changes from main themes panel to keep AI generator in sync
@@ -3666,12 +3722,31 @@
   }
 
   // Initialize only once when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAIGenerator);
-  } else {
-    // DOM is already ready
-    initAIGenerator();
+  // Wait for both DOM and app.js to be ready
+  function waitForAppJS(callback, maxAttempts = 50) {
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+      attempts++;
+      // Check if app.js has loaded (it sets window.availableThemes or other globals)
+      if (window.availableThemes !== undefined || attempts >= maxAttempts) {
+        clearInterval(checkInterval);
+        callback();
+      }
+    }, 100);
   }
+  
+  function initializeWhenReady() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        waitForAppJS(initAIGenerator);
+      });
+    } else {
+      // DOM is already ready, but wait for app.js
+      waitForAppJS(initAIGenerator);
+    }
+  }
+  
+  initializeWhenReady();
 
   // Simple function to open AI Generator - exposed globally
   function openAIGenerator() {
