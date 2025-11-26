@@ -2695,21 +2695,34 @@
         throw new Error(data.error);
       }
       
-      if (!data.slide) {
-        throw new Error('No slide data returned from server');
+      // Handle new response format (title, body, styleChanges, image) or legacy format (slide object)
+      let newSlideData;
+      if (data.title !== undefined) {
+        // New format: { title, body, styleChanges, image }
+        newSlideData = {
+          title: data.title,
+          bullets: typeof data.body === 'string' 
+            ? data.body.split('\n').filter(line => line.trim()).map(line => line.replace(/^[-•*]\s*/, '').trim())
+            : (Array.isArray(data.body) ? data.body : []),
+          styleChanges: data.styleChanges,
+          image: data.image
+        };
+      } else if (data.slide) {
+        // Legacy format: { slide: { title, bullets, ... } }
+        newSlideData = data.slide;
+      } else {
+        throw new Error('Invalid response format from server');
       }
       
       // Validate slide data structure
-      if (!data.slide.title || typeof data.slide.title !== 'string') {
+      if (!newSlideData.title || typeof newSlideData.title !== 'string') {
         throw new Error('Invalid slide data: missing or invalid title');
       }
       
-      if (!Array.isArray(data.slide.bullets)) {
-        throw new Error('Invalid slide data: bullets must be an array');
+      if (!Array.isArray(newSlideData.bullets)) {
+        newSlideData.bullets = [];
       }
       
-      // Update slide in place (don't regenerate entire deck)
-      const newSlideData = data.slide;
       const themeIdForSlide = getThemeIdFromName(themeName);
       
       // Ensure layout type is preserved: if original was title-only, force empty bullets
@@ -2718,8 +2731,12 @@
         newSlideData.bullets = [];
       }
       
+      // Get topic for image/chart generation (use original content title as topic context)
+      const topicForVisuals = originalContent.title || state.title || 'presentation';
+      
       // Create new slide object with theme applied (using same logic as main AI generation)
-      const newSlide = createAramcoSlideForProof(newSlideData, slideIndex, themeIdForSlide);
+      // Note: createAramcoSlide will automatically generate images/charts if needed
+      const newSlide = createAramcoSlideForProof(newSlideData, slideIndex, themeIdForSlide, topicForVisuals);
       
       // Validate new slide structure before applying
       if (!newSlide || !Array.isArray(newSlide.elements)) {
@@ -2736,6 +2753,31 @@
       slide.elements = newSlide.elements || [];
       slide.background = newSlide.background || slide.background;
       slide.layout = newSlide.layout; // Use the preserved layout type
+      
+      // Apply style changes from JSON (if provided)
+      if (newSlideData.styleChanges && typeof newSlideData.styleChanges === 'object') {
+        applyStyleChanges(slide, newSlideData.styleChanges, themeIdForSlide);
+      } else if (newSlideData.formatting && typeof newSlideData.formatting === 'object') {
+        // Legacy format support
+        applyFormattingChanges(slide, newSlideData.formatting, themeIdForSlide);
+      } else if (newSlideData.layout_changes && typeof newSlideData.layout_changes === 'object') {
+        // Legacy format support
+        applyLayoutChanges(slide, newSlideData.layout_changes, themeIdForSlide);
+      } else {
+        // Fallback: parse visual instructions from feedback text
+        applyVisualInstructions(slide, feedback.trim(), themeIdForSlide);
+      }
+      
+      // Handle image/chart generation if requested
+      if (newSlideData.styleChanges && newSlideData.styleChanges.image && newSlideData.styleChanges.image.generate === true) {
+        handleImageRequest(slide, newSlideData.styleChanges.image, slideIndex, themeIdForSlide, topicForVisuals);
+      } else if (newSlideData.image && newSlideData.image.generate === true) {
+        // New format support
+        handleImageRequest(slide, newSlideData.image, slideIndex, themeIdForSlide, topicForVisuals);
+      } else if (newSlideData.image && newSlideData.image.action && newSlideData.image.action !== 'none') {
+        // Legacy format support
+        handleImageRequest(slide, newSlideData.image, slideIndex, themeIdForSlide, topicForVisuals);
+      }
       
       // Preserve theme-specific properties (e.g., blue-aramco title slide)
       if (newSlide.isBlueAramcoTitle !== undefined) {
@@ -2937,10 +2979,798 @@
   }
   
   /**
+   * Apply visual/design instructions from user feedback to slide elements
+   */
+  function applyVisualInstructions(slide, feedback, themeId) {
+    if (!feedback || !slide.elements) return;
+    
+    const feedbackLower = feedback.toLowerCase();
+    
+    // Parse color instructions
+    const colorPatterns = {
+      background: /(?:background|bg|backdrop).*?(?:pink|red|blue|green|yellow|orange|purple|black|white|gray|grey|#[0-9a-fA-F]{3,6})/i,
+      textColor: /(?:text|font).*?color.*?(?:pink|red|blue|green|yellow|orange|purple|black|white|gray|grey|#[0-9a-fA-F]{3,6})/i,
+      titleColor: /(?:title|heading).*?color.*?(?:pink|red|blue|green|yellow|orange|purple|black|white|gray|grey|#[0-9a-fA-F]{3,6})/i
+    };
+    
+    // Parse size instructions
+    const sizePatterns = {
+      titleSize: /(?:title|heading).*?(?:size|bigger|smaller|larger|increase|decrease)/i,
+      textSize: /(?:text|font).*?(?:size|bigger|smaller|larger|increase|decrease)/i
+    };
+    
+    // Parse spacing/layout instructions
+    const spacingPatterns = {
+      spacing: /(?:spacing|space|gap|margin|padding).*?(?:more|less|increase|decrease|add|remove)/i,
+      layout: /(?:layout|arrange|position|move|align)/i
+    };
+    
+    // Apply background color changes
+    if (colorPatterns.background.test(feedbackLower)) {
+      const colorMatch = feedbackLower.match(/(?:background|bg|backdrop).*?(pink|red|blue|green|yellow|orange|purple|black|white|gray|grey|#[0-9a-fA-F]{3,6})/i);
+      if (colorMatch) {
+        const color = parseColor(colorMatch[1]);
+        if (color) {
+          slide.background = color;
+        }
+      }
+    }
+    
+    // Apply text color changes
+    if (colorPatterns.textColor.test(feedbackLower) || colorPatterns.titleColor.test(feedbackLower)) {
+      const colorMatch = feedbackLower.match(/(?:text|font|title|heading).*?color.*?(pink|red|blue|green|yellow|orange|purple|black|white|gray|grey|#[0-9a-fA-F]{3,6})/i);
+      if (colorMatch) {
+        const color = parseColor(colorMatch[1]);
+        if (color) {
+          slide.elements.forEach(el => {
+            if (el.type === 'text') {
+              // Check if it's title or body text
+              const isTitle = colorPatterns.titleColor.test(feedbackLower) && 
+                            (el.fontSize > 30 || el.fontWeight === 'bold' || el.fontWeight === '700');
+              if (isTitle || !colorPatterns.titleColor.test(feedbackLower)) {
+                el.color = color;
+              }
+            }
+          });
+        }
+      }
+    }
+    
+    // Apply font size changes
+    if (sizePatterns.titleSize.test(feedbackLower)) {
+      const isIncrease = /increase|bigger|larger/i.test(feedbackLower);
+      const isDecrease = /decrease|smaller/i.test(feedbackLower);
+      
+      slide.elements.forEach(el => {
+        if (el.type === 'text' && (el.fontSize > 30 || el.fontWeight === 'bold' || el.fontWeight === '700')) {
+          if (isIncrease) {
+            el.fontSize = Math.min((el.fontSize || 36) * 1.2, 72);
+          } else if (isDecrease) {
+            el.fontSize = Math.max((el.fontSize || 36) * 0.8, 24);
+          }
+        }
+      });
+    }
+    
+    if (sizePatterns.textSize.test(feedbackLower) && !sizePatterns.titleSize.test(feedbackLower)) {
+      const isIncrease = /increase|bigger|larger/i.test(feedbackLower);
+      const isDecrease = /decrease|smaller/i.test(feedbackLower);
+      
+      slide.elements.forEach(el => {
+        if (el.type === 'text' && el.fontSize <= 30 && el.fontWeight !== 'bold' && el.fontWeight !== '700') {
+          if (isIncrease) {
+            el.fontSize = Math.min((el.fontSize || 18) * 1.2, 28);
+          } else if (isDecrease) {
+            el.fontSize = Math.max((el.fontSize || 18) * 0.8, 14);
+          }
+        }
+      });
+    }
+    
+    // Apply spacing changes
+    if (spacingPatterns.spacing.test(feedbackLower)) {
+      const isIncrease = /more|increase|add/i.test(feedbackLower);
+      const isDecrease = /less|decrease|remove/i.test(feedbackLower);
+      
+      // Adjust vertical spacing between elements
+      if (isIncrease) {
+        slide.elements.forEach((el, index) => {
+          if (index > 0 && el.type === 'text') {
+            el.y = (el.y || 0) + 20;
+          }
+        });
+      } else if (isDecrease) {
+        slide.elements.forEach((el, index) => {
+          if (index > 0 && el.type === 'text') {
+            el.y = Math.max((el.y || 0) - 15, 0);
+          }
+        });
+      }
+    }
+    
+    // Handle element positioning instructions
+    if (spacingPatterns.layout.test(feedbackLower)) {
+      // Move title up/down/left/right
+      if (/move.*title.*(up|down|left|right)/i.test(feedbackLower)) {
+        const moveMatch = feedbackLower.match(/move.*title.*(up|down|left|right)/i);
+        if (moveMatch) {
+          const direction = moveMatch[1].toLowerCase();
+          slide.elements.forEach(el => {
+            if (el.type === 'text' && (el.fontSize > 30 || el.fontWeight === 'bold' || el.fontWeight === '700')) {
+              if (direction === 'up') el.y = Math.max((el.y || 0) - 30, 0);
+              else if (direction === 'down') el.y = (el.y || 0) + 30;
+              else if (direction === 'left') el.x = Math.max((el.x || 0) - 50, 0);
+              else if (direction === 'right') el.x = (el.x || 0) + 50;
+            }
+          });
+        }
+      }
+    }
+    
+    // Handle image/chart resizing
+    if (/(?:image|chart|visual|diagram|graph).*?(?:bigger|smaller|larger|increase|decrease|resize)/i.test(feedbackLower)) {
+      const isIncrease = /bigger|larger|increase/i.test(feedbackLower);
+      const isDecrease = /smaller|decrease/i.test(feedbackLower);
+      
+      slide.elements.forEach(el => {
+        if (el.type === 'image' || el.type === 'chart') {
+          if (isIncrease) {
+            el.width = (el.width || 200) * 1.2;
+            el.height = (el.height || 150) * 1.2;
+          } else if (isDecrease) {
+            el.width = (el.width || 200) * 0.8;
+            el.height = (el.height || 150) * 0.8;
+          }
+        }
+      });
+    }
+  }
+  
+  /**
+   * Apply layout changes from JSON structure
+   */
+  function applyLayoutChanges(slide, layoutChanges, themeId) {
+    if (!layoutChanges || !slide.elements) return;
+    
+    // Apply background color
+    if (layoutChanges.background_color && layoutChanges.background_color !== 'keep') {
+      const color = parseColor(layoutChanges.background_color);
+      if (color) {
+        slide.background = color;
+      }
+    }
+    
+    // Apply text color
+    if (layoutChanges.text_color && layoutChanges.text_color !== 'keep') {
+      const color = parseColor(layoutChanges.text_color);
+      if (color) {
+        slide.elements.forEach(el => {
+          if (el.type === 'text') {
+            el.color = color;
+          }
+        });
+      }
+    }
+    
+    // Apply font size
+    if (layoutChanges.font_size && layoutChanges.font_size !== 'keep') {
+      const sizeValue = layoutChanges.font_size.toLowerCase();
+      const isIncrease = sizeValue.includes('larger') || sizeValue.includes('bigger') || sizeValue.includes('increase');
+      const isDecrease = sizeValue.includes('smaller') || sizeValue.includes('decrease');
+      
+      slide.elements.forEach(el => {
+        if (el.type === 'text') {
+          if (isIncrease) {
+            el.fontSize = Math.min((el.fontSize || 18) * 1.2, 72);
+          } else if (isDecrease) {
+            el.fontSize = Math.max((el.fontSize || 18) * 0.8, 14);
+          }
+        }
+      });
+    }
+    
+    // Apply text alignment
+    if (layoutChanges.text_alignment && layoutChanges.text_alignment !== 'keep') {
+      const alignment = layoutChanges.text_alignment.toLowerCase();
+      if (['left', 'center', 'right', 'justify'].includes(alignment)) {
+        slide.elements.forEach(el => {
+          if (el.type === 'text') {
+            el.textAlign = alignment;
+          }
+        });
+      }
+    }
+    
+    // Handle image actions
+    if (layoutChanges.image && layoutChanges.image.action && layoutChanges.image.action !== 'keep') {
+      const action = layoutChanges.image.action.toLowerCase();
+      
+      if (action === 'remove') {
+        // Remove image/chart elements
+        slide.elements = slide.elements.filter(el => el.type !== 'image' && el.type !== 'chart');
+      } else if (action === 'add' || action === 'resize') {
+        // Images/charts are added automatically by createAramcoSlide
+        // Resize logic handled below
+        if (action === 'resize' && layoutChanges.image.details) {
+          const details = layoutChanges.image.details.toLowerCase();
+          const isBigger = details.includes('bigger') || details.includes('larger') || details.includes('increase');
+          const isSmaller = details.includes('smaller') || details.includes('decrease');
+          
+          slide.elements.forEach(el => {
+            if (el.type === 'image' || el.type === 'chart') {
+              if (isBigger) {
+                el.width = (el.width || 200) * 1.2;
+                el.height = (el.height || 150) * 1.2;
+              } else if (isSmaller) {
+                el.width = (el.width || 200) * 0.8;
+                el.height = (el.height || 150) * 0.8;
+              }
+            }
+          });
+        }
+      } else if (action === 'move' && layoutChanges.image.details) {
+        // Move image/chart elements
+        const details = layoutChanges.image.details.toLowerCase();
+        const moveUp = details.includes('up');
+        const moveDown = details.includes('down');
+        const moveLeft = details.includes('left');
+        const moveRight = details.includes('right');
+        
+        slide.elements.forEach(el => {
+          if (el.type === 'image' || el.type === 'chart') {
+            if (moveUp) el.y = Math.max((el.y || 0) - 30, 0);
+            if (moveDown) el.y = (el.y || 0) + 30;
+            if (moveLeft) el.x = Math.max((el.x || 0) - 50, 0);
+            if (moveRight) el.x = (el.x || 0) + 50;
+          }
+        });
+      }
+    }
+  }
+  
+  /**
+   * Apply style changes from JSON structure (new format with styleChanges)
+   */
+  function applyStyleChanges(slide, styleChanges, themeId) {
+    if (!styleChanges || !slide.elements) return;
+    
+    const titleChanges = styleChanges.title || {};
+    const bodyChanges = styleChanges.body || {};
+    
+    // Apply title style changes
+    const titleElement = slide.elements.find(el => el.type === 'text' && el.isTitle);
+    if (titleElement && titleChanges) {
+      applyTextStyleChanges(titleElement, titleChanges);
+    }
+    
+    // Apply body style changes
+    slide.elements.forEach(el => {
+      if (el.type === 'text' && !el.isTitle) {
+        applyTextStyleChanges(el, bodyChanges);
+      }
+    });
+    
+    // Apply background changes
+    if (styleChanges.background && styleChanges.background !== 'keep') {
+      const color = parseColor(styleChanges.background);
+      if (color) slide.background = color;
+    }
+    
+    // Apply layout changes
+    if (styleChanges.layout && styleChanges.layout !== 'keep') {
+      const layout = styleChanges.layout.toLowerCase();
+      const slideWidth = 1280;
+      const slideHeight = 720;
+      
+      slide.elements.forEach(el => {
+        if (el.type === 'text') {
+          // Corner positioning
+          if (layout === 'top-left') {
+            el.x = 50;
+            el.y = 50;
+            el.textAlign = 'left';
+          } else if (layout === 'top-right') {
+            el.x = slideWidth - (el.width || 400) - 50;
+            el.y = 50;
+            el.textAlign = 'right';
+          } else if (layout === 'bottom-left') {
+            el.x = 50;
+            el.y = slideHeight - (el.height || 100) - 50;
+            el.textAlign = 'left';
+          } else if (layout === 'bottom-right') {
+            el.x = slideWidth - (el.width || 400) - 50;
+            el.y = slideHeight - (el.height || 100) - 50;
+            el.textAlign = 'right';
+          } else if (layout === 'far-left') {
+            el.x = 20;
+            el.textAlign = 'left';
+          } else if (layout === 'far-right') {
+            el.x = slideWidth - (el.width || 400) - 20;
+            el.textAlign = 'right';
+          } else if (layout.includes('move up')) {
+            const match = layout.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 30;
+            el.y = Math.max((el.y || 0) - pixels, 0);
+          } else if (layout.includes('move down')) {
+            const match = layout.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 30;
+            el.y = (el.y || 0) + pixels;
+          } else if (layout.includes('move left')) {
+            const match = layout.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 50;
+            el.x = Math.max((el.x || 0) - pixels, 0);
+          } else if (layout.includes('move right')) {
+            const match = layout.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 50;
+            el.x = (el.x || 0) + pixels;
+          } else if (layout.includes('center')) {
+            el.textAlign = 'center';
+            el.x = slideWidth / 2 - (el.width || 400) / 2;
+            el.y = slideHeight / 2 - (el.height || 100) / 2;
+          }
+        }
+      });
+    }
+  }
+  
+  /**
+   * Apply text style changes to a single element
+   */
+  function applyTextStyleChanges(element, changes) {
+    if (!changes || !element) return;
+    
+    // Color
+    if (changes.color && changes.color !== 'keep') {
+      const color = parseColor(changes.color);
+      if (color) element.color = color;
+    }
+    
+    // Size
+    if (changes.size && changes.size !== 'keep') {
+      if (changes.size.includes('px')) {
+        element.fontSize = parseInt(changes.size);
+      } else if (changes.size.toLowerCase().includes('larger') || changes.size.toLowerCase().includes('bigger')) {
+        element.fontSize = Math.min((element.fontSize || 18) * 1.2, 72);
+      } else if (changes.size.toLowerCase().includes('smaller')) {
+        element.fontSize = Math.max((element.fontSize || 18) * 0.8, 14);
+      }
+    }
+    
+    // Alignment
+    if (changes.alignment && changes.alignment !== 'keep') {
+      const alignment = changes.alignment.toLowerCase();
+      if (['left', 'center', 'right', 'justify'].includes(alignment)) {
+        element.textAlign = alignment;
+      }
+    }
+    
+    // Weight
+    if (changes.weight && changes.weight !== 'keep') {
+      const weightMap = {
+        'normal': 'normal',
+        'bold': 'bold',
+        '600': '600',
+        '700': '700',
+        'thin': '300',
+        '300': '300'
+      };
+      element.fontWeight = weightMap[changes.weight.toLowerCase()] || changes.weight;
+    }
+    
+    // Shadow
+    if (changes.shadow && changes.shadow !== 'keep') {
+      if (changes.shadow === 'none') {
+        element.textShadow = 'none';
+      } else {
+        element.textShadow = changes.shadow;
+      }
+    }
+    
+    // Letter spacing
+    if (changes.letter_spacing && changes.letter_spacing !== 'keep') {
+      element.letterSpacing = changes.letter_spacing;
+    }
+    
+    // Line height
+    if (changes.line_height && changes.line_height !== 'keep') {
+      element.lineHeight = changes.line_height;
+    }
+    
+    // Font family
+    if (changes.font_family && changes.font_family !== 'keep') {
+      element.fontFamily = changes.font_family;
+    }
+  }
+  
+  /**
+   * Apply formatting changes from JSON structure (legacy format with text_changes and layout_changes)
+   */
+  function applyFormattingChanges(slide, formatting, themeId) {
+    if (!formatting || !slide.elements) return;
+    
+    const textChanges = formatting.text_changes || {};
+    const layoutChanges = formatting.layout_changes || {};
+    
+    // Apply text formatting changes
+    slide.elements.forEach(el => {
+      if (el.type === 'text') {
+        // Color
+        if (textChanges.color && textChanges.color !== 'keep') {
+          const color = parseColor(textChanges.color);
+          if (color) el.color = color;
+        }
+        
+        // Size
+        if (textChanges.size && textChanges.size !== 'keep') {
+          if (textChanges.size.includes('px')) {
+            el.fontSize = parseInt(textChanges.size);
+          } else if (textChanges.size.toLowerCase().includes('larger') || textChanges.size.toLowerCase().includes('bigger')) {
+            el.fontSize = Math.min((el.fontSize || 18) * 1.2, 72);
+          } else if (textChanges.size.toLowerCase().includes('smaller')) {
+            el.fontSize = Math.max((el.fontSize || 18) * 0.8, 14);
+          }
+        }
+        
+        // Alignment
+        if (textChanges.alignment && textChanges.alignment !== 'keep') {
+          const alignment = textChanges.alignment.toLowerCase();
+          if (['left', 'center', 'right', 'justify'].includes(alignment)) {
+            el.textAlign = alignment;
+          }
+        }
+        
+        // Weight
+        if (textChanges.weight && textChanges.weight !== 'keep') {
+          const weightMap = {
+            'normal': 'normal',
+            'bold': 'bold',
+            '600': '600',
+            '700': '700',
+            'thin': '300',
+            '300': '300'
+          };
+          el.fontWeight = weightMap[textChanges.weight.toLowerCase()] || textChanges.weight;
+        }
+        
+        // Shadow
+        if (textChanges.shadow && textChanges.shadow !== 'keep') {
+          if (textChanges.shadow === 'none') {
+            el.textShadow = 'none';
+          } else {
+            el.textShadow = textChanges.shadow;
+          }
+        }
+        
+        // Width
+        if (textChanges.width && textChanges.width !== 'keep') {
+          if (textChanges.width.includes('%')) {
+            el.width = textChanges.width;
+          } else if (textChanges.width.includes('px')) {
+            el.width = parseInt(textChanges.width);
+          } else if (textChanges.width.toLowerCase().includes('larger') || textChanges.width.toLowerCase().includes('wider')) {
+            el.width = (el.width || 400) * 1.2;
+          } else if (textChanges.width.toLowerCase().includes('smaller') || textChanges.width.toLowerCase().includes('narrower')) {
+            el.width = (el.width || 400) * 0.8;
+          }
+        }
+        
+        // Letter spacing
+        if (textChanges.letter_spacing && textChanges.letter_spacing !== 'keep') {
+          el.letterSpacing = textChanges.letter_spacing;
+        }
+        
+        // Line height
+        if (textChanges.line_height && textChanges.line_height !== 'keep') {
+          el.lineHeight = textChanges.line_height;
+        }
+        
+        // Font family
+        if (textChanges.font_family && textChanges.font_family !== 'keep') {
+          el.fontFamily = textChanges.font_family;
+        }
+      }
+    });
+    
+    // Apply layout changes
+    // Background color
+    if (layoutChanges.background_color && layoutChanges.background_color !== 'keep') {
+      const color = parseColor(layoutChanges.background_color);
+      if (color) slide.background = color;
+    }
+    
+    // Text box position
+    if (layoutChanges.text_box_position && layoutChanges.text_box_position !== 'keep') {
+      const position = layoutChanges.text_box_position.toLowerCase();
+      slide.elements.forEach(el => {
+        if (el.type === 'text') {
+          if (position.includes('move up')) {
+            const match = position.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 30;
+            el.y = Math.max((el.y || 0) - pixels, 0);
+          } else if (position.includes('move down')) {
+            const match = position.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 30;
+            el.y = (el.y || 0) + pixels;
+          } else if (position.includes('move left')) {
+            const match = position.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 50;
+            el.x = Math.max((el.x || 0) - pixels, 0);
+          } else if (position.includes('move right')) {
+            const match = position.match(/(\d+)\s*px/i);
+            const pixels = match ? parseInt(match[1]) : 50;
+            el.x = (el.x || 0) + pixels;
+          } else if (position.includes('center')) {
+            el.textAlign = 'center';
+            el.x = 640 - (el.width || 400) / 2; // Center horizontally
+          }
+        }
+      });
+    }
+    
+    // Margins (applied as spacing between elements)
+    if (layoutChanges.margins && layoutChanges.margins !== 'keep') {
+      // Parse margin values and apply spacing
+      const marginValues = layoutChanges.margins.split(' ').map(v => parseInt(v) || 0);
+      slide.elements.forEach((el, index) => {
+        if (index > 0 && el.type === 'text') {
+          el.y = (el.y || 0) + (marginValues[0] || 0);
+        }
+      });
+    }
+    
+    // Padding (applied to text elements)
+    if (layoutChanges.padding && layoutChanges.padding !== 'keep') {
+      slide.elements.forEach(el => {
+        if (el.type === 'text') {
+          el.padding = layoutChanges.padding;
+        }
+      });
+    }
+  }
+  
+  /**
+   * Handle image/chart generation/update requests
+   */
+  async function handleImageRequest(slide, imageSpec, slideIndex, themeId, topic) {
+    // Support both new format (generate: true/false) and legacy format (action: "add"/"none")
+    const shouldGenerate = (imageSpec.generate === true) || (imageSpec.action === 'add' || imageSpec.action === 'update');
+    
+    if (!imageSpec || !shouldGenerate) return;
+    
+    // Check if user requested a chart (keywords: chart, graph, price prediction, forecast, data visualization)
+    const promptLower = (imageSpec.prompt || '').toLowerCase();
+    const isChartRequest = promptLower.includes('chart') || 
+                          promptLower.includes('graph') || 
+                          promptLower.includes('price prediction') ||
+                          promptLower.includes('forecast') ||
+                          promptLower.includes('data visualization') ||
+                          promptLower.includes('predict price') ||
+                          promptLower.includes('show price') ||
+                          promptLower.includes('prediction');
+    
+    if (isChartRequest) {
+      // Generate chart instead of image
+      try {
+        const response = await fetch('http://localhost:3000/api/ai/generate-chart-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slideTitle: slide.aiContent?.title || slide.elements.find(el => el.type === 'text')?.content || 'Slide',
+            bulletPoints: slide.aiContent?.bullets || [],
+            topic: topic || 'presentation',
+            prompt: imageSpec.prompt // Include user's prompt for context
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Chart generation failed: ${response.status}`);
+        }
+        
+        const chartData = await response.json();
+        
+        if (chartData.chartType && chartData.data && chartData.data.length > 0) {
+          // Create chart element
+          const slideWidth = 1280;
+          const slideHeight = 720;
+          const chartSize = { width: 400, height: 300 };
+          
+          // Position chart based on imageSpec.position
+          let chartX, chartY;
+          if (imageSpec.position === 'auto' || !imageSpec.position) {
+            // Auto-position: right side, vertically centered
+            chartX = slideWidth - chartSize.width - 50;
+            chartY = slideHeight / 2 - chartSize.height / 2;
+          } else {
+            // Use same positioning logic as images
+            const positionMap = {
+              'left': { x: 50, y: slideHeight / 2 - chartSize.height / 2 },
+              'right': { x: slideWidth - chartSize.width - 50, y: slideHeight / 2 - chartSize.height / 2 },
+              'top': { x: slideWidth / 2 - chartSize.width / 2, y: 50 },
+              'bottom': { x: slideWidth / 2 - chartSize.width / 2, y: slideHeight - chartSize.height - 50 }
+            };
+            const pos = positionMap[imageSpec.position] || positionMap.right;
+            chartX = pos.x;
+            chartY = pos.y;
+          }
+          
+          // Generate theme-based colors
+          // Use helper function from ai-generator.js if available, otherwise use default colors
+          let chartColors;
+          if (window.generateChartColors && typeof window.generateChartColors === 'function') {
+            const theme = window.getThemeDefinition ? window.getThemeDefinition(themeId || 'aramco') : null;
+            const primaryColor = theme?.colors?.primary || '#00aae7';
+            chartColors = window.generateChartColors(primaryColor, chartData.data.length);
+          } else {
+            // Fallback: generate colors manually
+            const defaultColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4', '#ec4899', '#14b8a6'];
+            chartColors = chartData.data.map((_, i) => defaultColors[i % defaultColors.length]);
+          }
+          
+          const chartElement = {
+            id: `chart-${Date.now()}`,
+            type: 'chart',
+            chartType: chartData.chartType,
+            x: chartX,
+            y: chartY,
+            width: chartSize.width,
+            height: chartSize.height,
+            data: chartData.data,
+            colors: chartColors,
+            showLegend: true,
+            showLabels: true,
+            isAIGenerated: true
+          };
+          
+          // Remove existing chart/image if any
+          slide.elements = slide.elements.filter(el => el.type !== 'chart' && el.type !== 'image');
+          
+          // Add new chart
+          slide.elements.push(chartElement);
+          
+          // Re-render to show new chart
+          renderAll();
+          saveState();
+        }
+      } catch (error) {
+        console.error('[Chart] Failed to generate chart:', error);
+      }
+      return; // Exit early after chart generation
+    }
+    
+    // Generate image using API endpoint
+    try {
+      const imagePrompt = imageSpec.prompt || null; // Use custom prompt if provided
+      
+      const response = await fetch('http://localhost:3000/api/ai/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slideTitle: slide.aiContent?.title || slide.elements.find(el => el.type === 'text')?.content || 'Slide',
+          bulletPoints: slide.aiContent?.bullets || [],
+          topic: topic || 'presentation',
+          theme: getThemeNameFromId(themeId),
+          prompt: imagePrompt // Use the prompt from AI if provided
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Image generation failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const imageUrl = data.imageUrl;
+      
+      if (imageUrl) {
+        // Find or create image element
+        let imageElement = slide.elements.find(el => el.type === 'image');
+        
+        // Calculate size - use auto-fit if specified, otherwise use size map
+        let imageSize;
+        if (imageSpec.size === 'auto-fit' || imageSpec.position === 'auto') {
+          // Auto-calculate size based on available space
+          imageSize = { width: 250, height: 180 }; // Default medium size
+        } else {
+          const sizeMap = { 
+            small: { width: 200, height: 150 },
+            medium: { width: 250, height: 180 },
+            large: { width: 300, height: 220 }
+          };
+          imageSize = sizeMap[imageSpec.size] || sizeMap.medium;
+        }
+        
+        // Calculate position - use auto-balanced if specified
+        const slideWidth = 1280;
+        const slideHeight = 720;
+        let position;
+        if (imageSpec.position === 'auto' || imageSpec.position === 'auto-balanced' || !imageSpec.placement) {
+          // Auto-balance: place on right side, vertically centered
+          position = { 
+            x: slideWidth - imageSize.width - 50, 
+            y: slideHeight / 2 - imageSize.height / 2 
+          };
+        } else {
+          const placementMap = {
+            left: { x: 50, y: slideHeight / 2 - imageSize.height / 2 },
+            right: { x: slideWidth - imageSize.width - 50, y: slideHeight / 2 - imageSize.height / 2 },
+            top: { x: slideWidth / 2 - imageSize.width / 2, y: 50 },
+            bottom: { x: slideWidth / 2 - imageSize.width / 2, y: slideHeight - imageSize.height - 50 }
+          };
+          position = placementMap[imageSpec.placement] || placementMap.right;
+        }
+        
+        if (!imageElement) {
+          // Create new image element
+          imageElement = {
+            id: `img-${Date.now()}`,
+            type: 'image',
+            x: position.x,
+            y: position.y,
+            width: imageSize.width,
+            height: imageSize.height,
+            src: imageUrl
+          };
+          slide.elements.push(imageElement);
+        } else {
+          // Update existing image
+          imageElement.src = imageUrl;
+          imageElement.width = imageSize.width;
+          imageElement.height = imageSize.height;
+          imageElement.x = position.x;
+          imageElement.y = position.y;
+        }
+        
+        // Re-render to show new image
+        renderAll();
+        saveState();
+      }
+    } catch (error) {
+      console.error('[Image] Failed to generate image:', error);
+    }
+    
+    // Handle removal request
+    if (imageSpec.generate === false || imageSpec.action === 'remove') {
+      // Remove image/chart elements
+      slide.elements = slide.elements.filter(el => el.type !== 'image' && el.type !== 'chart');
+      renderAll();
+      saveState();
+    }
+  }
+  
+  /**
+   * Parse color name or hex code to valid color value
+   */
+  function parseColor(colorStr) {
+    if (!colorStr) return null;
+    
+    // If it's already a hex code
+    if (/^#[0-9a-fA-F]{3,6}$/.test(colorStr)) {
+      return colorStr;
+    }
+    
+    // Map common color names to hex values
+    const colorMap = {
+      pink: '#FFC0CB',
+      red: '#FF0000',
+      blue: '#0000FF',
+      green: '#008000',
+      yellow: '#FFFF00',
+      orange: '#FFA500',
+      purple: '#800080',
+      black: '#000000',
+      white: '#FFFFFF',
+      gray: '#808080',
+      grey: '#808080'
+    };
+    
+    return colorMap[colorStr.toLowerCase()] || null;
+  }
+
+  /**
    * Helper to create slide using createAramcoSlide from ai-generator.js
    * This ensures theme consistency with the main AI generation logic
+   * Visual elements (images/charts) will be generated automatically if needed
    */
-  function createAramcoSlideForProof(slideData, index, themeId) {
+  function createAramcoSlideForProof(slideData, index, themeId, topic) {
     // Use the function from ai-generator.js if available (same logic as main generation)
     if (window.createAramcoSlide && typeof window.createAramcoSlide === 'function') {
       // Ensure slideData has correct structure
@@ -2950,7 +3780,8 @@
       };
       
       // Use the same createAramcoSlide function that main AI generation uses
-      // This ensures theme colors, fonts, spacing, and layout are applied consistently
+      // This ensures theme colors, fonts, spacing, layout, and visual elements are applied consistently
+      // createAramcoSlide automatically generates images/charts based on content
       return window.createAramcoSlide(normalizedSlideData, index, themeId);
     }
     
@@ -7878,17 +8709,33 @@ What do you need help with?`;
   updateSlideZoom(slideZoomLevel);
 
   // Presentation Mode
-  const presentationMode = document.getElementById('presentation-mode');
-  const presentBtn = document.getElementById('present-btn');
-  const presentationSlide = document.getElementById('presentation-slide');
-  const presentationSlideInfo = document.getElementById('presentation-slide-info');
-  const presentationPrev = document.getElementById('presentation-prev');
-  const presentationNext = document.getElementById('presentation-next');
-  const presentationExit = document.getElementById('presentation-exit');
+  let presentationMode = document.getElementById('presentation-mode');
+  let presentBtn = document.getElementById('present-btn');
+  let presentationSlide = document.getElementById('presentation-slide');
+  let presentationSlideInfo = document.getElementById('presentation-slide-info');
+  let presentationPrev = document.getElementById('presentation-prev');
+  let presentationNext = document.getElementById('presentation-next');
+  let presentationExit = document.getElementById('presentation-exit');
   let presentationSlideIndex = 0;
 
+  // Retry getting elements if they're not found initially (for cases where script loads before DOM)
+  function ensurePresentationElements() {
+    if (!presentationMode) presentationMode = document.getElementById('presentation-mode');
+    if (!presentBtn) presentBtn = document.getElementById('present-btn');
+    if (!presentationSlide) presentationSlide = document.getElementById('presentation-slide');
+    if (!presentationSlideInfo) presentationSlideInfo = document.getElementById('presentation-slide-info');
+    if (!presentationPrev) presentationPrev = document.getElementById('presentation-prev');
+    if (!presentationNext) presentationNext = document.getElementById('presentation-next');
+    if (!presentationExit) presentationExit = document.getElementById('presentation-exit');
+  }
+
   function enterPresentationMode() {
-    if (!presentationMode || !presentationSlide) return;
+    // Ensure elements are available
+    ensurePresentationElements();
+    if (!presentationMode || !presentationSlide) {
+      console.error('Presentation mode elements not found. Make sure presentation-mode HTML exists.');
+      return;
+    }
     presentationSlideIndex = state.currentSlideIndex;
     presentationMode.classList.remove('hidden');
     renderPresentationSlide();
@@ -7906,10 +8753,34 @@ What do you need help with?`;
     controlElements.forEach(el => {
       if (el) el.style.display = 'none';
     });
+    // Request fullscreen
+    if (presentationMode.requestFullscreen) {
+      presentationMode.requestFullscreen().catch(err => {
+        console.log('Fullscreen request failed:', err);
+      });
+    } else if (presentationMode.webkitRequestFullscreen) {
+      presentationMode.webkitRequestFullscreen();
+    } else if (presentationMode.mozRequestFullScreen) {
+      presentationMode.mozRequestFullScreen();
+    } else if (presentationMode.msRequestFullscreen) {
+      presentationMode.msRequestFullscreen();
+    }
   }
 
   function exitPresentationMode() {
     if (!presentationMode) return;
+    // Exit fullscreen if active
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement) {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
     presentationMode.classList.add('hidden');
     document.body.style.overflow = '';
     document.body.classList.remove('in-presentation-mode');
@@ -8099,19 +8970,75 @@ What do you need help with?`;
     updatePresentationInfo();
   }
 
-  presentBtn?.addEventListener('click', enterPresentationMode);
-  presentationExit?.addEventListener('click', exitPresentationMode);
-  presentationPrev?.addEventListener('click', () => {
-    if (presentationSlideIndex > 0) {
-      goToPresentationSlide(presentationSlideIndex - 1);
+  // Attach event listeners for presentation mode
+  function attachPresentationListeners() {
+    ensurePresentationElements();
+    
+    if (presentBtn) {
+      // Remove any existing listeners by cloning
+      const newBtn = presentBtn.cloneNode(true);
+      presentBtn.parentNode.replaceChild(newBtn, presentBtn);
+      presentBtn = newBtn;
+      
+      presentBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        enterPresentationMode();
+      });
+      console.log('Present button event listener attached');
+    } else {
+      console.warn('Present button not found. Retrying...');
+      // Retry after a short delay
+      setTimeout(attachPresentationListeners, 100);
+      return; // Exit early if button not found
     }
-  });
-  presentationNext?.addEventListener('click', () => {
-    if (presentationSlideIndex < state.slides.length - 1) {
-      goToPresentationSlide(presentationSlideIndex + 1);
+    
+    if (presentationExit) {
+      presentationExit.addEventListener('click', exitPresentationMode);
     }
-  });
+    
+    if (presentationPrev) {
+      presentationPrev.addEventListener('click', () => {
+        if (presentationSlideIndex > 0) {
+          goToPresentationSlide(presentationSlideIndex - 1);
+        }
+      });
+    }
+    
+    if (presentationNext) {
+      presentationNext.addEventListener('click', () => {
+        if (presentationSlideIndex < state.slides.length - 1) {
+          goToPresentationSlide(presentationSlideIndex + 1);
+        }
+      });
+    }
+  }
   
+  // Initialize presentation listeners
+  attachPresentationListeners();
+  
+  // Handle fullscreen changes
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && presentationMode && !presentationMode.classList.contains('hidden')) {
+      exitPresentationMode();
+    }
+  });
+  document.addEventListener('webkitfullscreenchange', () => {
+    if (!document.webkitFullscreenElement && presentationMode && !presentationMode.classList.contains('hidden')) {
+      exitPresentationMode();
+    }
+  });
+  document.addEventListener('mozfullscreenchange', () => {
+    if (!document.mozFullScreenElement && presentationMode && !presentationMode.classList.contains('hidden')) {
+      exitPresentationMode();
+    }
+  });
+  document.addEventListener('MSFullscreenChange', () => {
+    if (!document.msFullscreenElement && presentationMode && !presentationMode.classList.contains('hidden')) {
+      exitPresentationMode();
+    }
+  });
+
   // Keyboard navigation in presentation mode
   document.addEventListener('keydown', (e) => {
     if (presentationMode && !presentationMode.classList.contains('hidden')) {
@@ -8854,11 +9781,19 @@ What do you need help with?`;
       });
     }
 
-    // Open modal
+    // Open modal - Updated to open AI Generator instead (which has theme selection)
     themesBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      loadThemes();
-      themesModal.classList.remove('hidden');
+      // Open AI Generator modal which includes theme selection
+      if (window.openAIGenerator) {
+        window.openAIGenerator();
+      } else if (window.toggleAIPage) {
+        window.toggleAIPage();
+      } else {
+        // Fallback to old themes modal if AI Generator not available
+        loadThemes();
+        themesModal.classList.remove('hidden');
+      }
     });
 
     // Close modal

@@ -539,31 +539,49 @@ app.post('/api/ai/regenerate-slide', async (req, res) => {
   console.log('Request body:', req.body);
   
   try {
-    const { topic, originalContent, feedback, theme, language, preserveLayoutType } = req.body;
+    // Support both new format (title, body, instruction) and legacy format
+    let title, body, instruction;
+    
+    if (req.body.title && req.body.body && req.body.instruction) {
+      // New simplified format
+      title = req.body.title;
+      body = req.body.body;
+      instruction = req.body.instruction;
+    } else if (req.body.originalContent && req.body.feedback) {
+      // Legacy format - convert to new format
+      title = req.body.originalContent.title || '';
+      body = Array.isArray(req.body.originalContent.bullets) 
+        ? req.body.originalContent.bullets.join('\n')
+        : req.body.originalContent.bullets || '';
+      instruction = req.body.feedback;
+    } else {
+      return res.status(400).json({
+        error: "Either (title, body, instruction) or (originalContent, feedback) must be provided"
+      });
+    }
 
     // Validate inputs
-    if (!topic || typeof topic !== 'string' || !topic.trim()) {
+    if (!title || typeof title !== 'string') {
       return res.status(400).json({
-        error: "Topic is required and must be a non-empty string",
+        error: "title is required and must be a string",
       });
     }
 
-    if (!originalContent || typeof originalContent !== 'object') {
+    if (body === undefined || body === null) {
       return res.status(400).json({
-        error: "originalContent is required and must be an object",
+        error: "body is required",
       });
     }
 
-    const lang = (language || "en").toLowerCase();
-    if (!["ar", "en"].includes(lang)) {
+    if (!instruction || typeof instruction !== 'string') {
       return res.status(400).json({
-        error: 'language must be either "ar" or "en"',
+        error: "instruction is required and must be a string",
       });
     }
     
-    // Determine if original slide was title-only (preserve layout type)
-    const isTitleOnly = preserveLayoutType === true || 
-                        (originalContent.bullets && originalContent.bullets.length === 0);
+    // Determine if original slide was title-only
+    const bodyStr = typeof body === 'string' ? body : (Array.isArray(body) ? body.join('\n') : '');
+    const isTitleOnly = !bodyStr.trim() || bodyStr.trim() === '';
 
     // Check if API key is configured
     if (!process.env.OPENAI_API_KEY) {
@@ -572,71 +590,113 @@ app.post('/api/ai/regenerate-slide', async (req, res) => {
       });
     }
 
-    // Build prompt for single slide regeneration
-    const languageInstruction = lang === 'ar' 
-      ? 'Generate content in Arabic. All titles and bullet points must be in Arabic.'
-      : 'Generate content in English. All titles and bullet points must be in English.';
+    // Build comprehensive prompt
+    const prompt = `You are a slide editor AI. Modify the slide EXACTLY as the user requests.
 
-    const originalBullets = originalContent.bullets || [];
-    const originalBulletsText = originalBullets.length > 0 
-      ? originalBullets.join('\n- ')
-      : '(Title-only slide)';
+CRITICAL RULES:
+- NEVER delete text unless user says remove/delete.
+- ALWAYS keep the original title and body unless user explicitly says to change text.
+- Apply ONLY the specific changes requested - keep everything else exactly the same.
+- Maintain clean layout, correct spacing, and avoid overlapping elements.
+- Only modify the parts the user asked for.
 
-    const systemPrompt = `You are a professional presentation slide generator. Generate a SINGLE slide based on user feedback.
+CONTENT INSTRUCTIONS (when user requests text changes):
+- "rewrite text" or "rephrase" → Rewrite only the specified parts
+- "shorten" or "make shorter" → Reduce length while keeping key points
+- "expand" or "add more" → Add detail without removing existing content
+- "change tone" → Adjust tone (formal, casual, professional) while keeping content
+- "fix grammar" → Fix grammar errors only, keep all words
+- "add example" → Add a concrete example without removing existing content
+- "delete [text]" or "remove [text]" → Remove ONLY the specified text (e.g., "delete ..." removes only "...")
+- "delete [specific phrase]" → Remove ONLY that phrase, keep everything else exactly the same
 
-${languageInstruction}
+VISUAL INSTRUCTIONS (when user requests design changes):
+- "make background pink/blue/etc" → styleChanges.background = "pink" (or color name/hex)
+- "change text color" or "make text blue" → styleChanges.body.color = "blue"
+- "change title color" → styleChanges.title.color = "blue"
+- "increase title size" or "make title bigger" → styleChanges.title.size = "larger" or "48px"
+- "increase text size" or "make text bigger" → styleChanges.body.size = "larger" or "24px"
+- "make text bold" or "bold text" → styleChanges.body.weight = "bold"
+- "make title bold" → styleChanges.title.weight = "bold"
+- "unbold text" or "remove bold" → styleChanges.body.weight = "normal"
+- "center text" → styleChanges.body.alignment = "center"
+- "center title" → styleChanges.title.alignment = "center"
+- "align text left" or "move text to left" → styleChanges.body.alignment = "left"
+- "align text right" or "move text to right" → styleChanges.body.alignment = "right"
+- "move text to top left" → styleChanges.layout = "top-left"
+- "move text to top right" → styleChanges.layout = "top-right"
+- "move text to bottom left" → styleChanges.layout = "bottom-left"
+- "move text to bottom right" → styleChanges.layout = "bottom-right"
+- "move text to far left" → styleChanges.body.alignment = "left", styleChanges.layout = "far-left"
+- "move text to far right" → styleChanges.body.alignment = "right", styleChanges.layout = "far-right"
+- "add shadow" → styleChanges.body.shadow = "2px 2px 4px rgba(0,0,0,0.3)"
+- "move title up" → styleChanges.layout = "move up 30px"
+- "move text left" → styleChanges.layout = "move left 50px"
+- "add spacing" or "increase spacing" → styleChanges.body.line_height = "1.8"
+- "add image" or "add a picture" → image.generate = true, provide detailed DALL·E prompt
+- "add chart" or "add a chart" → image.generate = true, prompt should describe chart type, data, and predictions
+- "predict price" or "show price prediction" → image.generate = true, create chart with price forecast/prediction data
 
 IMPORTANT:
-- Generate exactly ONE slide (not multiple slides)
-- Return slide content in the following text format:
-Title: [slide title]
-Bullets:
-- [bullet point 1]
-- [bullet point 2]
-- [bullet point 3]
+- If user requests BOTH content and visual changes, apply BOTH.
+- Visual changes should be applied directly using the styleChanges structure.
+- Maintain theme consistency: colors, spacing, and alignment must stay within theme guidelines.
+- When adding images/charts, generate a detailed, descriptive prompt for DALL·E that matches the slide content and theme.
 
-If the slide should be title-only, leave Bullets section empty.
+Original Title:
+${title}
 
-SLIDE REQUIREMENTS:
-- Title: Clear, concise, relevant to the topic
-- Bullets: ${isTitleOnly ? 'MUST leave empty (this is a title-only slide).' : 'Provide 3-5 bullet points for content slide.'}
-- Content should incorporate user feedback while maintaining relevance to the original topic
-- ${isTitleOnly ? 'IMPORTANT: This slide must remain title-only. Leave Bullets section empty.' : ''}
-- Use proper ${lang === 'ar' ? 'Arabic' : 'English'} grammar and formatting`;
+Original Body:
+${body}
 
-    const userPrompt = feedback && feedback.trim()
-      ? `Original slide topic: "${topic}"
+User Request:
+${instruction}
 
-Original content:
-Title: ${originalContent.title || '(No title)'}
-Bullets:
-${originalBulletsText}
-${isTitleOnly ? '\nNOTE: This is a title-only slide. You MUST leave Bullets empty.' : ''}
+Return this JSON structure (apply changes based on user request):
+{
+  "title": "same original title unless user asks to change it",
+  "body": "same original body unless user asks to change text",
+  "image": {
+    "generate": true/false,
+    "prompt": "detailed DALL·E prompt if user requested image/chart",
+    "position": "auto"
+  },
+  "styleChanges": {
+    "title": {
+      "color": "keep or new value",
+      "size": "keep or new value",
+      "alignment": "keep or new value",
+      "shadow": "keep or new value",
+      "weight": "keep or new value",
+      "letter_spacing": "keep or new value",
+      "line_height": "keep or new value",
+      "font_family": "keep or new value"
+    },
+    "body": {
+      "color": "keep or new value",
+      "size": "keep or new value",
+      "alignment": "keep or new value",
+      "shadow": "keep or new value",
+      "weight": "keep or new value",
+      "letter_spacing": "keep or new value",
+      "line_height": "keep or new value",
+      "font_family": "keep or new value"
+    },
+    "background": "keep or new value",
+    "layout": "keep or new value"
+  }
+}
 
-User feedback: "${feedback}"
+CRITICAL: Only fill in fields that the user requested to change. Use "keep" for unchanged values. Always return valid JSON.`;
 
-Please regenerate this slide incorporating the user's feedback. ${feedback.toLowerCase().includes('simpler') || feedback.toLowerCase().includes('simple') ? 'Make it simpler and more concise.' : ''} ${feedback.toLowerCase().includes('example') ? 'Add a concrete example.' : ''} ${feedback.toLowerCase().includes('long') || feedback.toLowerCase().includes('shorter') ? 'Make it shorter and more concise.' : ''}
-
-${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Leave Bullets section empty.' : 'Return the regenerated slide in text format with Title and Bullets (3-5 bullets).'}`
-      : `Regenerate this slide about "${topic}".
-
-Original content:
-Title: ${originalContent.title || '(No title)'}
-Bullets:
-${originalBulletsText}
-${isTitleOnly ? '\nNOTE: This is a title-only slide. You MUST leave Bullets empty.' : ''}
-
-${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Leave Bullets section empty.' : 'Return the regenerated slide in text format with Title and Bullets (3-5 bullets).'}`;
-
-    const combinedInput = `${systemPrompt}\n\n${userPrompt}`;
-
-    // Call OpenAI API
-    let response;
+    // Call OpenAI API using chat completions
+    let completion;
     try {
-      response = await client.responses.create({
+      completion = await client.chat.completions.create({
         model: "gpt-4o-mini",
-        input: combinedInput,
-        text: { format: { type: "text" } }
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0,
+        response_format: { type: "json_object" }
       });
     } catch (apiError) {
       console.error('[Safety] OpenAI API error:', apiError.message);
@@ -644,40 +704,24 @@ ${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Leave Bullets sect
     }
 
     // DEFENSIVE CHECK: Handle malformed response
-    if (!response.output_text) {
+    if (!completion.choices || !completion.choices[0] || !completion.choices[0].message) {
       throw new Error('No response content from OpenAI');
     }
 
-    // Parse text response
-    function parseSingleSlideText(text) {
-      const titleMatch = text.match(/Title:\s*(.+?)(?:\n|$)/i);
-      const title = titleMatch ? titleMatch[1].trim() : '';
-      
-      if (!title) {
-        throw new Error('Invalid response: missing title');
-      }
-      
-      // Extract bullets
-      const bullets = [];
-      const bulletsMatch = text.match(/Bullets:\s*\n((?:- .+\n?)+)/is);
-      if (bulletsMatch) {
-        const bulletsText = bulletsMatch[1];
-        const bulletLines = bulletsText.match(/- (.+)/g);
-        if (bulletLines) {
-          bullets.push(...bulletLines.map(b => b.replace(/^- /, '').trim()).filter(b => b.length > 0));
-        }
-      }
-      
-      return { title, bullets };
-    }
-
+    // Parse JSON response
     let parsedResponse;
     try {
-      parsedResponse = parseSingleSlideText(response.output_text);
+      const content = completion.choices[0].message.content;
+      parsedResponse = typeof content === 'string' ? JSON.parse(content) : content;
     } catch (parseError) {
-      console.error('[Safety] Text parse error:', parseError.message);
-      console.error('[Safety] Response preview:', response.output_text.substring(0, 300));
-      throw new Error('Failed to parse AI response');
+      console.error('[Safety] JSON parse error:', parseError.message);
+      console.error('[Safety] Response preview:', completion.choices[0].message.content?.substring(0, 300));
+      throw new Error('Failed to parse AI response as JSON');
+    }
+
+    // Validate JSON structure
+    if (!parsedResponse.title || typeof parsedResponse.title !== 'string') {
+      throw new Error('Invalid response: missing or invalid title');
     }
 
     // Validate response structure
@@ -685,43 +729,47 @@ ${isTitleOnly ? 'CRITICAL: This slide must remain title-only. Leave Bullets sect
       throw new Error('Invalid response: missing or invalid title');
     }
 
-    if (!parsedResponse.bullets || !Array.isArray(parsedResponse.bullets)) {
-      parsedResponse.bullets = [];
-    }
-
-    // Clean and validate bullets
-    let cleanedBullets = parsedResponse.bullets
-      .map(b => typeof b === 'string' ? b.trim() : String(b).trim())
-      .filter(b => b.length > 0);
-
-    // Preserve layout type: if original was title-only, force empty bullets
-    if (isTitleOnly) {
-      if (cleanedBullets.length > 0) {
-        console.warn(`[Safety] Original slide was title-only, but AI returned ${cleanedBullets.length} bullets. Forcing empty bullets to preserve layout.`);
-        cleanedBullets = [];
-      }
-    } else {
-      // Ensure content slides have 3-5 bullets
-      if (cleanedBullets.length > 0 && cleanedBullets.length < 3) {
-        console.warn(`[Safety] Slide has only ${cleanedBullets.length} bullets, expected 3-5`);
-      }
-      if (cleanedBullets.length > 5) {
-        cleanedBullets.splice(5);
-        console.warn('[Safety] Trimmed bullets to 5');
+    // Extract body content - handle both string and array formats
+    let bodyContent = '';
+    if (parsedResponse.body !== undefined && parsedResponse.body !== null) {
+      if (typeof parsedResponse.body === 'string') {
+        bodyContent = parsedResponse.body;
+      } else if (Array.isArray(parsedResponse.body)) {
+        bodyContent = parsedResponse.body.join('\n');
+      } else {
+        bodyContent = String(parsedResponse.body);
       }
     }
 
-    const regeneratedSlide = {
+    // Preserve layout type: if original was title-only, force empty body
+    if (isTitleOnly && bodyContent.trim()) {
+      console.warn(`[Safety] Original slide was title-only, but AI returned body content. Forcing empty body to preserve layout.`);
+      bodyContent = '';
+    }
+
+    // Build response with styleChanges and image
+    const responseData = {
       title: parsedResponse.title.trim(),
-      bullets: cleanedBullets
+      body: bodyContent,
+      styleChanges: parsedResponse.styleChanges || {
+        title: {},
+        body: {},
+        background: "keep",
+        layout: "keep"
+      },
+      image: parsedResponse.image || {
+        generate: false,
+        prompt: "",
+        position: "auto"
+      }
     };
 
-    console.log(`[Single Slide] Regenerated slide: "${regeneratedSlide.title}" with ${cleanedBullets.length} bullets`);
+    console.log(`[Single Slide] Regenerated slide: "${responseData.title}"`);
+    if (responseData.styleChanges && Object.keys(responseData.styleChanges).length > 0) {
+      console.log(`[Single Slide] Style changes:`, JSON.stringify(responseData.styleChanges, null, 2));
+    }
 
-    res.json({
-      success: true,
-      slide: regeneratedSlide
-    });
+    res.json(responseData);
 
   } catch (error) {
     console.error('=== ERROR IN /api/ai/regenerate-slide ===');
@@ -940,7 +988,7 @@ app.post('/api/ai/generate-image', async (req, res) => {
   console.log('POST /api/ai/generate-image - Request received');
   
   try {
-    const { slideTitle, bulletPoints, topic, theme } = req.body;
+    const { slideTitle, bulletPoints, topic, theme, prompt } = req.body;
 
     // Validate inputs
     if (!slideTitle || typeof slideTitle !== 'string') {
@@ -956,12 +1004,19 @@ app.post('/api/ai/generate-image', async (req, res) => {
       });
     }
 
-    // Build image prompt based on slide content
-    const bulletText = Array.isArray(bulletPoints) && bulletPoints.length > 0
-      ? bulletPoints.slice(0, 3).join(', ') // Use first 3 bullets for context
-      : '';
-    
-    const imagePrompt = `A professional, clean, modern illustration or photograph related to: ${slideTitle}${bulletText ? '. Key concepts: ' + bulletText : ''}. ${topic ? 'Context: ' + topic : ''}. Style: professional presentation slide image, clean background, suitable for business presentation, high quality, professional photography or illustration style.`;
+    // Build image prompt - use custom prompt if provided, otherwise build from content
+    let imagePrompt;
+    if (prompt && typeof prompt === 'string' && prompt.trim()) {
+      // Use the custom prompt from AI if provided
+      imagePrompt = prompt.trim();
+    } else {
+      // Build prompt from slide content
+      const bulletText = Array.isArray(bulletPoints) && bulletPoints.length > 0
+        ? bulletPoints.slice(0, 3).join(', ') // Use first 3 bullets for context
+        : '';
+      
+      imagePrompt = `A professional, clean, modern illustration or photograph related to: ${slideTitle}${bulletText ? '. Key concepts: ' + bulletText : ''}. ${topic ? 'Context: ' + topic : ''}. Style: professional presentation slide image, clean background, suitable for business presentation, high quality, professional photography or illustration style.`;
+    }
 
     // Generate image using DALL-E (MANDATORY - always generate)
     let imageResponse;
@@ -1061,14 +1116,23 @@ app.post('/api/ai/generate-chart-data', async (req, res) => {
       ? bulletPoints.join('\n')
       : '';
     
+    // Check if user provided a custom prompt (for price predictions, forecasts, etc.)
+    const userPrompt = req.body.prompt || '';
+    const isPredictionRequest = userPrompt.toLowerCase().includes('predict') || 
+                                userPrompt.toLowerCase().includes('forecast') ||
+                                userPrompt.toLowerCase().includes('price');
+    
     const chartPrompt = `Analyze the following slide content and extract numerical data that would benefit from visualization.
 
 Slide Title: ${slideTitle}
 Content:
 ${bulletText}
 ${topic ? `Context: ${topic}` : ''}
+${userPrompt ? `User Request: ${userPrompt}` : ''}
 
-Extract any numbers, percentages, statistics, comparisons, or data points mentioned. If data is present, suggest an appropriate chart type (bar, pie, line, column) and create realistic chart data.
+${isPredictionRequest ? 'IMPORTANT: The user wants a PREDICTION or FORECAST chart. Generate realistic future data points, trends, or price predictions based on the content. Include forecasted values.' : ''}
+
+Extract any numbers, percentages, statistics, comparisons, or data points mentioned. ${isPredictionRequest ? 'Generate realistic prediction/forecast data.' : 'If data is present, suggest an appropriate chart type (bar, pie, line, column) and create realistic chart data.'}
 
 Return ONLY a JSON object with this structure:
 {
@@ -1079,6 +1143,8 @@ Return ONLY a JSON object with this structure:
     ...
   ]
 }
+
+${isPredictionRequest ? 'For predictions: Use "line" chart type and include future time periods with predicted values. Example: {"label": "2025 Q1", "value": 150}, {"label": "2025 Q2", "value": 175}, etc.' : ''}
 
 If no meaningful data can be extracted, return:
 {

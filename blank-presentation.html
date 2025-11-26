@@ -1786,83 +1786,196 @@
 
   <!-- AI Generator Full Page View -->
   <div id="ai-generator-page" class="ai-generator-page hidden">
+    <div class="ai-generator-backdrop"></div>
     <div class="ai-generator-container">
-      <!-- Left Side: AI Controls -->
-      <div class="ai-generator-left">
-        <div class="ai-generator-content">
-          <h2 class="ai-generator-title">AI Presentation Generator</h2>
-          
-          <!-- Options Section -->
-          <div class="ai-generator-options">
-            <div class="ai-option-group">
-              <label class="ai-option-label" for="ai-slide-count">Number of Slides</label>
-              <select id="ai-slide-count" class="ai-select">
-                <option value="5">5 slides</option>
-                <option value="8" selected>8 slides</option>
-                <option value="10">10 slides</option>
-                <option value="12">12 slides</option>
-                <option value="15">15 slides</option>
-                <option value="20">20 slides</option>
-              </select>
+      <!-- Modal Header -->
+      <div class="ai-generator-header">
+        <h2 class="ai-generator-title">AI Presentation Generator</h2>
+        <button class="ai-generator-close" aria-label="Close">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="ai-generator-body">
+        <!-- Left Side: AI Controls -->
+        <div class="ai-generator-left">
+          <div class="ai-generator-content">
+            <!-- Workflow Tabs -->
+            <div class="ai-workflow-tabs">
+              <button class="ai-workflow-tab active" data-workflow="topic" id="ai-workflow-tab-topic">
+                <span>Topic</span>
+              </button>
+              <button class="ai-workflow-tab" data-workflow="text" id="ai-workflow-tab-text">
+                <span>From Text</span>
+              </button>
             </div>
-            <div class="ai-option-group">
-              <label class="ai-option-label" for="ai-language-selector">Language</label>
-              <select id="ai-language-selector" class="ai-select">
-                <option value="en" selected>English</option>
-                <option value="ar">Arabic</option>
-              </select>
+
+            <!-- Options Section -->
+            <div class="ai-generator-options">
+              <div class="ai-option-group">
+                <label class="ai-option-label" for="number-of-slides">Number of Slides</label>
+                <input
+                  type="number"
+                  id="number-of-slides"
+                  class="ai-select"
+                  min="1"
+                  max="50"
+                  value="8"
+                  placeholder="Enter slide count"
+                />
+              </div>
+              <div class="ai-option-group">
+                <label class="ai-option-label" for="ai-language-selector">Language</label>
+                <select id="ai-language-selector" class="ai-select">
+                  <option value="en" selected>English</option>
+                  <option value="ar">Arabic</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Topic Workflow Content -->
+            <div class="ai-generator-workflow-content active" id="ai-page-content-topic">
+              <div class="ai-input-section">
+                <label class="ai-input-label" for="ai-input">Enter presentation topic</label>
+                <input 
+                  type="text" 
+                  id="ai-input" 
+                  class="ai-input" 
+                  placeholder="e.g., Introduction to Machine Learning"
+                />
+              </div>
+            </div>
+
+            <!-- Text Workflow Content -->
+            <div class="ai-generator-workflow-content" id="ai-page-content-text">
+              <div class="ai-input-section">
+                <label class="ai-input-label" for="ai-page-text-input">Paste your slide content</label>
+                <textarea 
+                  id="ai-page-text-input" 
+                  class="ai-textarea" 
+                  placeholder="Paste your text here..."
+                  rows="6"
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Generate Button -->
+            <button class="ai-submit-btn" id="ai-page-generate-btn">
+              <span>Generate Presentation</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Side: Theme Selection -->
+        <div class="ai-generator-right">
+          <div class="ai-right-content">
+            <!-- Theme Selection Box -->
+            <div class="ai-theme-selection-box">
+              <h3 class="ai-theme-selection-title">Choose the themes</h3>
+              <div class="ai-theme-grid" id="ai-themes-grid">
+                <!-- Theme boxes will be dynamically created here -->
+              </div>
             </div>
           </div>
-
-          <!-- Topic Workflow Content -->
-          <div class="ai-generator-workflow-content active" id="ai-page-content-topic">
-            <div class="ai-input-section">
-              <label class="ai-input-label" for="ai-input">Enter presentation topic</label>
-              <input 
-                type="text" 
-                id="ai-input" 
-                class="ai-input" 
-                placeholder="e.g., Introduction to Machine Learning"
-              />
-            </div>
-          </div>
-
-          <!-- Text Workflow Content -->
-          <div class="ai-generator-workflow-content" id="ai-page-content-text">
-            <div class="ai-input-section">
-              <label class="ai-input-label" for="ai-page-text-input">Paste your slide content</label>
-              <textarea 
-                id="ai-page-text-input" 
-                class="ai-textarea" 
-                placeholder="Paste your text here..."
-                rows="6"
-              ></textarea>
-            </div>
-          </div>
-
-          <!-- Improve Workflow Content -->
-          <div class="ai-generator-workflow-content" id="ai-page-content-improve">
-            <div class="ai-input-section">
-              <p class="ai-info-text">Improve your existing slides with AI-powered enhancements.</p>
-            </div>
-          </div>
-
-          <!-- Generate Button -->
-          <button class="ai-submit-btn" id="ai-page-generate-btn">
-            <span>Generate Presentation</span>
-          </button>
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Right Side: Theme Selection -->
-      <div class="ai-generator-right">
-        <div class="ai-theme-selection-box">
-          <h3 class="ai-theme-selection-title">Choose the themes</h3>
-          <div class="ai-theme-grid" id="ai-themes-grid">
-            <!-- Theme boxes will be dynamically created here -->
+  <!-- Floating AI Assistant Button -->
+  <button class="ai-floating-btn" id="ai-floating-btn" aria-label="Open AI Assistant">
+    <svg 
+      width="24" 
+      height="24" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      stroke-width="2" 
+      stroke-linecap="round" 
+      stroke-linejoin="round"
+    >
+      <rect x="3" y="7" width="18" height="12" rx="3" />
+      <circle cx="9" cy="13" r="1.5" />
+      <circle cx="15" cy="13" r="1.5" />
+      <path d="M12 7V4" />
+      <circle cx="12" cy="2" r="1" />
+    </svg>
+  </button>
+
+  <!-- AI Assistant Chat Panel (Popup) -->
+  <div class="ai-chat-panel" id="ai-chat-panel">
+    <div class="ai-chat-panel-header">
+      <h3 class="ai-chat-panel-title">AI Assistant</h3>
+      <button class="ai-chat-panel-close" id="ai-chat-panel-close" aria-label="Close chat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="ai-chat-panel-content">
+      <div class="ai-assistant-messages" id="ai-assistant-messages">
+        <div class="ai-assistant-message ai-message">
+          <div class="ai-message-avatar">AI</div>
+          <div class="ai-message-content">
+            <p>Hi! I'm your AI assistant. I can help you:</p>
+            <ul>
+              <li>Understand how to use the AI slide generator</li>
+              <li>Get suggestions for better prompts</li>
+              <li>Improve specific slides</li>
+            </ul>
+            <p>What would you like to know?</p>
           </div>
         </div>
       </div>
+      <div class="ai-assistant-input-container">
+        <input 
+          type="text" 
+          id="ai-assistant-input" 
+          class="ai-assistant-input" 
+          placeholder="Ask me anything about AI slides..."
+          autocomplete="off"
+        />
+        <button 
+          id="ai-assistant-send" 
+          class="ai-assistant-send-btn"
+          aria-label="Send message"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Presentation Mode -->
+  <div id="presentation-mode" class="presentation-mode hidden">
+    <div class="presentation-slide-container">
+      <div id="presentation-slide" class="presentation-slide"></div>
+    </div>
+    <div class="presentation-controls">
+      <button id="presentation-prev" class="presentation-control-btn" aria-label="Previous slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <div id="presentation-slide-info" class="presentation-slide-info">1 / 1</div>
+      <button id="presentation-next" class="presentation-control-btn" aria-label="Next slide">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+      <button id="presentation-exit" class="presentation-control-btn" aria-label="Exit presentation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
   </div>
 </body>

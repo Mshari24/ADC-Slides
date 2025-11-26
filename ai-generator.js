@@ -3654,6 +3654,10 @@
   
   // Expose createAramcoSlide globally for use in app.js (Proof/Review feature)
   window.createAramcoSlide = createAramcoSlide;
+  
+  // Expose helper functions for chart generation and theme access
+  window.generateChartColors = generateChartColors;
+  window.getThemeDefinition = getThemeDefinition;
 
   // Note: btn-ai-generate listener is handled in initializeAIPage() to avoid duplicates
   // No separate connectAIGenerateButton() needed
