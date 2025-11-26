@@ -3081,7 +3081,16 @@
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
-        alert(errorData.error || 'Failed to fetch');
+        const errorMsg = errorData.error || 'Failed to fetch';
+        
+        // Check for quota errors and show user-friendly message
+        if (errorMsg.includes('quota') || errorMsg.includes('exceeded') || errorMsg.includes('billing')) {
+          alert('OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.');
+        } else if (errorMsg.includes('rate limit')) {
+          alert('OpenAI API rate limit reached. Please wait a moment and try again.');
+        } else {
+          alert(errorMsg);
+        }
         stopLoading();
         return;
       }
@@ -3089,7 +3098,15 @@
       const data = await response.json();
 
       if (data.error) {
-        alert(data.error);
+        const errorMsg = data.error;
+        // Check for quota errors and show user-friendly message
+        if (errorMsg.includes('quota') || errorMsg.includes('exceeded') || errorMsg.includes('billing')) {
+          alert('OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.');
+        } else if (errorMsg.includes('rate limit')) {
+          alert('OpenAI API rate limit reached. Please wait a moment and try again.');
+        } else {
+          alert(errorMsg);
+        }
         stopLoading();
         return;
       }
@@ -3186,7 +3203,17 @@
       }
     } catch (error) {
       console.error('Error in generateSlidesRequest:', error);
-      alert('Failed to fetch');
+      const errorMessage = error.message || 'Failed to fetch';
+      
+      // Check for quota errors and show user-friendly message
+      let userMessage = errorMessage;
+      if (errorMessage.includes('quota') || errorMessage.includes('exceeded') || errorMessage.includes('billing')) {
+        userMessage = 'OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.';
+      } else if (errorMessage.includes('rate limit')) {
+        userMessage = 'OpenAI API rate limit reached. Please wait a moment and try again.';
+      }
+      
+      alert(userMessage);
     } finally {
       // Always stop loading and reset flag, even if there's an error
       stopLoading();
@@ -3231,7 +3258,16 @@
     } catch (e) {
       console.error('[Generate] Error during generation:', e);
       const errorMessage = e.message || 'An unexpected error occurred while generating slides.';
-      alert(`Error generating slides: ${errorMessage}`);
+      
+      // Check for quota errors and show user-friendly message
+      let userMessage = errorMessage;
+      if (errorMessage.includes('quota') || errorMessage.includes('exceeded') || errorMessage.includes('billing')) {
+        userMessage = 'OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.';
+      } else if (errorMessage.includes('rate limit')) {
+        userMessage = 'OpenAI API rate limit reached. Please wait a moment and try again.';
+      }
+      
+      alert(`Error generating slides: ${userMessage}`);
       // Ensure loading state is cleared on error
       hideLoading();
       stopLoading();

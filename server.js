@@ -56,6 +56,33 @@ app.post("/api/ai/test", async (req, res) => {
     }
 })
 
+// Helper function to handle OpenAI API errors with user-friendly messages
+function handleOpenAIError(error) {
+  if (error instanceof OpenAI.APIError) {
+    // Check for quota exceeded error (429)
+    if (error.status === 429 || error.message?.toLowerCase().includes('quota') || error.message?.toLowerCase().includes('exceeded')) {
+      return {
+        status: 429,
+        error: 'OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.'
+      };
+    }
+    // Check for rate limit error
+    if (error.message?.toLowerCase().includes('rate limit')) {
+      return {
+        status: 429,
+        error: 'OpenAI API rate limit reached. Please wait a moment and try again.'
+      };
+    }
+    // Generic OpenAI API error
+    return {
+      status: error.status || 500,
+      error: `OpenAI API error: ${error.message}`
+    };
+  }
+  // Not an OpenAI API error
+  return null;
+}
+
 // Helper function to normalize text for comparison (remove extra whitespace, lowercase)
 function normalizeText(text) {
   if (!text || typeof text !== 'string') return '';
@@ -507,10 +534,11 @@ REQUIREMENTS:
     }
     console.error('========================================');
     
-    // Handle OpenAI API errors
-    if (error instanceof OpenAI.APIError) {
-      return res.status(error.status || 500).json({
-        error: `OpenAI API error: ${error.message}`
+    // Handle OpenAI API errors with user-friendly messages
+    const openAIError = handleOpenAIError(error);
+    if (openAIError) {
+      return res.status(openAIError.status).json({
+        error: openAIError.error
       });
     }
 
@@ -777,9 +805,11 @@ CRITICAL: Only fill in fields that the user requested to change. Use "keep" for 
     console.error('Error:', error.message);
     console.error('========================================');
     
-    if (error instanceof OpenAI.APIError) {
-      return res.status(error.status || 500).json({
-        error: `OpenAI API error: ${error.message}`
+    // Handle OpenAI API errors with user-friendly messages
+    const openAIError = handleOpenAIError(error);
+    if (openAIError) {
+      return res.status(openAIError.status).json({
+        error: openAIError.error
       });
     }
 
@@ -971,9 +1001,11 @@ USER'S QUESTION: "${message.trim()}"`;
     console.error('Error:', error.message);
     console.error('========================================');
     
-    if (error instanceof OpenAI.APIError) {
-      return res.status(error.status || 500).json({
-        error: `OpenAI API error: ${error.message}`
+    // Handle OpenAI API errors with user-friendly messages
+    const openAIError = handleOpenAIError(error);
+    if (openAIError) {
+      return res.status(openAIError.status).json({
+        error: openAIError.error
       });
     }
 

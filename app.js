@@ -2832,6 +2832,10 @@
       
       if (errorMessage.includes('network') || errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch')) {
         userMessage += 'Please check your internet connection and try again.';
+      } else if (errorMessage.includes('quota') || errorMessage.includes('exceeded') || errorMessage.includes('billing')) {
+        userMessage = 'OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.';
+      } else if (errorMessage.includes('rate limit')) {
+        userMessage = 'OpenAI API rate limit reached. Please wait a moment and try again.';
       } else if (errorMessage.includes('API') || errorMessage.includes('OpenAI')) {
         userMessage += 'The AI service encountered an error. Please try again in a moment.';
       } else if (errorMessage.includes('JSON') || errorMessage.includes('parse') || errorMessage.includes('Invalid')) {
@@ -4125,9 +4129,17 @@
       removeTypingIndicator(typingIndicator);
       
       // Show error message
-      const errorMessage = error.message.includes('API key') 
-        ? 'AI service is not configured. Using fallback responses.'
-        : 'Failed to get AI response. Using fallback.';
+      let errorMessage;
+      const errorMsg = error.message || '';
+      if (errorMsg.includes('API key')) {
+        errorMessage = 'AI service is not configured. Using fallback responses.';
+      } else if (errorMsg.includes('quota') || errorMsg.includes('exceeded') || errorMsg.includes('billing')) {
+        errorMessage = 'OpenAI API quota exceeded. Please check your OpenAI account billing and plan limits. You may need to add credits or upgrade your plan. Visit https://platform.openai.com/account/billing for more information.';
+      } else if (errorMsg.includes('rate limit')) {
+        errorMessage = 'OpenAI API rate limit reached. Please wait a moment and try again.';
+      } else {
+        errorMessage = 'Failed to get AI response. Using fallback.';
+      }
       
       addMessageToChat(errorMessage, 'ai');
       
