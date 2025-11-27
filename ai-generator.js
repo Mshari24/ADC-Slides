@@ -2984,11 +2984,35 @@
         window.dispatchEvent(event);
       }
 
-      // Auto-redirect without showing alert
-      const presentationId = result.presentationId;
-      if (presentationId) {
-        window.location.href = 'index.html?presentation=' + presentationId;
+      // Auto-redirect to editor after slides are added
+      // Get presentation ID from current URL or generate new one
+      const urlParams = new URLSearchParams(window.location.search);
+      let presentationId = urlParams.get('presentation');
+      
+      if (!presentationId) {
+        // Generate a new presentation ID
+        presentationId = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       }
+      
+      // Check if we're already on the editor page
+      const isOnEditorPage = window.location.pathname.includes('index.html') || 
+                             window.location.pathname.includes('blank-presentation.html');
+      
+      // Wait a moment for slides to be added, then redirect (if not already on editor)
+      setTimeout(() => {
+        if (!isOnEditorPage) {
+          const redirectUrl = new URL('index.html', window.location.href);
+          redirectUrl.searchParams.set('presentation', presentationId);
+          redirectUrl.searchParams.set('new', 'true');
+          window.location.href = redirectUrl.toString();
+        } else {
+          // Already on editor page - just update URL with presentation ID
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('presentation', presentationId);
+          currentUrl.searchParams.set('new', 'true');
+          window.history.replaceState({}, '', currentUrl);
+        }
+      }, 500);
     } catch (err) {
       console.error('Text submit error:', err);
       alert(`Error generating slides: ${err.message || 'Unknown error'}`);
@@ -3206,11 +3230,35 @@
         window.dispatchEvent(event);
       }
 
-      // Auto-redirect without showing alert
-      const presentationId = data.presentationId;
-      if (presentationId) {
-        window.location.href = 'index.html?presentation=' + presentationId;
+      // Auto-redirect to editor after slides are added
+      // Get presentation ID from current URL or generate new one
+      const urlParams2 = new URLSearchParams(window.location.search);
+      let presentationId2 = urlParams2.get('presentation');
+      
+      if (!presentationId2) {
+        // Generate a new presentation ID
+        presentationId2 = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
       }
+      
+      // Check if we're already on the editor page
+      const isOnEditorPage2 = window.location.pathname.includes('index.html') || 
+                             window.location.pathname.includes('blank-presentation.html');
+      
+      // Wait a moment for slides to be added, then redirect (if not already on editor)
+      setTimeout(() => {
+        if (!isOnEditorPage2) {
+          const redirectUrl = new URL('index.html', window.location.href);
+          redirectUrl.searchParams.set('presentation', presentationId2);
+          redirectUrl.searchParams.set('new', 'true');
+          window.location.href = redirectUrl.toString();
+        } else {
+          // Already on editor page - just update URL with presentation ID
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('presentation', presentationId2);
+          currentUrl.searchParams.set('new', 'true');
+          window.history.replaceState({}, '', currentUrl);
+        }
+      }, 500);
     } catch (error) {
       console.error('Error in generateSlidesRequest:', error);
       const errorMessage = error.message || 'Failed to fetch';

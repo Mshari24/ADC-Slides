@@ -143,6 +143,7 @@
   </div>
 
   <script src="./storage.js"></script>
+  <script src="./dark-mode.js"></script>
   <script src="./notifications.js"></script>
   <script>
     (function () {
@@ -444,10 +445,11 @@
             setOpen(false);
             if (target) {
               const url = new URL(target, window.location.href);
-              // Don't add presentation ID for blank-presentation.html
-              if (!url.pathname.includes('blank-presentation.html') && !url.searchParams.has('presentation')) {
-                url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
-              }
+              // Always generate a new unique presentation ID
+              const newPresentationId = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+              url.searchParams.set('presentation', newPresentationId);
+              // Always mark as new to prevent loading old presentations
+              url.searchParams.set('new', 'true');
               window.location.href = url.toString();
             }
           });

@@ -105,6 +105,7 @@
   </div>
 
   <script src="../storage.js"></script>
+  <script src="../dark-mode.js"></script>
   <script>
     (function () {
       const storage = window.AccountStorage;
@@ -255,17 +256,39 @@
 
       const darkModeToggle = document.getElementById('toggle-dark');
       const accountPreferences = account.preferences || {};
-      if (accountPreferences.darkMode) {
-        document.body.classList.add('dark-mode');
+      
+      // Initialize dark mode using the utility
+      if (window.DarkMode) {
+        window.DarkMode.init();
+        if (darkModeToggle) {
+          darkModeToggle.checked = window.DarkMode.isEnabled();
+        }
+      } else {
+        // Fallback if dark-mode.js not loaded
+        if (accountPreferences.darkMode) {
+          document.body.classList.add('dark-mode');
+          document.documentElement.classList.add('dark-mode');
+        }
+        if (darkModeToggle) {
+          darkModeToggle.checked = !!accountPreferences.darkMode;
+        }
       }
+      
+      // Handle toggle change
       if (darkModeToggle) {
-        darkModeToggle.checked = !!accountPreferences.darkMode;
         darkModeToggle.addEventListener('change', () => {
-          document.body.classList.toggle('dark-mode', darkModeToggle.checked);
-          storage.updateCurrentAccount((acc) => {
-            acc.preferences = acc.preferences || {};
-            acc.preferences.darkMode = darkModeToggle.checked;
-          });
+          if (window.DarkMode) {
+            window.DarkMode.set(darkModeToggle.checked);
+            showToast(darkModeToggle.checked ? 'Dark mode enabled' : 'Dark mode disabled', 1500);
+          } else {
+            // Fallback
+            document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+            document.documentElement.classList.toggle('dark-mode', darkModeToggle.checked);
+            storage.updateCurrentAccount((acc) => {
+              acc.preferences = acc.preferences || {};
+              acc.preferences.darkMode = darkModeToggle.checked;
+            });
+          }
         });
       }
 

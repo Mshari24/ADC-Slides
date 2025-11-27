@@ -94,6 +94,11 @@
     <header class="secondary-bar topbar">
       <div class="topbar-left">
         <div class="menubar-group">
+          <button id="back-btn" class="top-btn" aria-label="Back to Home" title="Back to Home">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
           <button id="menu-btn" class="top-btn" aria-label="Menu">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -109,6 +114,21 @@
       </div>
 
       <div class="topbar-right">
+        <button id="btn-top-notifications" class="top-btn icon-btn" type="button" aria-label="Notifications" aria-haspopup="dialog" aria-expanded="false" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="badge" id="notif-count" aria-hidden="true">0</span>
+        </button>
+        <div class="notification-panel hidden" id="notification-panel" role="dialog" aria-modal="false" aria-labelledby="notifications-title" aria-hidden="true" tabindex="-1">
+          <div class="notification-panel-head">
+            <h3 id="notifications-title">Notifications</h3>
+            <button class="notification-panel-action" type="button" data-notification-mark-read>Mark all read</button>
+          </div>
+          <p class="notification-empty hidden" data-notification-empty>You're all caught up.</p>
+          <ul class="notification-list" data-notification-list aria-live="polite"></ul>
+        </div>
         <button class="top-btn ai-generate-btn" id="ai-generate-btn" title="AI Generate">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"></circle>
@@ -964,10 +984,29 @@
             <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="10" y1="12" x2="20" y2="12"></line><line x1="6" y1="18" x2="20" y2="18"></line></svg>
           </button>
           <div class="divider"></div>
+          <button class="text-control-btn" id="text-comment" title="Add Comment">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+          </button>
+          <button class="text-control-btn" id="text-duplicate" title="Duplicate">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
           <button class="text-control-btn" id="text-delete" title="Delete">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+          <div class="divider"></div>
+          <button class="text-control-btn" id="text-more" title="More options">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="1"></circle>
+              <circle cx="19" cy="12" r="1"></circle>
+              <circle cx="5" cy="12" r="1"></circle>
             </svg>
           </button>
         </div>
@@ -1193,6 +1232,8 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
   <script src="./storage.js"></script>
+  <script src="./dark-mode.js"></script>
+  <script src="./notifications.js"></script>
   <script type="module" src="./js-modules/slides-module.js"></script>
   <script src="./ai-generator.js"></script>
   <script src="./app.js"></script>
@@ -1350,9 +1391,11 @@
             setOpen(false);
             if (target) {
               const url = new URL(target, window.location.href);
-              if (!url.searchParams.has('presentation')) {
-                url.searchParams.set('presentation', `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`);
-              }
+              // Always generate a new unique presentation ID
+              const newPresentationId = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+              url.searchParams.set('presentation', newPresentationId);
+              // Always mark as new to prevent loading old presentations
+              url.searchParams.set('new', 'true');
               window.location.href = url.toString();
             }
           });
@@ -2042,6 +2085,24 @@
           <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
       </button>
+    </div>
+  </div>
+
+  <!-- Presentation Name Modal -->
+  <div id="presentation-name-modal" class="presentation-name-modal hidden">
+    <div class="presentation-name-modal-content">
+      <h3>Name Your Presentation</h3>
+      <input 
+        type="text" 
+        id="presentation-name-input" 
+        class="presentation-name-input" 
+        placeholder="Enter presentation name..."
+        maxlength="100"
+      />
+      <div class="presentation-name-modal-actions">
+        <button id="presentation-name-cancel" class="presentation-name-btn presentation-name-btn-secondary">Cancel</button>
+        <button id="presentation-name-submit" class="presentation-name-btn presentation-name-btn-primary">Create</button>
+      </div>
     </div>
   </div>
 </body>

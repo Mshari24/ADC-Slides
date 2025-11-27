@@ -11,16 +11,17 @@
         
         // Get presentation ID from URL or state
         const urlParams = new URLSearchParams(window.location.search);
-        const presentationId = urlParams.get('presentation') || snapshot.presentationId;
+        const presentationId = urlParams.get('presentation') || snapshot.presentationId || state.presentationId;
         
         if (presentationId) {
-          // Save by presentation ID for specific presentations
+          // Save ONLY to specific presentation ID (not autosave to prevent duplicates)
           account.presentations[presentationId] = snapshot;
           snapshot.presentationId = presentationId; // Store ID in snapshot
+          // DO NOT save to autosave when there's a presentation ID
+        } else {
+          // Only use autosave for legacy/backward compatibility when no presentation ID exists
+          account.presentations.autosave = snapshot;
         }
-        
-        // Also save as autosave for backward compatibility
-        account.presentations.autosave = snapshot;
       });
     } else if (typeof localStorage !== 'undefined') {
       try {
@@ -256,7 +257,7 @@
   const stageEl = document.getElementById('stage');
   const stageWrap = document.querySelector('.stage-wrap');
   const sidebarEl = document.getElementById('slides-sidebar');
-  const deckTitleEl = document.getElementById('deck-title');
+  const deckTitleEl = document.getElementById('deck-title') || document.querySelector('.document-title');
 
   const btnAddSlide = document.getElementById('btn-add-slide');
   const btnDelSlide = document.getElementById('btn-del-slide');
@@ -285,25 +286,35 @@
   const urlParams = new URLSearchParams(window.location.search);
   const presentationId = urlParams.get('presentation');
   const projectId = urlParams.get('project');
-  const isNewPresentation = !!presentationId; // If there's a presentation ID, it's a new one (not autosave)
-  
-  // Check if we're on blank-presentation.html
+  const isNewParam = urlParams.get('new') === 'true'; // Explicit "new" parameter
+  const templateParam = urlParams.get('template'); // Template parameter (e.g., "ad")
   const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
+  
+  // Determine if this is a new presentation
+  // A presentation is "new" if:
+  // 1. It has ?new=true parameter
+  // 2. It's on blank-presentation.html page
+  // 3. It has a template parameter (creating from template)
+  // 4. It has a presentation ID that doesn't exist in storage yet
+  const isNewPresentation = isNewParam || isBlankPresentation || !!templateParam;
   
   // Load saved presentation if it exists, otherwise create new
   let persisted = null;
   
-  if (presentationId) {
-    // Try to load specific presentation by ID
+  // CRITICAL: Never load existing presentation when creating new
+  // If any "new" indicator is present, always create fresh
+  if (isNewPresentation) {
+    // Force create new - don't load anything
+    persisted = null;
+  } else if (presentationId) {
+    // Try to load specific presentation by ID (only if not creating new)
     persisted = loadPersistedState(presentationId);
-    if (!persisted) {
-      // Presentation doesn't exist yet, will be created fresh
-      persisted = null;
-    }
+    // If presentation doesn't exist, persisted will be null (will create fresh)
   } else if (!isBlankPresentation) {
-    // No presentation ID and not blank presentation - load autosave
+    // No presentation ID and not blank presentation - load autosave (for continuing work on legacy presentations)
     persisted = loadPersistedState();
   }
+  // If isNewPresentation is true, persisted stays null (will create fresh)
   
   if (persisted) {
     // Load existing presentation
@@ -311,17 +322,32 @@
     // Ensure presentation ID is set in state
     if (presentationId) {
       state.presentationId = presentationId;
+    } else if (state.presentationId) {
+      // Use existing ID from loaded state - already in state.presentationId
     }
   } else {
-    // Create fresh state for new presentation
+    // Create fresh state for new presentation - ALWAYS start with clean state
+    // Clear any existing state properties to prevent reuse
     state.title = 'Untitled presentation';
     state.currentSlideIndex = 0;
     state.slides = [defaultSlide()];
+    state.theme = undefined; // Will be set by theme loader if template is specified
+    state.presentationId = null; // Will be set below
     
-    // Set presentation ID if provided
-    if (presentationId) {
-      state.presentationId = presentationId;
+    // Always generate a presentation ID for new presentations
+    let finalPresentationId = presentationId;
+    if (!finalPresentationId) {
+      finalPresentationId = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     }
+    state.presentationId = finalPresentationId;
+    
+    // Update URL without reload to include the new ID
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('presentation', finalPresentationId);
+    if (isNewPresentation) {
+      newUrl.searchParams.set('new', 'true');
+    }
+    window.history.replaceState({}, '', newUrl);
     
     // If on blank-presentation.html, ensure blank theme and blank slide
     if (isBlankPresentation) {
@@ -329,6 +355,9 @@
       // Ensure slide has no background
       state.slides[0].background = undefined;
     }
+    
+    // If template parameter is present, theme will be set by loadSavedTheme() function
+    // which runs after initialization
   }
   
   normalizeState(state);
@@ -869,6 +898,8 @@
   
   function showContextToolbar(targetNode) {
     if (!floatingToolbar || !targetNode) return;
+    // Hide text control bar when showing floating toolbar (for non-text elements)
+    hideTextControlBar();
     currentToolbarTarget = targetNode;
     floatingToolbar.classList.remove('hidden');
     toolbarMenu?.classList.add('hidden');
@@ -1171,7 +1202,7 @@
               resizeHandle.style.display = 'block';
             }
             updateToolbarFromSelection();
-            showContextToolbar(node);
+            // Don't show floating toolbar for text elements - use integrated text-control-bar instead
             showTextControlBarForElement(el);
           }
         });
@@ -1278,7 +1309,7 @@
             moveHandle.style.display = 'inline-flex';
             resizeHandle.style.display = 'block';
             updateToolbarFromSelection();
-            showContextToolbar(node);
+            // Don't show floating toolbar for text elements - use integrated text-control-bar instead
             showTextControlBarForElement(el);
             e.preventDefault();
             return;
@@ -1313,7 +1344,7 @@
             resizeHandle.style.display = 'block';
           }
           updateToolbarFromSelection();
-          showContextToolbar(node);
+          // Don't show floating toolbar for text elements - use integrated text-control-bar instead
           showTextControlBarForElement(el);
           node.classList.add('dragging');
           showDragInfo();
@@ -5409,6 +5440,20 @@ What do you need help with?`;
     }
   });
 
+  // Update title when document-title is edited
+  const documentTitleEl = document.querySelector('.document-title');
+  if (documentTitleEl) {
+    documentTitleEl.addEventListener('input', () => {
+      state.title = documentTitleEl.textContent || 'Untitled presentation';
+      saveState(); // Auto-save on title change
+    });
+    documentTitleEl.addEventListener('blur', () => {
+      if (!documentTitleEl.textContent || documentTitleEl.textContent.trim() === '') {
+        documentTitleEl.textContent = state.title || 'Untitled presentation';
+      }
+    });
+  }
+  
   deckTitleEl?.addEventListener('input', () => {
     state.title = deckTitleEl.textContent || 'Untitled presentation';
     saveState(); // Auto-save on title change
@@ -6287,14 +6332,91 @@ What do you need help with?`;
     textBulletBtn?.classList.toggle('active', el.listType === 'bullet');
     textNumberedBtn?.classList.toggle('active', el.listType === 'number');
     textLineSpacingBtn?.classList.toggle('active', el.lineHeight && Number(el.lineHeight) > 1.2);
+    
+    // Position the toolbar above the text element
+    positionTextControlBar();
+  }
+
+  function positionTextControlBar() {
+    if (!textControlBar) return;
+    
+    // Try to find the text element node
+    let textNode = editingNode;
+    if (!textNode && editingElementId) {
+      // Find the node by element ID
+      textNode = document.querySelector(`.el[data-id="${editingElementId}"]`);
+    }
+    if (!textNode) {
+      // Try to find any selected text element
+      textNode = document.querySelector('.el.selected[data-type="text"]');
+    }
+    if (!textNode) {
+      // Try to find any text element that's being edited
+      textNode = document.querySelector('.el.editing');
+    }
+    
+    if (!textNode) return;
+    
+    // Get the text element's position
+    const textRect = textNode.getBoundingClientRect();
+    const stageContainer = stageEl?.parentElement || document.body;
+    const containerRect = stageContainer.getBoundingClientRect();
+    const toolbarRect = textControlBar.getBoundingClientRect();
+    
+    // Calculate position relative to the stage container
+    const scrollTop = stageContainer === document.body ? window.scrollY : stageContainer.scrollTop;
+    const scrollLeft = stageContainer === document.body ? window.scrollX : stageContainer.scrollLeft;
+    
+    // Position above the text element with some spacing
+    const spacing = 12; // Space between toolbar and text
+    const top = textRect.top - containerRect.top + scrollTop - toolbarRect.height - spacing;
+    const left = textRect.left - containerRect.left + scrollLeft + (textRect.width / 2) - (toolbarRect.width / 2);
+    
+    // Ensure toolbar stays within viewport bounds
+    const minTop = 16;
+    const maxTop = (containerRect.height || window.innerHeight) - toolbarRect.height - 16;
+    const minLeft = 16;
+    const maxLeft = (containerRect.width || window.innerWidth) - toolbarRect.width - 16;
+    
+    textControlBar.style.top = `${Math.max(minTop, Math.min(top, maxTop))}px`;
+    textControlBar.style.left = `${Math.max(minLeft, Math.min(left, maxLeft))}px`;
   }
 
   function showTextControlBarForElement(el) {
     updateTextControlBar(el);
+    // Hide the floating toolbar when showing text control bar (integrated toolbar)
+    if (floatingToolbar) {
+      floatingToolbar.classList.add('hidden');
+    }
+    // Position after a short delay to ensure DOM is updated
+    requestAnimationFrame(() => {
+      positionTextControlBar();
+    });
+    
+    // Reposition on scroll and resize
+    if (!window.textControlBarRepositionListener) {
+      const repositionHandler = () => {
+        if (!textControlBar?.classList.contains('hidden')) {
+          positionTextControlBar();
+        }
+      };
+      
+      window.addEventListener('scroll', repositionHandler, true);
+      window.addEventListener('resize', repositionHandler);
+      window.textControlBarRepositionListener = repositionHandler;
+    }
   }
 
   function hideTextControlBar() {
-    if (textControlBar) textControlBar.classList.add('hidden');
+    if (textControlBar) {
+      textControlBar.classList.add('hidden');
+      // Clean up reposition listener if it exists
+      if (window.textControlBarRepositionListener) {
+        window.removeEventListener('scroll', window.textControlBarRepositionListener, true);
+        window.removeEventListener('resize', window.textControlBarRepositionListener);
+        window.textControlBarRepositionListener = null;
+      }
+    }
   }
 
   function enterTextEditing(node, el) {
@@ -6312,9 +6434,9 @@ What do you need help with?`;
       moveHandle.style.display = 'inline-flex';
       resizeHandle.style.display = 'block';
     }
-    updateToolbarFromSelection();
-    showContextToolbar(node);
-    showTextControlBarForElement(el);
+            updateToolbarFromSelection();
+            // Don't show floating toolbar for text elements - use integrated text-control-bar instead
+            showTextControlBarForElement(el);
     updateFormattingButtons();
     requestAnimationFrame(() => {
       node.focus();
@@ -7121,6 +7243,29 @@ What do you need help with?`;
   document.getElementById('btn-comment')?.addEventListener('click', () => performAction('add-comment'));
   document.getElementById('btn-duplicate')?.addEventListener('click', () => performAction('duplicate'));
   document.getElementById('btn-delete')?.addEventListener('click', () => performAction('delete'));
+  
+  // Integrated toolbar buttons (in text-control-bar)
+  document.getElementById('text-comment')?.addEventListener('click', () => performAction('add-comment'));
+  document.getElementById('text-duplicate')?.addEventListener('click', () => performAction('duplicate'));
+  document.getElementById('text-delete')?.addEventListener('click', () => performAction('delete'));
+  document.getElementById('text-more')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (toolbarMenu) {
+      const isHidden = toolbarMenu.classList.contains('hidden');
+      document.querySelectorAll('.toolbar-menu').forEach(m => m.classList.add('hidden'));
+      if (isHidden) {
+        // Position menu near the more button
+        const moreBtn = e.target.closest('#text-more');
+        if (moreBtn && textControlBar) {
+          const barRect = textControlBar.getBoundingClientRect();
+          const menuRect = toolbarMenu.getBoundingClientRect();
+          toolbarMenu.style.top = `${barRect.bottom + 8}px`;
+          toolbarMenu.style.left = `${barRect.right - menuRect.width}px`;
+          toolbarMenu.classList.remove('hidden');
+        }
+      }
+    }
+  });
 
   textFontFamily?.addEventListener('change', () => {
     const value = textFontFamily.value;
@@ -9755,12 +9900,14 @@ What do you need help with?`;
       renderAll();
       saveState();
       
-      // Auto-save to recent work for AI-generated presentations
-      setTimeout(() => {
-        if (window.saveToRecentWork) {
-          window.saveToRecentWork();
-        }
-      }, 500);
+      // Auto-save to recent work for AI-generated presentations (only if not already saved)
+      if (!hasSavedToRecentWork) {
+        setTimeout(() => {
+          if (window.saveToRecentWork) {
+            window.saveToRecentWork();
+          }
+        }, 500);
+      }
     } finally {
       // Reset flag after a short delay to allow for async operations
       setTimeout(() => {
@@ -10628,10 +10775,6 @@ What do you need help with?`;
       }
       normalizeState(state);
       renderAll();
-      // Auto-save to recent work for new presentations
-      if (isNewPresentation) {
-        setTimeout(() => saveToRecentWork(), 500);
-      }
     } else if (themeId === 'aramco') {
       if (isNewPresentation) {
         // Aramco theme: create Aramco template slides
@@ -10645,10 +10788,6 @@ What do you need help with?`;
       }
       normalizeState(state);
       renderAll();
-      // Auto-save to recent work for new presentations
-      if (isNewPresentation) {
-        setTimeout(() => saveToRecentWork(), 500);
-      }
     } else if (themeId === 'dark-aramco') {
       if (isNewPresentation) {
         // Dark Aramco theme: create dark variant template slides
@@ -10662,10 +10801,6 @@ What do you need help with?`;
       }
       normalizeState(state);
       renderAll();
-      // Auto-save to recent work for new presentations
-      if (isNewPresentation) {
-        setTimeout(() => saveToRecentWork(), 500);
-      }
     } else if (themeId === 'blue-aramco') {
       if (isNewPresentation) {
         // Blue Aramco theme: create blue variant template slides
@@ -10679,10 +10814,6 @@ What do you need help with?`;
       }
       normalizeState(state);
       renderAll();
-      // Auto-save to recent work for new presentations
-      if (isNewPresentation) {
-        setTimeout(() => saveToRecentWork(), 500);
-      }
     } else if (isNewPresentation) {
       // Fallback: create blank slide
       state.slides = [defaultSlide()];
@@ -10830,14 +10961,28 @@ What do you need help with?`;
   
   // Save presentation to recent work
   async function saveToRecentWork() {
-    if (!AccountStorage) return;
+    // Prevent duplicate saves - set flag immediately to prevent race conditions
+    if (hasSavedToRecentWork) {
+      return;
+    }
+    
+    // Set flag immediately to prevent concurrent calls
+    hasSavedToRecentWork = true;
+    
+    if (!AccountStorage) {
+      hasSavedToRecentWork = false; // Reset on error
+      return;
+    }
     
     const account = AccountStorage.getCurrentAccount();
-    if (!account) return;
+    if (!account) {
+      hasSavedToRecentWork = false; // Reset on error
+      return;
+    }
     
-    // Get presentation ID from URL or generate one
+    // Get presentation ID from URL or state
     const urlParams = new URLSearchParams(window.location.search);
-    let presentationId = urlParams.get('presentation');
+    let presentationId = urlParams.get('presentation') || state.presentationId;
     
     if (!presentationId) {
       // Generate a new ID for this presentation
@@ -10846,10 +10991,24 @@ What do you need help with?`;
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('presentation', presentationId);
       window.history.replaceState({}, '', newUrl);
+      // Also update state
+      state.presentationId = presentationId;
     }
     
-    // Check if this presentation already exists in recent work
-    const existingIndex = account.recentWork?.findIndex(item => item.id === presentationId);
+    // Double-check: if this presentation already exists in recent work, update it instead of adding duplicate
+    AccountStorage.updateCurrentAccount((acc) => {
+      if (!acc.recentWork) {
+        acc.recentWork = [];
+      }
+      
+      // Check if this presentation already exists
+      const existingIndex = acc.recentWork.findIndex(item => item.id === presentationId);
+      
+      // If it exists, remove it first (we'll add updated version at the beginning)
+      if (existingIndex >= 0) {
+        acc.recentWork.splice(existingIndex, 1);
+      }
+    });
     
     // Generate thumbnail
     const thumbnail = await generateThumbnail();
@@ -10866,16 +11025,14 @@ What do you need help with?`;
       slideCount: state.slides?.length || 0
     };
     
-    // Update account with new entry
+    // Update account with new entry (ensuring no duplicates)
     AccountStorage.updateCurrentAccount((acc) => {
       if (!acc.recentWork) {
         acc.recentWork = [];
       }
       
-      // Remove existing entry if it exists
-      if (existingIndex >= 0) {
-        acc.recentWork.splice(existingIndex, 1);
-      }
+      // Final check: remove any existing entry with this ID (in case of race condition)
+      acc.recentWork = acc.recentWork.filter(item => item.id !== presentationId);
       
       // Add new entry at the beginning (most recent first)
       acc.recentWork.unshift(recentEntry);
@@ -10892,30 +11049,149 @@ What do you need help with?`;
   
   // Auto-save to recent work when presentation is created or first rendered
   let hasSavedToRecentWork = false;
+  let autoSaveScheduled = false; // Prevent multiple calls to autoSaveToRecentWork
   
   // Save to recent work after initial render
   function autoSaveToRecentWork() {
-    if (hasSavedToRecentWork) return;
+    // Prevent multiple calls
+    if (autoSaveScheduled || hasSavedToRecentWork) return;
+    autoSaveScheduled = true;
     
-    // Only save if this is a new presentation (has presentation ID or is blank presentation)
+    // Only save if this is a new presentation (not loaded from storage)
     const urlParams = new URLSearchParams(window.location.search);
     const presentationId = urlParams.get('presentation');
+    const isNewParam = urlParams.get('new') === 'true';
     const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
     
-    if (presentationId || isBlankPresentation || isNewPresentation) {
+    // A presentation is "new" if:
+    // 1. It has ?new=true parameter
+    // 2. It's on blank-presentation.html page
+    // 3. It has a presentation ID and wasn't loaded from storage (has default title and empty slides)
+    const hasDefaultTitle = !state.title || state.title === 'Untitled presentation';
+    const isEmptyPresentation = !state.slides || state.slides.length === 0 || 
+                                (state.slides.length === 1 && 
+                                 state.slides[0].elements && 
+                                 state.slides[0].elements.length === 0);
+    const looksLikeNew = hasDefaultTitle && isEmptyPresentation;
+    
+    const isNew = isNewParam || isBlankPresentation || (presentationId && looksLikeNew);
+    
+    if (isNew) {
       // Wait a bit for the slide to render, then save
+      // Use longer delay to ensure theme is selected first (if theme selection happens)
       setTimeout(() => {
-        saveToRecentWork().then(() => {
-          hasSavedToRecentWork = true;
-        }).catch(err => {
-          console.warn('Failed to save to recent work:', err);
-        });
-      }, 500);
+        if (!hasSavedToRecentWork && window.saveToRecentWork) {
+          window.saveToRecentWork().then(() => {
+            hasSavedToRecentWork = true;
+            autoSaveScheduled = false;
+          }).catch(err => {
+            console.warn('Failed to save to recent work:', err);
+            hasSavedToRecentWork = false; // Reset on error to allow retry
+            autoSaveScheduled = false;
+          });
+        } else {
+          autoSaveScheduled = false; // Reset if already saved
+        }
+      }, 1500);
+    } else {
+      autoSaveScheduled = false; // Reset if not a new presentation
     }
   }
   
   // Expose saveToRecentWork globally
   window.saveToRecentWork = saveToRecentWork;
+
+  // Back button handler
+  const backBtn = document.getElementById('back-btn');
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      window.location.href = './home.html';
+    });
+  }
+
+  // Presentation Name Modal
+  function showPresentationNameModal() {
+    const modal = document.getElementById('presentation-name-modal');
+    const input = document.getElementById('presentation-name-input');
+    if (!modal || !input) return;
+    
+    modal.classList.remove('hidden');
+    input.value = state.title || 'Untitled presentation';
+    input.focus();
+    input.select();
+  }
+
+  function hidePresentationNameModal() {
+    const modal = document.getElementById('presentation-name-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+    }
+  }
+
+  function setupPresentationNameModal() {
+    const modal = document.getElementById('presentation-name-modal');
+    const input = document.getElementById('presentation-name-input');
+    const submitBtn = document.getElementById('presentation-name-submit');
+    const cancelBtn = document.getElementById('presentation-name-cancel');
+    
+    if (!modal || !input || !submitBtn || !cancelBtn) return;
+
+    // Submit handler
+    submitBtn.addEventListener('click', () => {
+      const newName = input.value.trim();
+      if (newName) {
+        state.title = newName;
+        if (deckTitleEl) {
+          if (deckTitleEl.tagName === 'SPAN' || deckTitleEl.tagName === 'DIV') {
+            deckTitleEl.textContent = newName;
+          } else {
+            deckTitleEl.value = newName;
+          }
+        }
+        saveState();
+        hidePresentationNameModal();
+      }
+    });
+
+    // Cancel handler
+    cancelBtn.addEventListener('click', () => {
+      hidePresentationNameModal();
+    });
+
+    // Enter key to submit
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        submitBtn.click();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelBtn.click();
+      }
+    });
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        hidePresentationNameModal();
+      }
+    });
+  }
+
+  // Show modal for new presentations
+  function checkAndShowNameModal() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const isNewParam = urlParams.get('new') === 'true';
+    const isBlankPresentation = window.location.pathname.includes('blank-presentation.html');
+    const templateParam = urlParams.get('template');
+    const isNewPresentation = isNewParam || isBlankPresentation || !!templateParam;
+    
+    if (isNewPresentation && (!state.title || state.title === 'Untitled presentation')) {
+      // Wait a bit for the page to render, then show modal
+      setTimeout(() => {
+        showPresentationNameModal();
+      }, 300);
+    }
+  }
 
   // Start initialization - scripts are loaded at bottom of HTML so DOM should be ready
   if (document.readyState === 'loading') {
@@ -10923,12 +11199,16 @@ What do you need help with?`;
       initializeApp();
       initializeThemesModal();
       loadSavedTheme();
+      setupPresentationNameModal();
+      checkAndShowNameModal();
       autoSaveToRecentWork();
     });
   } else {
     initializeApp();
     initializeThemesModal();
     loadSavedTheme();
+    setupPresentationNameModal();
+    checkAndShowNameModal();
     autoSaveToRecentWork();
   }
 })();

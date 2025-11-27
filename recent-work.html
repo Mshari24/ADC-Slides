@@ -119,7 +119,7 @@
               <h2>Recent work</h2>
             </div>
           </div>
-          <div class="recent-table" id="recent-list">
+          <div class="recent-grid" id="recent-list">
             <!-- Recent work entries will be loaded here -->
           </div>
         </div>
@@ -128,6 +128,7 @@
   </div>
 
   <script src="./storage.js"></script>
+  <script src="./dark-mode.js"></script>
   <script src="./notifications.js"></script>
   <script>
     (function () {
@@ -291,10 +292,16 @@
         menuItems.forEach((button) => {
           button.addEventListener('click', (event) => {
             event.stopPropagation();
-            const target = button.dataset.newHref || defaultHref;
+            let target = button.dataset.newHref || defaultHref;
             setOpen(false);
             if (target) {
-              window.location.href = target;
+              const url = new URL(target, window.location.href);
+              // Always generate a new unique presentation ID
+              const newPresentationId = `presentation-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+              url.searchParams.set('presentation', newPresentationId);
+              // Always mark as new to prevent loading old presentations
+              url.searchParams.set('new', 'true');
+              window.location.href = url.toString();
             }
           });
         });
@@ -302,7 +309,15 @@
 
       setupSidebarNewMenu();
       
-      // Load and display recent work entries
+      function showToast(msg) {
+        const el = document.createElement('div');
+        el.textContent = msg;
+        el.style.cssText = 'position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #111827; color: #fff; padding: 10px 14px; border-radius: 10px; z-index: 9999;';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1800);
+      }
+      
+      // Load and display recent work entries in grid format
       function loadRecentWork() {
         const storage = window.AccountStorage;
         if (!storage) return;
@@ -321,21 +336,18 @@
         }
         
         account.recentWork.forEach((entry) => {
-          const row = document.createElement('div');
-          row.className = 'recent-row';
-          row.style.cssText = 'display: flex; align-items: center; padding: 16px; border-bottom: 1px solid #e5e7eb; cursor: pointer; transition: background 0.2s;';
-          row.style.cssText += 'hover: background: #f9fafb;';
+          const card = document.createElement('div');
+          card.className = 'recent-card';
+          card.style.cssText = 'position: relative; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px; padding: 16px 20px;';
           
-          row.addEventListener('mouseenter', () => {
-            row.style.background = '#f9fafb';
-          });
-          row.addEventListener('mouseleave', () => {
-            row.style.background = '';
-          });
+          const cardLink = document.createElement('a');
+          cardLink.href = entry.url || '#';
+          cardLink.style.cssText = 'display: contents; text-decoration: none; color: inherit;';
           
           // Thumbnail
           const thumbnail = document.createElement('div');
-          thumbnail.style.cssText = 'width: 120px; height: 68px; margin-right: 16px; flex-shrink: 0; background: #f3f4f6; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;';
+          thumbnail.className = 'recent-thumbnail';
+          thumbnail.style.cssText = 'width: 80px; height: 45px; border-radius: 8px; overflow: hidden; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0;';
           
           if (entry.thumbnail) {
             const img = document.createElement('img');
@@ -344,59 +356,205 @@
             img.alt = entry.title;
             thumbnail.appendChild(img);
           } else {
-            thumbnail.innerHTML = '<div style="color: #9ca3af; font-size: 12px;">No preview</div>';
+            thumbnail.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>';
+            thumbnail.style.color = '#9ca3af';
           }
           
           // Content
           const content = document.createElement('div');
+          content.className = 'recent-details';
           content.style.cssText = 'flex: 1; min-width: 0;';
           
           const title = document.createElement('div');
+          title.className = 'recent-name';
           title.textContent = entry.title || 'Untitled presentation';
           title.style.cssText = 'font-weight: 600; font-size: 14px; color: #111827; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;';
           
           const date = document.createElement('div');
-          const createdDate = new Date(entry.createdAt);
-          date.textContent = createdDate.toLocaleString('en-US', { 
+          date.className = 'recent-meta';
+          const createdDate = new Date(entry.updatedAt || entry.createdAt);
+          date.textContent = createdDate.toLocaleDateString('en-US', { 
             month: 'short', 
             day: 'numeric', 
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+            year: 'numeric'
           });
           date.style.cssText = 'font-size: 12px; color: #6b7280;';
           
           content.appendChild(title);
           content.appendChild(date);
           
-          // Open button
-          const openBtn = document.createElement('button');
-          openBtn.textContent = 'Open';
-          openBtn.style.cssText = 'padding: 6px 16px; background: #00aae7; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; margin-left: 16px; transition: background 0.2s;';
-          openBtn.addEventListener('mouseenter', () => {
-            openBtn.style.background = '#0088c0';
+          // Three-dot menu button
+          const menuBtn = document.createElement('button');
+          menuBtn.className = 'recent-menu-btn';
+          menuBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>';
+          menuBtn.style.cssText = 'width: 32px; height: 32px; border: none; background: transparent; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #6b7280; transition: all 0.2s; flex-shrink: 0; position: relative; z-index: 10;';
+          menuBtn.setAttribute('aria-label', 'More options');
+          
+          // Menu dropdown
+          const menu = document.createElement('div');
+          menu.className = 'recent-menu-dropdown';
+          menu.style.cssText = 'position: absolute; top: 100%; right: 0; margin-top: 4px; background: white; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); min-width: 180px; z-index: 10000; display: none; overflow: hidden;';
+          
+          const menuItems = [
+            { label: 'Rename', action: () => {
+              const newName = prompt('Enter new name:', entry.title || 'Untitled presentation');
+              if (newName && newName.trim()) {
+                storage.updateCurrentAccount((acc) => {
+                  // Update in recent work
+                  if (acc.recentWork) {
+                    const recentItem = acc.recentWork.find(item => item.id === entry.id);
+                    if (recentItem) {
+                      recentItem.title = newName.trim();
+                      recentItem.updatedAt = new Date().toISOString();
+                    }
+                  }
+                  // Update in presentations
+                  if (acc.presentations && acc.presentations[entry.id]) {
+                    acc.presentations[entry.id].title = newName.trim();
+                  }
+                  // Update in favorites if exists
+                  if (acc.favorites) {
+                    const favoriteItem = acc.favorites.find(item => item.id === entry.id);
+                    if (favoriteItem) {
+                      favoriteItem.title = newName.trim();
+                    }
+                  }
+                });
+                showToast('Presentation renamed');
+                loadRecentWork();
+              }
+            }},
+            { label: 'Add to favorites', action: () => {
+              // Ensure we have all required data
+              const favoriteEntry = {
+                id: entry.id,
+                title: entry.title || 'Untitled presentation',
+                url: entry.url || window.location.href,
+                thumbnail: entry.thumbnail || null,
+                createdAt: entry.createdAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                theme: entry.theme || 'blank',
+                slideCount: entry.slideCount || 0
+              };
+              
+              storage.updateCurrentAccount((acc) => {
+                acc.favorites = acc.favorites || [];
+                // Remove existing entry if it exists (to avoid duplicates)
+                acc.favorites = acc.favorites.filter(f => f.id !== entry.id);
+                // Add new entry at the beginning
+                acc.favorites.unshift(favoriteEntry);
+                // Limit to 100 favorites
+                if (acc.favorites.length > 100) {
+                  acc.favorites = acc.favorites.slice(0, 100);
+                }
+              });
+              
+              showToast('Added to favorites');
+              loadRecentWork();
+              
+              // Dispatch event with a delay to ensure storage is updated
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('favorites-updated', { 
+                  detail: { presentationId: entry.id, action: 'added' } 
+                }));
+              }, 100);
+            }},
+            { label: 'Delete', action: () => {
+              if (confirm('Are you sure you want to delete this presentation?')) {
+                storage.updateCurrentAccount((acc) => {
+                  if (acc.presentations && acc.presentations[entry.id]) {
+                    delete acc.presentations[entry.id];
+                  }
+                  if (acc.recentWork) {
+                    acc.recentWork = acc.recentWork.filter(item => item.id !== entry.id);
+                  }
+                  if (acc.favorites) {
+                    acc.favorites = acc.favorites.filter(item => item.id !== entry.id);
+                  }
+                });
+                showToast('Presentation deleted');
+                loadRecentWork();
+              }
+            }}
+          ];
+          
+          menuItems.forEach((item, index) => {
+            const menuItem = document.createElement('button');
+            menuItem.textContent = item.label;
+            menuItem.style.cssText = 'width: 100%; padding: 10px 16px; text-align: left; border: none; background: transparent; cursor: pointer; font-size: 14px; color: #111827; transition: background 0.2s;';
+            // Make Delete red (last item)
+            if (index === menuItems.length - 1) {
+              menuItem.style.color = '#dc2626';
+            }
+            menuItem.addEventListener('mouseenter', () => {
+              menuItem.style.background = '#f9fafb';
+            });
+            menuItem.addEventListener('mouseleave', () => {
+              menuItem.style.background = 'transparent';
+            });
+            menuItem.addEventListener('click', (e) => {
+              e.stopPropagation();
+              item.action();
+              menu.style.display = 'none';
+              card.style.zIndex = '1';
+            });
+            menu.appendChild(menuItem);
           });
-          openBtn.addEventListener('mouseleave', () => {
-            openBtn.style.background = '#00aae7';
-          });
-          openBtn.addEventListener('click', (e) => {
+          
+          menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            e.preventDefault();
+            const isOpen = menu.style.display === 'block';
+            // Close all other menus and reset their card z-index
+            document.querySelectorAll('.recent-menu-dropdown').forEach(m => {
+              m.style.display = 'none';
+              const parentCard = m.closest('.recent-card');
+              if (parentCard) {
+                parentCard.style.zIndex = '1';
+              }
+            });
+            if (!isOpen) {
+              menu.style.display = 'block';
+              // Raise this card's z-index so menu appears above other cards
+              card.style.zIndex = '10001';
+            } else {
+              menu.style.display = 'none';
+              card.style.zIndex = '1';
+            }
+          });
+          
+          cardLink.appendChild(thumbnail);
+          cardLink.appendChild(content);
+          card.appendChild(cardLink);
+          card.appendChild(menuBtn);
+          card.appendChild(menu);
+          
+          // Handle card click (but not menu button)
+          card.addEventListener('click', (e) => {
+            if (e.target.closest('.recent-menu-btn') || e.target.closest('.recent-menu-dropdown')) {
+              e.preventDefault();
+              return;
+            }
+            // Navigate to presentation
             if (entry.url) {
               window.location.href = entry.url;
             }
           });
           
-          row.appendChild(thumbnail);
-          row.appendChild(content);
-          row.appendChild(openBtn);
-          
-          row.addEventListener('click', () => {
-            if (entry.url) {
-              window.location.href = entry.url;
-            }
-          });
-          
-          recentList.appendChild(row);
+          recentList.appendChild(card);
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+          if (!e.target.closest('.recent-menu-btn') && !e.target.closest('.recent-menu-dropdown')) {
+            document.querySelectorAll('.recent-menu-dropdown').forEach(m => {
+              m.style.display = 'none';
+              const parentCard = m.closest('.recent-card');
+              if (parentCard) {
+                parentCard.style.zIndex = '1';
+              }
+            });
+          }
         });
       }
       
