@@ -410,6 +410,80 @@
           </div>
           <span class="sidebar-label">Tools</span>
         </div>
+        <div id="tools-panel" class="sidebar-panel tools-panel hidden">
+          <div class="panel-view panel-view-options">
+            <div class="tools-view-main">
+              <div class="tool-option-list">
+                <button class="text-option-btn tool-option-btn" data-tool="draw">
+                  <div class="tool-option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+                      <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+                      <path d="M2 2l7.586 7.586"></path>
+                      <circle cx="11" cy="11" r="2"></circle>
+                    </svg>
+                  </div>
+                  <span class="text-option-label">Drawing</span>
+                </button>
+                <button class="text-option-btn tool-option-btn" data-tool="shapes">
+                  <div class="tool-option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    </svg>
+                  </div>
+                  <span class="text-option-label">Shapes</span>
+                </button>
+                <button class="text-option-btn tool-option-btn" data-tool="sticky">
+                  <div class="tool-option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                  </div>
+                  <span class="text-option-label">Sticky Note</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="tools-view-shapes">
+            <div class="tools-shapes-header">
+              <button class="panel-back-btn" id="tools-shapes-back" aria-label="Back to tools options">
+                <span aria-hidden="true">‹</span> Back
+              </button>
+              <span class="panel-title">Choose Shape</span>
+            </div>
+            <div class="panel-view panel-view-options">
+              <button class="text-option-btn shape-option-btn" data-shape="square">
+                <span class="text-option-label">Square</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="rectangle">
+                <span class="text-option-label">Rectangle</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="circle">
+                <span class="text-option-label">Circle</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="triangle">
+                <span class="text-option-label">Triangle</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="diamond">
+                <span class="text-option-label">Diamond</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="oval">
+                <span class="text-option-label">Oval</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="star">
+                <span class="text-option-label">Star</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="pentagon">
+                <span class="text-option-label">Pentagon</span>
+              </button>
+              <button class="text-option-btn shape-option-btn" data-shape="hexagon">
+                <span class="text-option-label">Hexagon</span>
+              </button>
+            </div>
+          </div>
+        </div>
         <!-- Drawing Toolbar (Left Side - Next to Tools) -->
         <div id="drawing-toolbar" class="sidebar-panel drawing-toolbar hidden">
           <button class="drawing-toolbar-close" id="drawing-toolbar-close" title="Close">
@@ -505,215 +579,6 @@
                 <line x1="12" y1="22.08" x2="12" y2="12"></line>
               </svg>
             </button>
-          </div>
-        </div>
-        <div id="tools-panel" class="sidebar-panel tools-panel hidden">
-          <div class="panel-view panel-view-options">
-            <button class="text-option-btn" data-tool="draw">
-              <span class="text-option-label">Draw</span>
-            </button>
-            <button class="text-option-btn" data-tool="shapes">
-              <span class="text-option-label">Shapes</span>
-            </button>
-            <button class="text-option-btn" data-tool="line">
-              <span class="text-option-label">Line</span>
-            </button>
-            <button class="text-option-btn" data-tool="sticky">
-              <span class="text-option-label">Sticky note</span>
-            </button>
-            <button class="text-option-btn" data-tool="textbox">
-              <span class="text-option-label">Text box</span>
-            </button>
-            <button class="text-option-btn" data-tool="table">
-              <span class="text-option-label">Table</span>
-            </button>
-          </div>
-          <div class="tools-panel-body">
-            <div class="tools-view tools-view-main hidden">
-              <div class="tool-option-list">
-              </div>
-            </div>
-            <div class="tools-view tools-view-shapes hidden">
-              <div class="tools-shapes-header">
-                <button class="panel-back-btn" id="tools-shapes-back">
-                  <span aria-hidden="true">‹</span> Back
-                </button>
-                <div class="panel-header-text">
-                  <span class="panel-title">Shapes</span>
-                  <span class="panel-subtitle">Pick a geometric shape</span>
-                </div>
-              </div>
-              <div class="shape-option-grid">
-                <button class="shape-option-btn" data-shape="rectangle">
-                  <span class="shape-preview rectangle"></span>
-                  <span>Rectangle</span>
-                </button>
-                <button class="shape-option-btn" data-shape="circle">
-                  <span class="shape-preview circle"></span>
-                  <span>Circle</span>
-                </button>
-                <button class="shape-option-btn" data-shape="triangle">
-                  <span class="shape-preview triangle"></span>
-                  <span>Triangle</span>
-                </button>
-                <button class="shape-option-btn" data-shape="diamond">
-                  <span class="shape-preview diamond"></span>
-                  <span>Diamond</span>
-                </button>
-              </div>
-            </div>
-            <div class="tools-view tools-view-draw hidden">
-              <div class="tools-draw-header">
-                <button class="panel-back-btn" id="tools-draw-back">
-                  <span aria-hidden="true">‹</span> Back
-                </button>
-                <div class="panel-header-text">
-                  <span class="panel-title">Draw</span>
-                  <span class="panel-subtitle">Choose a tool</span>
-                </div>
-              </div>
-              <div class="draw-option-grid">
-                <button class="draw-option-btn" data-draw-color="#000000" data-draw-width="3" title="Black Pen">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <path d="M 8 32 L 12 28 L 28 12 L 32 8" stroke="#000000" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="8" cy="32" r="2" fill="#000000"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-color="#ef4444" data-draw-width="3" title="Red Pen">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <path d="M 8 32 L 12 28 L 28 12 L 32 8" stroke="#ef4444" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="8" cy="32" r="2" fill="#ef4444"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-color="#3b82f6" data-draw-width="3" title="Blue Pen">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <path d="M 8 32 L 12 28 L 28 12 L 32 8" stroke="#3b82f6" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="8" cy="32" r="2" fill="#3b82f6"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-color="#fbbf24" data-draw-width="3" title="Yellow Pen">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <path d="M 8 32 L 12 28 L 28 12 L 32 8" stroke="#fbbf24" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="8" cy="32" r="2" fill="#fbbf24"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-color="#ec4899" data-draw-width="3" title="Pink Pen">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <path d="M 8 32 L 12 28 L 28 12 L 32 8" stroke="#ec4899" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="8" cy="32" r="2" fill="#ec4899"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-mode="eraser" title="Eraser">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <rect x="8" y="12" width="24" height="20" rx="2" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2"/>
-                      <line x1="12" y1="16" x2="28" y2="28" stroke="#9ca3af" stroke-width="1.5"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-width="1" title="Thin">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <line x1="8" y1="20" x2="32" y2="20" stroke="#000000" stroke-width="1" stroke-linecap="round"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-width="3" title="Medium">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <line x1="8" y1="20" x2="32" y2="20" stroke="#000000" stroke-width="3" stroke-linecap="round"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="draw-option-btn" data-draw-width="6" title="Thick">
-                  <span class="draw-preview">
-                    <svg viewBox="0 0 40 40" width="40" height="40">
-                      <line x1="8" y1="20" x2="32" y2="20" stroke="#000000" stroke-width="6" stroke-linecap="round"/>
-                    </svg>
-                  </span>
-                </button>
-              </div>
-            </div>
-            <div class="tools-view tools-view-lines hidden">
-              <div class="tools-lines-header">
-                <button class="panel-back-btn" id="tools-lines-back">
-                  <span aria-hidden="true">‹</span> Back
-                </button>
-                <div class="panel-header-text">
-                  <span class="panel-title">Lines</span>
-                  <span class="panel-subtitle">Choose a line type</span>
-                </div>
-              </div>
-              <div class="line-option-list">
-                <button class="line-option-btn" data-line-type="straight">
-                  <span class="line-preview">
-                    <svg viewBox="0 0 60 40" width="60" height="40">
-                      <circle cx="5" cy="35" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                      <line x1="5" y1="35" x2="55" y2="5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                      <circle cx="55" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="line-option-btn" data-line-type="wavy">
-                  <span class="line-preview">
-                    <svg viewBox="0 0 60 40" width="60" height="40">
-                      <circle cx="5" cy="20" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                      <path d="M 5 20 Q 20 5, 30 20 T 55 20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-                      <circle cx="55" cy="20" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>
-                  </span>
-                </button>
-                <button class="line-option-btn" data-line-type="semicircular">
-                  <span class="line-preview">
-                    <svg viewBox="0 0 60 40" width="60" height="40">
-                      <circle cx="5" cy="35" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                      <path d="M 5 35 Q 30 5, 55 35" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-                      <circle cx="30" cy="5" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                      <circle cx="55" cy="35" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/>
-                    </svg>
-                  </span>
-                </button>
-              </div>
-            </div>
-            <div class="tools-view tools-view-tables hidden">
-              <div class="tools-table-header">
-                <button class="panel-back-btn" id="tools-tables-back">
-                  <span aria-hidden="true">‹</span> Back
-                </button>
-                <div class="panel-header-text">
-                  <span class="panel-title">Tables</span>
-                  <span class="panel-subtitle">Choose a size</span>
-                </div>
-              </div>
-              <div class="table-option-grid">
-                <button class="table-option-btn" data-rows="2" data-cols="2">
-                  <span class="table-preview" data-pattern="2x2"></span>
-                  <span>2 x 2</span>
-                </button>
-                <button class="table-option-btn" data-rows="3" data-cols="3">
-                  <span class="table-preview" data-pattern="3x3"></span>
-                  <span>3 x 3</span>
-                </button>
-                <button class="table-option-btn" data-rows="4" data-cols="4">
-                  <span class="table-preview" data-pattern="4x4"></span>
-                  <span>4 x 4</span>
-                </button>
-                <button class="table-option-btn" data-rows="5" data-cols="4">
-                  <span class="table-preview" data-pattern="5x4"></span>
-                  <span>5 x 4</span>
-                </button>
-              </div>
-            </div>
           </div>
         </div>
         <div class="sidebar-item" title="Charts">
@@ -814,27 +679,27 @@
             </button>
             <div class="chart-editor-content">
               <div class="chart-editor-section">
-                <label class="chart-editor-label">Width</label>
-                <input type="number" id="chart-width" class="chart-editor-input" min="100" max="800" value="400" />
-              </div>
-              <div class="chart-editor-section">
-                <label class="chart-editor-label">Height</label>
-                <input type="number" id="chart-height" class="chart-editor-input" min="100" max="600" value="300" />
-              </div>
-              <div class="chart-editor-section">
                 <label class="chart-editor-label">Number of Data Points</label>
                 <input type="number" id="chart-data-count" class="chart-editor-input" min="2" max="10" value="4" />
               </div>
-              <div class="chart-editor-section">
-                <label class="chart-editor-label">Data Values</label>
-                <div id="chart-data-values" class="chart-data-values">
-                  <!-- Data inputs will be generated here -->
+              <div class="chart-editor-horizontal-group">
+                <div class="chart-editor-section chart-editor-column">
+                  <label class="chart-editor-label">Data Labels</label>
+                  <div id="chart-data-labels" class="chart-data-column">
+                    <!-- Data label inputs will be generated here -->
+                  </div>
                 </div>
-              </div>
-              <div class="chart-editor-section">
-                <label class="chart-editor-label">Colors</label>
-                <div id="chart-colors" class="chart-colors">
-                  <!-- Color inputs will be generated here -->
+                <div class="chart-editor-section chart-editor-column">
+                  <label class="chart-editor-label">Data Values</label>
+                  <div id="chart-data-values" class="chart-data-column">
+                    <!-- Data inputs will be generated here -->
+                  </div>
+                </div>
+                <div class="chart-editor-section chart-editor-column">
+                  <label class="chart-editor-label">Colors</label>
+                  <div id="chart-colors" class="chart-colors-column">
+                    <!-- Color inputs will be generated here -->
+                  </div>
                 </div>
               </div>
               <button class="chart-editor-apply" id="chart-editor-apply">Insert Chart</button>

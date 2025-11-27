@@ -197,6 +197,283 @@
   }, true); // Use capture phase to ensure it fires first
 
   // Unified drag handler for images, charts, PDFs, and icons
+  // Universal function to add toolbar and resize handle to any element
+  function addUniversalToolbarAndResize(el, node, options = {}) {
+    const {
+      maintainAspectRatio = false,
+      minWidth = 50,
+      minHeight = 50,
+      maxWidth = 1280,
+      maxHeight = 720,
+      onResize = null
+    } = options;
+    
+    // Create resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'element-resize-handle';
+    resizeHandle.style.position = 'absolute';
+    resizeHandle.style.width = '12px';
+    resizeHandle.style.height = '12px';
+    resizeHandle.style.background = '#3b82f6';
+    resizeHandle.style.border = '2px solid #ffffff';
+    resizeHandle.style.borderRadius = '50%';
+    resizeHandle.style.cursor = 'nwse-resize';
+    resizeHandle.style.display = 'none';
+    resizeHandle.style.zIndex = '1000';
+    resizeHandle.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
+    
+    // Create universal toolbar
+    const toolbar = document.createElement('div');
+    toolbar.className = 'element-toolbar';
+    toolbar.style.position = 'absolute';
+    toolbar.style.display = 'none';
+    toolbar.style.zIndex = '1001';
+    toolbar.style.background = '#ffffff';
+    toolbar.style.border = '1px solid #e5e7eb';
+    toolbar.style.borderRadius = '8px';
+    toolbar.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+    toolbar.style.padding = '4px';
+    toolbar.style.gap = '4px';
+    toolbar.style.display = 'flex';
+    toolbar.style.flexDirection = 'row';
+    
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'element-toolbar-btn';
+    deleteBtn.title = 'Delete';
+    deleteBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+        <polyline points="3 6 5 6 21 6"></polyline>
+        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+      </svg>
+    `;
+    deleteBtn.style.background = 'transparent';
+    deleteBtn.style.border = 'none';
+    deleteBtn.style.cursor = 'pointer';
+    deleteBtn.style.padding = '6px';
+    deleteBtn.style.borderRadius = '4px';
+    deleteBtn.style.display = 'flex';
+    deleteBtn.style.alignItems = 'center';
+    deleteBtn.style.justifyContent = 'center';
+    deleteBtn.style.color = '#ef4444';
+    deleteBtn.addEventListener('mouseenter', () => {
+      deleteBtn.style.background = '#fee2e2';
+    });
+    deleteBtn.addEventListener('mouseleave', () => {
+      deleteBtn.style.background = 'transparent';
+    });
+    
+    // Duplicate button
+    const duplicateBtn = document.createElement('button');
+    duplicateBtn.className = 'element-toolbar-btn';
+    duplicateBtn.title = 'Duplicate';
+    duplicateBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+    `;
+    duplicateBtn.style.background = 'transparent';
+    duplicateBtn.style.border = 'none';
+    duplicateBtn.style.cursor = 'pointer';
+    duplicateBtn.style.padding = '6px';
+    duplicateBtn.style.borderRadius = '4px';
+    duplicateBtn.style.display = 'flex';
+    duplicateBtn.style.alignItems = 'center';
+    duplicateBtn.style.justifyContent = 'center';
+    duplicateBtn.style.color = '#3b82f6';
+    duplicateBtn.addEventListener('mouseenter', () => {
+      duplicateBtn.style.background = '#dbeafe';
+    });
+    duplicateBtn.addEventListener('mouseleave', () => {
+      duplicateBtn.style.background = 'transparent';
+    });
+    
+    toolbar.appendChild(deleteBtn);
+    toolbar.appendChild(duplicateBtn);
+    
+    // Update resize handle position
+    const updateResizeHandle = () => {
+      resizeHandle.style.right = '-6px';
+      resizeHandle.style.bottom = '-6px';
+    };
+    
+    // Update toolbar position
+    const updateToolbarPosition = () => {
+      const rect = node.getBoundingClientRect();
+      const stageRect = stageEl.getBoundingClientRect();
+      toolbar.style.left = (rect.left - stageRect.left + rect.width / 2 - toolbar.offsetWidth / 2) + 'px';
+      toolbar.style.top = (rect.top - stageRect.top - toolbar.offsetHeight - 8) + 'px';
+    };
+    
+    // Selection handler
+    const handleSelection = (e) => {
+      if (e.button !== 0 || el.locked) return;
+      if (e.target === resizeHandle || e.target.closest('.element-resize-handle')) return;
+      if (e.target === deleteBtn || e.target.closest('.element-toolbar-btn')) return;
+      
+      // Don't prevent drag - just handle selection
+      deselectAllElements();
+      node.classList.add('selected');
+      resizeHandle.style.display = 'block';
+      toolbar.style.display = 'flex';
+      updateResizeHandle();
+      updateToolbarPosition();
+      updateToolbarFromSelection();
+      hideContextToolbar();
+      // Don't stop propagation - let drag handler work
+    };
+    
+    // Delete button handler
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const slide = state.slides[state.currentSlideIndex];
+      const index = slide.elements.findIndex(e => e.id === el.id);
+      if (index >= 0) {
+        slide.elements.splice(index, 1);
+        saveState();
+        renderAll();
+        hideContextToolbar();
+      }
+    });
+    
+    // Duplicate button handler
+    duplicateBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const slide = state.slides[state.currentSlideIndex];
+      const duplicated = JSON.parse(JSON.stringify(el));
+      duplicated.id = uid();
+      duplicated.x = el.x + 20;
+      duplicated.y = el.y + 20;
+      slide.elements.push(duplicated);
+      saveState();
+      renderAll();
+      // Select the duplicated element
+      setTimeout(() => {
+        const dupNode = stageEl.querySelector(`.el[data-id="${duplicated.id}"]`);
+        if (dupNode) {
+          deselectAllElements();
+          dupNode.classList.add('selected');
+          const dupResizeHandle = dupNode.querySelector('.element-resize-handle');
+          const dupToolbar = dupNode.querySelector('.element-toolbar');
+          if (dupResizeHandle) dupResizeHandle.style.display = 'block';
+          if (dupToolbar) {
+            dupToolbar.style.display = 'flex';
+            const updateDupToolbar = () => {
+              const rect = dupNode.getBoundingClientRect();
+              const stageRect = stageEl.getBoundingClientRect();
+              dupToolbar.style.left = (rect.left - stageRect.left + rect.width / 2 - dupToolbar.offsetWidth / 2) + 'px';
+              dupToolbar.style.top = (rect.top - stageRect.top - dupToolbar.offsetHeight - 8) + 'px';
+            };
+            updateDupToolbar();
+          }
+          hideContextToolbar();
+        }
+      }, 50);
+    });
+    
+    // Resize functionality
+    let isResizing = false;
+    let resizeStartX = 0;
+    let resizeStartY = 0;
+    let resizeStartWidth = 0;
+    let resizeStartHeight = 0;
+    let resizeStartAspectRatio = 0;
+    
+    resizeHandle.addEventListener('mousedown', (e) => {
+      if (e.button !== 0 || el.locked) return;
+      e.stopPropagation();
+      isResizing = true;
+      resizeStartX = e.clientX;
+      resizeStartY = e.clientY;
+      resizeStartWidth = el.width || 100;
+      resizeStartHeight = el.height || 100;
+      resizeStartAspectRatio = resizeStartWidth / resizeStartHeight;
+      document.body.style.cursor = 'nwse-resize';
+    });
+    
+    const handleResizeMove = (e) => {
+      if (!isResizing) return;
+      const deltaX = e.clientX - resizeStartX;
+      const deltaY = e.clientY - resizeStartY;
+      
+      let newWidth = Math.max(minWidth, Math.min(maxWidth, resizeStartWidth + deltaX));
+      let newHeight = Math.max(minHeight, Math.min(maxHeight, resizeStartHeight + deltaY));
+      
+      if (maintainAspectRatio) {
+        const aspectRatio = resizeStartAspectRatio;
+        const widthBasedHeight = newWidth / aspectRatio;
+        const heightBasedWidth = newHeight * aspectRatio;
+        
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          newHeight = widthBasedHeight;
+        } else {
+          newWidth = heightBasedWidth;
+        }
+        
+        newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+        newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
+      }
+      
+      el.width = newWidth;
+      el.height = newHeight;
+      node.style.width = newWidth + 'px';
+      node.style.height = newHeight + 'px';
+      
+      // Constrain position to stage bounds
+      const maxX = 1280 - newWidth;
+      const maxY = 720 - newHeight;
+      if (el.x > maxX) el.x = maxX;
+      if (el.y > maxY) el.y = maxY;
+      if (el.x < 0) el.x = 0;
+      if (el.y < 0) el.y = 0;
+      node.style.left = el.x + 'px';
+      node.style.top = el.y + 'px';
+      
+      updateResizeHandle();
+      updateToolbarPosition();
+      
+      // Call custom resize handler if provided
+      if (onResize) {
+        onResize(el, node, newWidth, newHeight);
+      }
+    };
+    
+    const handleResizeUp = () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+        saveState();
+        renderAll();
+      }
+    };
+    
+    window.addEventListener('mousemove', handleResizeMove);
+    window.addEventListener('mouseup', handleResizeUp);
+    
+    // Hide toolbar and resize handle when clicking elsewhere
+    document.addEventListener('click', (e) => {
+      if (!node.contains(e.target) && e.target !== node) {
+        if (!e.target.closest('.element-toolbar') && !e.target.closest('.element-resize-handle')) {
+          node.classList.remove('selected');
+          resizeHandle.style.display = 'none';
+          toolbar.style.display = 'none';
+        }
+      }
+    });
+    
+    // Append to node
+    node.appendChild(resizeHandle);
+    node.appendChild(toolbar);
+    
+    // Return handlers for custom integration
+    return {
+      handleSelection,
+      updateResizeHandle,
+      updateToolbarPosition
+    };
+  }
+
   function setupUnifiedDragHandler(el, node, defaultWidth, defaultHeight) {
     function startDrag(e) {
       if (e.button !== 0 || el.locked) return;
@@ -1653,6 +1930,18 @@
         img.draggable = false;
         node.appendChild(img);
         
+        // Add universal toolbar and resize handle
+        const handlers = addUniversalToolbarAndResize(el, node, {
+          maintainAspectRatio: true, // Images should maintain aspect ratio
+          minWidth: 50,
+          minHeight: 50,
+          maxWidth: 1280,
+          maxHeight: 720
+        });
+        
+        // Add selection handler (runs before drag handler)
+        node.addEventListener('mousedown', handlers.handleSelection, true); // Use capture phase
+        
         // Drag functionality - using unified drag handler
         setupUnifiedDragHandler(el, node, 300, 200);
         
@@ -1702,7 +1991,19 @@
         node.appendChild(pdfIcon);
         node.appendChild(fileName);
         
-        // Click to open PDF
+        // Add universal toolbar and resize handle
+        const handlers = addUniversalToolbarAndResize(el, node, {
+          maintainAspectRatio: false, // PDFs can be resized freely
+          minWidth: 100,
+          minHeight: 120,
+          maxWidth: 1280,
+          maxHeight: 720
+        });
+        
+        // Add selection handler (runs before drag handler)
+        node.addEventListener('mousedown', handlers.handleSelection, true); // Use capture phase
+        
+        // Click to open PDF (double-click)
         node.addEventListener('dblclick', () => {
           if (el.src) {
             window.open(el.src, '_blank');
@@ -1729,6 +2030,34 @@
         node.style.boxSizing = 'border-box';
         node.style.cursor = el.locked ? 'default' : 'move';
         node.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
+        
+        // Add universal toolbar and resize handle (charts use same styling)
+        const chartHandlers = addUniversalToolbarAndResize(el, node, {
+          maintainAspectRatio: false, // Charts can be resized freely
+          minWidth: 200,
+          minHeight: 150,
+          maxWidth: 1280,
+          maxHeight: 720,
+          onResize: (el, node, newWidth, newHeight) => {
+            // Update chart SVG viewBox when resized
+            const svg = node.querySelector('svg');
+            if (svg) {
+              svg.setAttribute('viewBox', `0 0 ${newWidth} ${newHeight}`);
+            }
+          }
+        });
+        
+        // Get references to toolbar and buttons for chart-specific behavior
+        const chartToolbar = node.querySelector('.element-toolbar');
+        const resizeHandle = node.querySelector('.element-resize-handle');
+        
+        // Add chart-specific classes for backward compatibility
+        if (chartToolbar) {
+          chartToolbar.classList.add('chart-toolbar');
+        }
+        if (resizeHandle) {
+          resizeHandle.classList.add('chart-resize-handle');
+        }
         
         // Create SVG for chart
         const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -1914,6 +2243,45 @@
         
         node.appendChild(svg);
         
+        // Chart selection handler with chart-specific edit panel opening
+        const originalHandleSelection = chartHandlers.handleSelection;
+        const customChartSelection = (e) => {
+          // Call original handler first
+          originalHandleSelection(e);
+          
+          // Then add chart-specific behavior
+          if (node.classList.contains('selected')) {
+            // Open chart edit panel
+            const chartEditorPanel = document.getElementById('chart-editor-panel');
+            const chartTypeSelection = document.getElementById('chart-type-selection');
+            const chartsPanelTitle = document.getElementById('charts-panel-title');
+            const chartEditorApply = document.getElementById('chart-editor-apply');
+            if (chartEditorPanel && chartTypeSelection) {
+              chartTypeSelection.classList.add('hidden');
+              chartEditorPanel.classList.remove('hidden');
+              if (chartsPanelTitle) {
+                const chartNames = {
+                  'bar': 'Bar Chart',
+                  'pie': 'Pie Chart',
+                  'line': 'Line Chart',
+                  'area': 'Area Chart',
+                  'doughnut': 'Doughnut Chart',
+                  'column': 'Column Chart'
+                };
+                chartsPanelTitle.textContent = `Edit ${chartNames[el.chartType] || 'Chart'}`;
+              }
+              if (chartEditorApply) {
+                chartEditorApply.textContent = 'Update Chart';
+              }
+              initializeChartEditor(el.chartType, node);
+            }
+          }
+        };
+        
+        // Replace the default selection handler with chart-specific one
+        node.removeEventListener('mousedown', chartHandlers.handleSelection);
+        node.addEventListener('mousedown', customChartSelection);
+        
         // Drag functionality - using unified drag handler
         setupUnifiedDragHandler(el, node, 400, 300);
         
@@ -1926,6 +2294,7 @@
         node.style.top = el.y + 'px';
         node.style.width = (el.width || 100) + 'px';
         node.style.height = (el.height || 100) + 'px';
+        node.style.position = 'absolute';
         node.style.backgroundColor = el.fillColor || '#fff';
         node.style.border = `${el.strokeWidth || 1}px ${el.strokeDash === 'dashed' ? 'dashed' : el.strokeDash === 'dotted' ? 'dotted' : 'solid'} ${el.strokeColor || '#000'}`;
         
@@ -1978,14 +2347,20 @@
         node.classList.toggle('locked', !!el.locked);
         node.style.cursor = el.locked ? 'default' : 'pointer';
         
-        node.addEventListener('mousedown', (e) => {
-          if (e.button !== 0) return;
-          selectElement(node);
-          updateToolbarFromSelection();
-          showContextToolbar(node);
-          hideTextControlBar();
-          e.stopPropagation();
+        // Add universal toolbar and resize handle
+        const handlers = addUniversalToolbarAndResize(el, node, {
+          maintainAspectRatio: false, // Shapes can be resized freely
+          minWidth: 20,
+          minHeight: 20,
+          maxWidth: 1280,
+          maxHeight: 720
         });
+        
+        // Add selection handler (runs before drag handler)
+        node.addEventListener('mousedown', handlers.handleSelection, true); // Use capture phase
+        
+        // Drag functionality - using unified drag handler
+        setupUnifiedDragHandler(el, node, 100, 100);
         
         stageEl.appendChild(node);
       } else if (el.type === 'table') {
@@ -1998,10 +2373,11 @@
         node.style.top = el.y + 'px';
         node.style.width = (el.width || cols * 90) + 'px';
         node.style.height = (el.height || rows * 56) + 'px';
+        node.style.position = 'absolute';
         node.style.display = 'grid';
         node.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
         node.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-        node.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+        node.style.border = `1px solid ${el.borderColor || '#e5e7eb'}`;
         node.style.background = el.backgroundColor || '#ffffff';
         node.classList.toggle('locked', !!el.locked);
         node.style.cursor = el.locked ? 'default' : 'pointer';
@@ -2009,20 +2385,33 @@
         for (let r = 0; r < rows * cols; r++) {
           const cell = document.createElement('div');
           cell.className = 'table-cell';
-          cell.style.border = `1px solid ${el.borderColor || '#1f2937'}`;
+          cell.style.border = `1px solid ${el.borderColor || '#e5e7eb'}`;
           cell.style.background = el.backgroundColor || '#ffffff';
           node.appendChild(cell);
         }
 
-        node.addEventListener('mousedown', (e) => {
-          if (e.button !== 0) return;
-          document.querySelectorAll('.el').forEach(elm => elm.classList.remove('selected'));
-          node.classList.add('selected');
-          updateToolbarFromSelection();
-          showContextToolbar(node);
-          hideTextControlBar();
-          e.stopPropagation();
+        // Add universal toolbar and resize handle
+        const handlers = addUniversalToolbarAndResize(el, node, {
+          maintainAspectRatio: false, // Tables can be resized freely
+          minWidth: 60,
+          minHeight: 40,
+          maxWidth: 1280,
+          maxHeight: 720,
+          onResize: (element, tableNode, newWidth, newHeight) => {
+            // Cells automatically scale because they use 1fr in grid
+            // The element dimensions are already updated by addUniversalToolbarAndResize
+            // Just save the state
+            saveState();
+          }
         });
+        
+        // Add selection handler (runs before drag handler)
+        node.addEventListener('mousedown', handlers.handleSelection, true); // Use capture phase
+        
+        // Drag functionality - using unified drag handler
+        const defaultWidth = cols * 90;
+        const defaultHeight = rows * 56;
+        setupUnifiedDragHandler(el, node, defaultWidth, defaultHeight);
 
         stageEl.appendChild(node);
       } else if (el.type === 'line') {
@@ -4858,7 +5247,7 @@ What do you need help with?`;
 
   function insertShape(shapeType) {
     const slide = state.slides[state.currentSlideIndex];
-    slide.elements.push({
+    const newShape = {
       id: uid(),
       type: 'shape',
       shape: shapeType,
@@ -4866,13 +5255,24 @@ What do you need help with?`;
       y: 200,
       width: 100,
       height: 100,
-      fillColor: '#ffffff',
-      strokeColor: '#000000',
+      fillColor: '#f3f4f6', // Light gray fill
+      strokeColor: '#d1d5db', // Minimal gray stroke
       strokeWidth: 1,
       strokeDash: 'solid'
-    });
+    };
+    slide.elements.push(newShape);
     saveState();
     renderAll();
+    
+    // Select the newly created shape
+    setTimeout(() => {
+      const shapeElement = stageEl.querySelector(`.el.shape[data-id="${newShape.id}"]`);
+      if (shapeElement) {
+        selectElement(shapeElement);
+        updateToolbarFromSelection();
+        showContextToolbar(shapeElement);
+      }
+    }, 50);
   }
 
   function getUsername() {
@@ -5071,18 +5471,25 @@ What do you need help with?`;
     initializeChartEditor(chartType);
   }
 
-  function initializeChartEditor(chartType) {
-    const chartWidth = document.getElementById('chart-width');
-    const chartHeight = document.getElementById('chart-height');
+  function initializeChartEditor(chartType, chartElement = null) {
     const chartDataCount = document.getElementById('chart-data-count');
-    const chartDataValues = document.getElementById('chart-data-values');
-    const chartColors = document.getElementById('chart-colors');
     
-    // Set default dimensions
-    if (chartWidth) chartWidth.value = 400;
-    if (chartHeight) chartHeight.value = 300;
+    // If editing existing chart, populate with its data
+    if (chartElement) {
+      const slide = state.slides[state.currentSlideIndex];
+      const el = slide.elements.find(e => e.id === chartElement.dataset.id);
+      if (el && el.type === 'chart') {
+        const dataCount = el.data ? el.data.length : 4;
+        if (chartDataCount) {
+          chartDataCount.value = dataCount;
+        }
+        updateChartDataInputs(chartType, dataCount, el.data);
+        updateChartColorInputs(dataCount, el.colors);
+        return;
+      }
+    }
     
-    // Set default data count
+    // Set default data count for new charts
     let defaultCount = 4;
     if (chartType === 'line' || chartType === 'area') {
       defaultCount = 6;
@@ -5106,11 +5513,16 @@ What do you need help with?`;
     updateChartColorInputs(defaultCount);
   }
 
-  function updateChartDataInputs(chartType, count) {
+  function updateChartDataInputs(chartType, count, existingData = null) {
     const chartDataValues = document.getElementById('chart-data-values');
-    if (!chartDataValues) return;
+    const chartDataLabels = document.getElementById('chart-data-labels');
     
-    chartDataValues.innerHTML = '';
+    if (chartDataValues) {
+      chartDataValues.innerHTML = '';
+    }
+    if (chartDataLabels) {
+      chartDataLabels.innerHTML = '';
+    }
     
     const defaultLabels = chartType === 'line' || chartType === 'area' 
       ? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']
@@ -5119,17 +5531,85 @@ What do you need help with?`;
     const defaultValues = [30, 45, 25, 50, 35, 40, 28, 42, 38, 33];
     
     for (let i = 0; i < count; i++) {
-      const item = document.createElement('div');
-      item.className = 'chart-data-item';
-      item.innerHTML = `
-        <input type="text" class="chart-data-label" data-index="${i}" value="${defaultLabels[i] || `Item ${i + 1}`}" placeholder="Label" />
-        <input type="number" class="chart-data-value" data-index="${i}" value="${defaultValues[i] || 30}" min="0" max="100" placeholder="Value" />
-      `;
-      chartDataValues.appendChild(item);
+      const label = existingData && existingData[i] ? existingData[i].label : (defaultLabels[i] || `Item ${i + 1}`);
+      const value = existingData && existingData[i] ? existingData[i].value : (defaultValues[i] || 30);
+      
+      // Data Labels - single input per row
+      if (chartDataLabels) {
+        const labelInput = document.createElement('input');
+        labelInput.type = 'text';
+        labelInput.className = 'chart-data-label';
+        labelInput.dataset.index = i;
+        labelInput.value = label;
+        labelInput.placeholder = 'Label';
+        labelInput.style.width = '100%';
+        labelInput.style.padding = '6px 8px';
+        labelInput.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+        labelInput.style.borderRadius = '4px';
+        labelInput.style.fontSize = '12px';
+        labelInput.style.height = '32px';
+        labelInput.style.boxSizing = 'border-box';
+        
+        // Live update for existing selected chart
+        labelInput.addEventListener('input', (e) => {
+          const selected = getSelectedElement();
+          if (selected && selected.classList.contains('chart')) {
+            const slide = state.slides[state.currentSlideIndex];
+            const el = slide.elements.find(e => e.id === selected.dataset.id);
+            if (el && el.type === 'chart' && el.data) {
+              const index = parseInt(e.target.dataset.index);
+              if (el.data[index]) {
+                el.data[index].label = e.target.value;
+                saveState();
+                renderAll();
+              }
+            }
+          }
+        });
+        
+        chartDataLabels.appendChild(labelInput);
+      }
+      
+      // Data Values - single input per row
+      if (chartDataValues) {
+        const valueInput = document.createElement('input');
+        valueInput.type = 'number';
+        valueInput.className = 'chart-data-value';
+        valueInput.dataset.index = i;
+        valueInput.value = value;
+        valueInput.min = '0';
+        valueInput.placeholder = 'Value';
+        valueInput.style.width = '100%';
+        valueInput.style.padding = '6px 8px';
+        valueInput.style.border = '1px solid rgba(148, 163, 184, 0.3)';
+        valueInput.style.borderRadius = '4px';
+        valueInput.style.fontSize = '12px';
+        valueInput.style.height = '32px';
+        valueInput.style.boxSizing = 'border-box';
+        
+        // Live update for existing selected chart
+        valueInput.addEventListener('input', (e) => {
+          const selected = getSelectedElement();
+          if (selected && selected.classList.contains('chart')) {
+            const slide = state.slides[state.currentSlideIndex];
+            const el = slide.elements.find(e => e.id === selected.dataset.id);
+            if (el && el.type === 'chart' && el.data) {
+              const index = parseInt(e.target.dataset.index);
+              if (el.data[index]) {
+                el.data[index].value = parseInt(e.target.value) || 0;
+                saveState();
+                renderAll();
+              }
+            }
+          }
+        });
+        
+        chartDataValues.appendChild(valueInput);
+      }
     }
   }
 
-  function updateChartColorInputs(count) {
+  function updateChartColorInputs(count, existingColors = null) {
     const chartColors = document.getElementById('chart-colors');
     if (!chartColors) return;
     
@@ -5138,39 +5618,54 @@ What do you need help with?`;
     const defaultColors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#a855f7', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#8b5cf6'];
     
     for (let i = 0; i < count; i++) {
-      const item = document.createElement('div');
-      item.className = 'chart-color-item';
-      const color = defaultColors[i % defaultColors.length];
-      item.innerHTML = `
-        <input type="color" class="chart-color-picker" data-index="${i}" value="${color}" />
-        <input type="text" class="chart-color-hex" data-index="${i}" value="${color}" placeholder="#000000" />
-      `;
-      chartColors.appendChild(item);
+      const color = existingColors && existingColors[i] ? existingColors[i] : (defaultColors[i % defaultColors.length]);
+      const colorPicker = document.createElement('input');
+      colorPicker.type = 'color';
+      colorPicker.className = 'chart-color-picker';
+      colorPicker.dataset.index = i;
+      colorPicker.value = color;
+      colorPicker.style.width = '100%';
+      colorPicker.style.height = '32px';
+      colorPicker.style.border = '2px solid rgba(148, 163, 184, 0.3)';
+      colorPicker.style.borderRadius = '4px';
+      colorPicker.style.cursor = 'pointer';
+      colorPicker.style.padding = '0';
+      colorPicker.style.boxSizing = 'border-box';
       
-      // Sync color picker and hex input
-      const colorPicker = item.querySelector('.chart-color-picker');
-      const colorHex = item.querySelector('.chart-color-hex');
+      // Live update for existing selected chart
       colorPicker.addEventListener('input', (e) => {
-        colorHex.value = e.target.value;
-      });
-      colorHex.addEventListener('input', (e) => {
-        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
-          colorPicker.value = e.target.value;
+        const selected = getSelectedElement();
+        if (selected && selected.classList.contains('chart')) {
+          const slide = state.slides[state.currentSlideIndex];
+          const el = slide.elements.find(e => e.id === selected.dataset.id);
+          if (el && el.type === 'chart') {
+            const index = parseInt(e.target.dataset.index);
+            if (!el.colors) el.colors = [];
+            el.colors[index] = e.target.value;
+            // Update pie/doughnut data colors
+            if (el.chartType === 'pie' || el.chartType === 'doughnut') {
+              if (el.data && el.data[index]) {
+                el.data[index].color = e.target.value;
+              }
+            }
+            saveState();
+            renderAll();
+          }
         }
       });
+      
+      chartColors.appendChild(colorPicker);
     }
   }
 
   function insertChart(chartType = 'bar', options = {}) {
     const slide = state.slides[state.currentSlideIndex];
     
-    // Get values from editor
-    const chartWidth = document.getElementById('chart-width');
-    const chartHeight = document.getElementById('chart-height');
+    // Get values from editor (width and height removed from UI, use defaults)
     const chartDataCount = document.getElementById('chart-data-count');
     
-    const width = options.width || (chartWidth ? parseInt(chartWidth.value) : 400);
-    const height = options.height || (chartHeight ? parseInt(chartHeight.value) : 300);
+    const width = options.width || 400;
+    const height = options.height || 300;
     const dataCount = options.dataCount || (chartDataCount ? parseInt(chartDataCount.value) : 4);
     
     // Collect data values
@@ -5254,7 +5749,7 @@ What do you need help with?`;
       height: rows * cellHeight,
       cellWidth,
       cellHeight,
-      borderColor: '#1f2937',
+      borderColor: '#e5e7eb', // Thin light gray border
       backgroundColor: '#ffffff'
     });
     saveState();
@@ -5324,6 +5819,12 @@ What do you need help with?`;
     node.style.borderRadius = '12px';
     node.style.clipPath = '';
     switch (shape) {
+      case 'square':
+        node.style.borderRadius = '0';
+        break;
+      case 'rectangle':
+        node.style.borderRadius = '12px';
+        break;
       case 'circle':
         node.style.borderRadius = '50%';
         break;
@@ -5334,6 +5835,21 @@ What do you need help with?`;
       case 'diamond':
         node.style.borderRadius = '0';
         node.style.clipPath = 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)';
+        break;
+      case 'oval':
+        node.style.borderRadius = '50%';
+        break;
+      case 'star':
+        node.style.borderRadius = '0';
+        node.style.clipPath = 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
+        break;
+      case 'pentagon':
+        node.style.borderRadius = '0';
+        node.style.clipPath = 'polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%)';
+        break;
+      case 'hexagon':
+        node.style.borderRadius = '0';
+        node.style.clipPath = 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
         break;
       default:
         break;
@@ -5887,12 +6403,30 @@ What do you need help with?`;
   function positionChartsPanel() {
     const chartsPanel = document.getElementById('charts-panel');
     const textSidebarItem = document.querySelector('.sidebar-item[title="Text"]');
+    const topToolbar = document.querySelector('.top-toolbar');
     
     if (!chartsPanel || !textSidebarItem) return;
     
     const sidebarRect = textSidebarItem.getBoundingClientRect();
     
-    chartsPanel.style.top = `20px`;
+    // Calculate top offset: account for top toolbar + comfortable spacing
+    let topOffset = 100; // Base offset to account for top toolbar area
+    if (topToolbar) {
+      const toolbarRect = topToolbar.getBoundingClientRect();
+      // Position panel below toolbar with 16px spacing (12-20px range as recommended)
+      topOffset = toolbarRect.bottom + 16;
+    }
+    
+    // Ensure panel doesn't go off-screen on smaller viewports
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    const panelHeight = chartsPanel.offsetHeight || 400;
+    const minBottomMargin = 20;
+    const maxTop = Math.max(16, windowHeight - panelHeight - minBottomMargin);
+    
+    // Use calculated offset but ensure it's within viewport bounds
+    const finalTop = Math.min(Math.max(16, topOffset), maxTop);
+    
+    chartsPanel.style.top = `${finalTop}px`;
     chartsPanel.style.left = `${sidebarRect.right + 12}px`;
   }
 
@@ -8876,14 +9410,29 @@ What do you need help with?`;
     const chartTypeSelection = document.getElementById('chart-type-selection');
     const chartEditorPanel = document.getElementById('chart-editor-panel');
     const chartsPanelTitle = document.getElementById('charts-panel-title');
+    const chartEditorApply = document.getElementById('chart-editor-apply');
     
     if (chartTypeSelection) chartTypeSelection.classList.remove('hidden');
     if (chartEditorPanel) chartEditorPanel.classList.add('hidden');
     if (chartsPanelTitle) chartsPanelTitle.textContent = 'Choose Chart Type';
+    if (chartEditorApply) chartEditorApply.textContent = 'Insert Chart';
   });
 
   chartEditorApply?.addEventListener('click', () => {
-    if (selectedChartType) {
+    // Check if we're editing an existing chart
+    const selected = getSelectedElement();
+    if (selected && selected.classList.contains('chart')) {
+      // Already editing - live updates handle changes, just close panel
+      const chartEditorPanel = document.getElementById('chart-editor-panel');
+      const chartTypeSelection = document.getElementById('chart-type-selection');
+      const chartsPanelTitle = document.getElementById('charts-panel-title');
+      if (chartEditorPanel) chartEditorPanel.classList.add('hidden');
+      if (chartTypeSelection) chartTypeSelection.classList.remove('hidden');
+      if (chartsPanelTitle) chartsPanelTitle.textContent = 'Choose Chart Type';
+      if (chartEditorApply) chartEditorApply.textContent = 'Insert Chart';
+      hideChartsPanel();
+    } else if (selectedChartType) {
+      // Creating new chart
       insertChart(selectedChartType);
     }
   });
@@ -10012,19 +10561,11 @@ What do you need help with?`;
       });
     }
 
-    // Open modal - Updated to open AI Generator instead (which has theme selection)
+    // Open themes modal
     themesBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      // Open AI Generator modal which includes theme selection
-      if (window.openAIGenerator) {
-        window.openAIGenerator();
-      } else if (window.toggleAIPage) {
-        window.toggleAIPage();
-      } else {
-        // Fallback to old themes modal if AI Generator not available
-        loadThemes();
-        themesModal.classList.remove('hidden');
-      }
+      loadThemes();
+      themesModal.classList.remove('hidden');
     });
 
     // Close modal
